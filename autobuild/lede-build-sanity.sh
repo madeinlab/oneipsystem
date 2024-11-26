@@ -438,11 +438,11 @@ build() {
 
 	#make
 
-	echo "make  V=s -j $(($(nproc) + 1)) download world"
-	make  V=s -j $(($(nproc) + 1)) download world || exit 1
+	#echo "make  V=s -j $(($(nproc) + 1)) download world"
+	#make  V=s -j $(($(nproc) + 1)) download world || exit 1
 
 	#tar unstripped rootfs for debug symbols
-	install_release $1
+	#install_release $1
 }
 
 build_log() {
@@ -458,9 +458,9 @@ build_log() {
 
 	#make
 
-	echo "make  V=s -j $(($(nproc) + 1)) download world"
-	make  V=s -j $(($(nproc) + 1)) download world || make V=s -j1 || exit 1
+	#echo "make  V=s -j $(($(nproc) + 1)) download world"
+	#make  V=s -j $(($(nproc) + 1)) download world || make V=s -j1 || exit 1
 
 	#tar unstripped rootfs for debug symbols
-	install_release $1
+	#install_release $1
 }
