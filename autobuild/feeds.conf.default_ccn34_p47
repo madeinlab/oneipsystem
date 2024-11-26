@@ -1,0 +1,4 @@
+src-git mtk_openwrt_feed https://gerrit.mediatek.inc/openwrt/feeds/mtk_openwrt_feeds^68356e9
+src-git packages https://gerrit.mediatek.inc/openwrt/feeds/packages^c618a62
+src-git luci https://gerrit.mediatek.inc/openwrt/feeds/luci^d30ab74
+src-git routing https://gerrit.mediatek.inc/openwrt/feeds/routing^4e2bdb4

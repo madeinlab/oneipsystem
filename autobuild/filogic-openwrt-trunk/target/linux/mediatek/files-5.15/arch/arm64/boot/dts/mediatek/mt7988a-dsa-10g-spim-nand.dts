@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2022 MediaTek Inc.
+ * Author: Sam.Shih <sam.shih@mediatek.com>
+ */
+
+/dts-v1/;
+#include "mt7988a-rfb-spim-nand.dtsi"
+#include <dt-bindings/pinctrl/mt65xx.h>
+
+/ {
+	model = "MediaTek MT7988A DSA 10G SPIM-NAND RFB";
+	compatible = "mediatek,mt7988a-dsa-10g-spim-snand",
+		     "mediatek,mt7988a-rfb-snand",
+		     /* Reserve this for DVFS if creating new dts */
+		     "mediatek,mt7988";
+
+	chosen {
+		bootargs = "console=ttyS0,115200n1 loglevel=8  \
+			    earlycon=uart8250,mmio32,0x11000000 \
+			    pci=pcie_bus_perf";
+	};
+
+	memory {
+		reg = <0 0x40000000 0 0x40000000>;
+	};
+};
+
+
+&pio {
+	mdio0_pins: mdio0-pins {
+		mux {
+			function = "mdio";
+			groups = "mdc_mdio0";
+		};
+
+		conf {
+			groups = "mdc_mdio0";
+			drive-strength = <MTK_DRIVE_8mA>;
+		};
+	};
+};
+
+&eth {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mdio0_pins>;
+	status = "okay";
+
+	gmac0: mac@0 {
+		compatible = "mediatek,eth-mac";
+		reg = <0>;
+		phy-mode = "usxgmii";
+
+		fixed-link {
+			speed = <10000>;
+			full-duplex;
+			pause;
+		};
+	};
+
+	gmac1: mac@1 {
+		compatible = "mediatek,eth-mac";
+		reg = <1>;
+		mac-type = "xgdm";
+		phy-mode = "10gbase-kr";
+		phy-handle = <&phy0>;
+	};
+
+	gmac2: mac@2 {
+		compatible = "mediatek,eth-mac";
+		reg = <2>;
+		mac-type = "xgdm";
+		phy-mode = "10gbase-kr";
+		phy-handle = <&phy1>;
+	};
+
+	mdio: mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mdc-max-frequency = <10500000>;
+
+		phy0: ethernet-phy@0 {
+			reg = <0>;
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reset-gpios = <&pio 72 1>;
+			reset-assert-us = <1000000>;
+			reset-deassert-us = <1000000>;
+		};
+
+		phy1: ethernet-phy@8 {
+			reg = <8>;
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reset-gpios = <&pio 71 1>;
+			reset-assert-us = <1000000>;
+			reset-deassert-us = <1000000>;
+		};
+
+		switch@0 {
+			compatible = "mediatek,mt7988";
+			reg = <31>;
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					label = "lan0";
+					phy-mode = "gmii";
+					phy-handle = <&sphy0>;
+				};
+
+				port@1 {
+					reg = <1>;
+					label = "lan1";
+					phy-mode = "gmii";
+					phy-handle = <&sphy1>;
+				};
+
+				port@2 {
+					reg = <2>;
+					label = "lan2";
+					phy-mode = "gmii";
+					phy-handle = <&sphy2>;
+				};
+
+				port@3 {
+					reg = <3>;
+					label = "lan3";
+					phy-mode = "gmii";
+					phy-handle = <&sphy3>;
+				};
+
+				port@6 {
+					reg = <6>;
+					label = "cpu";
+					ethernet = <&gmac0>;
+					phy-mode = "10gbase-kr";
+
+					fixed-link {
+						speed = <10000>;
+						full-duplex;
+						pause;
+					};
+				};
+			};
+
+			mdio {
+				compatible = "mediatek,dsa-slave-mdio";
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				sphy0: switch_phy0@0 {
+					compatible = "ethernet-phy-id03a2.9481";
+					reg = <0>;
+					phy-mode = "gmii";
+					rext = "efuse";
+					tx_r50 = "efuse";
+					nvmem-cells = <&phy_calibration_p0>;
+					nvmem-cell-names = "phy-cal-data";
+				};
+
+				sphy1: switch_phy1@1 {
+					compatible = "ethernet-phy-id03a2.9481";
+					reg = <1>;
+					phy-mode = "gmii";
+					rext = "efuse";
+					tx_r50 = "efuse";
+					nvmem-cells = <&phy_calibration_p1>;
+					nvmem-cell-names = "phy-cal-data";
+				};
+
+				sphy2: switch_phy2@2 {
+					compatible = "ethernet-phy-id03a2.9481";
+					reg = <2>;
+					phy-mode = "gmii";
+					rext = "efuse";
+					tx_r50 = "efuse";
+					nvmem-cells = <&phy_calibration_p2>;
+					nvmem-cell-names = "phy-cal-data";
+				};
+
+				sphy3: switch_phy3@3 {
+					compatible = "ethernet-phy-id03a2.9481";
+					reg = <3>;
+					phy-mode = "gmii";
+					rext = "efuse";
+					tx_r50 = "efuse";
+					nvmem-cells = <&phy_calibration_p3>;
+					nvmem-cell-names = "phy-cal-data";
+				};
+			};
+		};
+	};
+};

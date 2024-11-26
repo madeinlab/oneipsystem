@@ -1,0 +1,9 @@
+KERNEL_LOADADDR := 0x44080000
+
+define Device/mt7622-mt7915-rfb1
+  DEVICE_VENDOR := MediaTek
+  DEVICE_MODEL := MTK7622 mt7915 rfb1
+  DEVICE_DTS := mt7622-rfb1
+  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
+endef
+TARGET_DEVICES += mt7622-mt7915-rfb1

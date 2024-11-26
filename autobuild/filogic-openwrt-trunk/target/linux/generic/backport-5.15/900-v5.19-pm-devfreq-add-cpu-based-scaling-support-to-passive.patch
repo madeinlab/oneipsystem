@@ -1,0 +1,672 @@
+From 94209cc2c3436f73fbf0f13527ab8dba220acf74 Mon Sep 17 00:00:00 2001
+From: Sam Shih <sam.shih@mediatek.com>
+Date: Mon, 27 Mar 2023 17:34:38 +0800
+Subject: [PATCH 1/5] 
+ pm_devfreq_add_cpu_based_scaling_support_to_passive_governor
+
+---
+ drivers/devfreq/devfreq.c          |  20 +-
+ drivers/devfreq/governor.h         |  27 ++
+ drivers/devfreq/governor_passive.c | 403 ++++++++++++++++++++++++-----
+ include/linux/devfreq.h            |  17 +-
+ 4 files changed, 389 insertions(+), 78 deletions(-)
+
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index a473b64..c225234 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -112,16 +112,16 @@ static unsigned long find_available_max_freq(struct devfreq *devfreq)
+ }
+ 
+ /**
+- * get_freq_range() - Get the current freq range
++ * devfreq_get_freq_range() - Get the current freq range
+  * @devfreq:	the devfreq instance
+  * @min_freq:	the min frequency
+  * @max_freq:	the max frequency
+  *
+  * This takes into consideration all constraints.
+  */
+-static void get_freq_range(struct devfreq *devfreq,
+-			   unsigned long *min_freq,
+-			   unsigned long *max_freq)
++void devfreq_get_freq_range(struct devfreq *devfreq,
++			    unsigned long *min_freq,
++			    unsigned long *max_freq)
+ {
+ 	unsigned long *freq_table = devfreq->profile->freq_table;
+ 	s32 qos_min_freq, qos_max_freq;
+@@ -158,6 +158,7 @@ static void get_freq_range(struct devfreq *devfreq,
+ 	if (*min_freq > *max_freq)
+ 		*min_freq = *max_freq;
+ }
++EXPORT_SYMBOL(devfreq_get_freq_range);
+ 
+ /**
+  * devfreq_get_freq_level() - Lookup freq_table for the frequency
+@@ -418,7 +419,7 @@ int devfreq_update_target(struct devfreq *devfreq, unsigned long freq)
+ 	err = devfreq->governor->get_target_freq(devfreq, &freq);
+ 	if (err)
+ 		return err;
+-	get_freq_range(devfreq, &min_freq, &max_freq);
++	devfreq_get_freq_range(devfreq, &min_freq, &max_freq);
+ 
+ 	if (freq < min_freq) {
+ 		freq = min_freq;
+@@ -784,6 +785,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ {
+ 	struct devfreq *devfreq;
+ 	struct devfreq_governor *governor;
++	unsigned long min_freq, max_freq;
+ 	int err = 0;
+ 
+ 	if (!dev || !profile || !governor_name) {
+@@ -848,6 +850,8 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ 		goto err_dev;
+ 	}
+ 
++	devfreq_get_freq_range(devfreq, &min_freq, &max_freq);
++
+ 	devfreq->suspend_freq = dev_pm_opp_get_suspend_opp_freq(dev);
+ 	devfreq->opp_table = dev_pm_opp_get_opp_table(dev);
+ 	if (IS_ERR(devfreq->opp_table))
+@@ -1559,7 +1563,7 @@ static ssize_t min_freq_show(struct device *dev, struct device_attribute *attr,
+ 	unsigned long min_freq, max_freq;
+ 
+ 	mutex_lock(&df->lock);
+-	get_freq_range(df, &min_freq, &max_freq);
++	devfreq_get_freq_range(df, &min_freq, &max_freq);
+ 	mutex_unlock(&df->lock);
+ 
+ 	return sprintf(buf, "%lu\n", min_freq);
+@@ -1613,7 +1617,7 @@ static ssize_t max_freq_show(struct device *dev, struct device_attribute *attr,
+ 	unsigned long min_freq, max_freq;
+ 
+ 	mutex_lock(&df->lock);
+-	get_freq_range(df, &min_freq, &max_freq);
++	devfreq_get_freq_range(df, &min_freq, &max_freq);
+ 	mutex_unlock(&df->lock);
+ 
+ 	return sprintf(buf, "%lu\n", max_freq);
+@@ -1927,7 +1931,7 @@ static int devfreq_summary_show(struct seq_file *s, void *data)
+ 
+ 		mutex_lock(&devfreq->lock);
+ 		cur_freq = devfreq->previous_freq;
+-		get_freq_range(devfreq, &min_freq, &max_freq);
++		devfreq_get_freq_range(devfreq, &min_freq, &max_freq);
+ 		timer = devfreq->profile->timer;
+ 
+ 		if (IS_SUPPORTED_ATTR(devfreq->governor->attrs, POLLING_INTERVAL))
+diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
+index 2d69a0c..07008dd 100644
+--- a/drivers/devfreq/governor.h
++++ b/drivers/devfreq/governor.h
+@@ -47,6 +47,31 @@
+ #define DEVFREQ_GOV_ATTR_POLLING_INTERVAL		BIT(0)
+ #define DEVFREQ_GOV_ATTR_TIMER				BIT(1)
+ 
++/**
++ * struct devfreq_cpu_data - Hold the per-cpu data
++ * @node:	list node
++ * @dev:	reference to cpu device.
++ * @first_cpu:	the cpumask of the first cpu of a policy.
++ * @opp_table:	reference to cpu opp table.
++ * @cur_freq:	the current frequency of the cpu.
++ * @min_freq:	the min frequency of the cpu.
++ * @max_freq:	the max frequency of the cpu.
++ *
++ * This structure stores the required cpu_data of a cpu.
++ * This is auto-populated by the governor.
++ */
++struct devfreq_cpu_data {
++	struct list_head node;
++
++	struct device *dev;
++	unsigned int first_cpu;
++
++	struct opp_table *opp_table;
++	unsigned int cur_freq;
++	unsigned int min_freq;
++	unsigned int max_freq;
++};
++
+ /**
+  * struct devfreq_governor - Devfreq policy governor
+  * @node:		list node - contains registered devfreq governors
+@@ -86,6 +111,8 @@ int devfreq_remove_governor(struct devfreq_governor *governor);
+ 
+ int devfreq_update_status(struct devfreq *devfreq, unsigned long freq);
+ int devfreq_update_target(struct devfreq *devfreq, unsigned long freq);
++void devfreq_get_freq_range(struct devfreq *devfreq, unsigned long *min_freq,
++			    unsigned long *max_freq);
+ 
+ static inline int devfreq_update_stats(struct devfreq *df)
+ {
+diff --git a/drivers/devfreq/governor_passive.c b/drivers/devfreq/governor_passive.c
+index fc09324..7306e94 100644
+--- a/drivers/devfreq/governor_passive.c
++++ b/drivers/devfreq/governor_passive.c
+@@ -1,4 +1,4 @@
+-// SPDX-License-Identifier: GPL-2.0-only
++	// SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * linux/drivers/devfreq/governor_passive.c
+  *
+@@ -8,76 +8,129 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/cpu.h>
++#include <linux/cpufreq.h>
++#include <linux/cpumask.h>
++#include <linux/slab.h>
+ #include <linux/device.h>
+ #include <linux/devfreq.h>
+ #include "governor.h"
+ 
+-static int devfreq_passive_get_target_freq(struct devfreq *devfreq,
+-					unsigned long *freq)
++#define HZ_PER_KHZ	1000
++
++static struct devfreq_cpu_data *
++get_parent_cpu_data(struct devfreq_passive_data *p_data,
++		    struct cpufreq_policy *policy)
+ {
+-	struct devfreq_passive_data *p_data
+-			= (struct devfreq_passive_data *)devfreq->data;
+-	struct devfreq *parent_devfreq = (struct devfreq *)p_data->parent;
+-	unsigned long child_freq = ULONG_MAX;
+-	struct dev_pm_opp *opp, *p_opp;
+-	int i, count;
++	struct devfreq_cpu_data *parent_cpu_data;
+ 
+-	/*
+-	 * If the devfreq device with passive governor has the specific method
+-	 * to determine the next frequency, should use the get_target_freq()
+-	 * of struct devfreq_passive_data.
+-	 */
+-	if (p_data->get_target_freq)
+-		return p_data->get_target_freq(devfreq, freq);
++	if (!p_data || !policy)
++		return NULL;
+ 
+-	/*
+-	 * If the parent and passive devfreq device uses the OPP table,
+-	 * get the next frequency by using the OPP table.
+-	 */
++	list_for_each_entry(parent_cpu_data, &p_data->cpu_data_list, node)
++		if (parent_cpu_data->first_cpu == cpumask_first(policy->related_cpus))
++			return parent_cpu_data;
+ 
+-	/*
+-	 * - parent devfreq device uses the governors except for passive.
+-	 * - passive devfreq device uses the passive governor.
+-	 *
+-	 * Each devfreq has the OPP table. After deciding the new frequency
+-	 * from the governor of parent devfreq device, the passive governor
+-	 * need to get the index of new frequency on OPP table of parent
+-	 * device. And then the index is used for getting the suitable
+-	 * new frequency for passive devfreq device.
+-	 */
+-	if (!devfreq->profile || !devfreq->profile->freq_table
+-		|| devfreq->profile->max_state <= 0)
+-		return -EINVAL;
++	return NULL;
++}
+ 
+-	/*
+-	 * The passive governor have to get the correct frequency from OPP
+-	 * list of parent device. Because in this case, *freq is temporary
+-	 * value which is decided by ondemand governor.
+-	 */
+-	if (devfreq->opp_table && parent_devfreq->opp_table) {
+-		p_opp = devfreq_recommended_opp(parent_devfreq->dev.parent,
+-						freq, 0);
+-		if (IS_ERR(p_opp))
+-			return PTR_ERR(p_opp);
++static unsigned long get_target_freq_by_required_opp(struct device *p_dev,
++						struct opp_table *p_opp_table,
++						struct opp_table *opp_table,
++						unsigned long *freq)
++{
++	struct dev_pm_opp *opp = NULL, *p_opp = NULL;
++	unsigned long target_freq;
+ 
+-		opp = dev_pm_opp_xlate_required_opp(parent_devfreq->opp_table,
+-						    devfreq->opp_table, p_opp);
+-		dev_pm_opp_put(p_opp);
++	if (!p_dev || !p_opp_table || !opp_table || !freq)
++		return 0;
+ 
+-		if (IS_ERR(opp))
+-			goto no_required_opp;
++	p_opp = devfreq_recommended_opp(p_dev, freq, 0);
++	if (IS_ERR(p_opp))
++		return 0;
+ 
+-		*freq = dev_pm_opp_get_freq(opp);
+-		dev_pm_opp_put(opp);
++	opp = dev_pm_opp_xlate_required_opp(p_opp_table, opp_table, p_opp);
++	dev_pm_opp_put(p_opp);
+ 
++	if (IS_ERR(opp))
+ 		return 0;
++
++	target_freq = dev_pm_opp_get_freq(opp);
++	dev_pm_opp_put(opp);
++
++	return target_freq;
++}
++
++static int get_target_freq_with_cpufreq(struct devfreq *devfreq,
++					unsigned long *target_freq)
++{
++	struct devfreq_passive_data *p_data =
++				(struct devfreq_passive_data *)devfreq->data;
++	struct devfreq_cpu_data *parent_cpu_data;
++	struct cpufreq_policy *policy;
++	unsigned long cpu, cpu_cur, cpu_min, cpu_max, cpu_percent;
++	unsigned long dev_min, dev_max;
++	unsigned long freq = 0;
++	int ret = 0;
++
++	for_each_online_cpu(cpu) {
++		policy = cpufreq_cpu_get(cpu);
++		if (!policy) {
++			ret = -EINVAL;
++			continue;
++		}
++
++		parent_cpu_data = get_parent_cpu_data(p_data, policy);
++		if (!parent_cpu_data) {
++			cpufreq_cpu_put(policy);
++			continue;
++		}
++
++		/* Get target freq via required opps */
++		cpu_cur = parent_cpu_data->cur_freq * HZ_PER_KHZ;
++		freq = get_target_freq_by_required_opp(parent_cpu_data->dev,
++					parent_cpu_data->opp_table,
++					devfreq->opp_table, &cpu_cur);
++		if (freq) {
++			*target_freq = max(freq, *target_freq);
++			cpufreq_cpu_put(policy);
++			continue;
++		}
++
++		/* Use interpolation if required opps is not available */
++		devfreq_get_freq_range(devfreq, &dev_min, &dev_max);
++
++		cpu_min = parent_cpu_data->min_freq;
++		cpu_max = parent_cpu_data->max_freq;
++		cpu_cur = parent_cpu_data->cur_freq;
++
++		cpu_percent = ((cpu_cur - cpu_min) * 100) / (cpu_max - cpu_min);
++		freq = dev_min + mult_frac(dev_max - dev_min, cpu_percent, 100);
++
++		*target_freq = max(freq, *target_freq);
++		cpufreq_cpu_put(policy);
+ 	}
+ 
+-no_required_opp:
+-	/*
+-	 * Get the OPP table's index of decided frequency by governor
+-	 * of parent device.
+-	 */
++	return ret;
++}
++
++static int get_target_freq_with_devfreq(struct devfreq *devfreq,
++					unsigned long *freq)
++{
++	struct devfreq_passive_data *p_data
++			= (struct devfreq_passive_data *)devfreq->data;
++	struct devfreq *parent_devfreq = (struct devfreq *)p_data->parent;
++	unsigned long child_freq = ULONG_MAX;
++	int i, count;
++
++	/* Get target freq via required opps */
++	child_freq = get_target_freq_by_required_opp(parent_devfreq->dev.parent,
++						parent_devfreq->opp_table,
++						devfreq->opp_table, freq);
++	if (child_freq)
++		goto out;
++
++	/* Use interpolation if required opps is not available */
+ 	for (i = 0; i < parent_devfreq->profile->max_state; i++)
+ 		if (parent_devfreq->profile->freq_table[i] == *freq)
+ 			break;
+@@ -85,7 +138,6 @@ static int devfreq_passive_get_target_freq(struct devfreq *devfreq,
+ 	if (i == parent_devfreq->profile->max_state)
+ 		return -EINVAL;
+ 
+-	/* Get the suitable frequency by using index of parent device. */
+ 	if (i < devfreq->profile->max_state) {
+ 		child_freq = devfreq->profile->freq_table[i];
+ 	} else {
+@@ -93,12 +145,202 @@ static int devfreq_passive_get_target_freq(struct devfreq *devfreq,
+ 		child_freq = devfreq->profile->freq_table[count - 1];
+ 	}
+ 
+-	/* Return the suitable frequency for passive device. */
++out:
+ 	*freq = child_freq;
+ 
+ 	return 0;
+ }
+ 
++static int devfreq_passive_get_target_freq(struct devfreq *devfreq,
++					   unsigned long *freq)
++{
++	struct devfreq_passive_data *p_data =
++				(struct devfreq_passive_data *)devfreq->data;
++	int ret;
++
++	if (!p_data)
++		return -EINVAL;
++
++	/*
++	 * If the devfreq device with passive governor has the specific method
++	 * to determine the next frequency, should use the get_target_freq()
++	 * of struct devfreq_passive_data.
++	 */
++	if (p_data->get_target_freq)
++		return p_data->get_target_freq(devfreq, freq);
++
++	switch (p_data->parent_type) {
++	case DEVFREQ_PARENT_DEV:
++		ret = get_target_freq_with_devfreq(devfreq, freq);
++		break;
++	case CPUFREQ_PARENT_DEV:
++		ret = get_target_freq_with_cpufreq(devfreq, freq);
++		break;
++	default:
++		ret = -EINVAL;
++		dev_err(&devfreq->dev, "Invalid parent type\n");
++		break;
++	}
++
++	return ret;
++}
++
++static int cpufreq_passive_notifier_call(struct notifier_block *nb,
++					 unsigned long event, void *ptr)
++{
++	struct devfreq_passive_data *p_data =
++			container_of(nb, struct devfreq_passive_data, nb);
++	struct devfreq *devfreq = (struct devfreq *)p_data->this;
++	struct devfreq_cpu_data *parent_cpu_data;
++	struct cpufreq_freqs *freqs = ptr;
++	unsigned int cur_freq;
++	int ret;
++
++	if (event != CPUFREQ_POSTCHANGE || !freqs)
++		return 0;
++
++	parent_cpu_data = get_parent_cpu_data(p_data, freqs->policy);
++	if (!parent_cpu_data || parent_cpu_data->cur_freq == freqs->new)
++		return 0;
++
++	cur_freq = parent_cpu_data->cur_freq;
++	parent_cpu_data->cur_freq = freqs->new;
++
++	mutex_lock(&devfreq->lock);
++	ret = devfreq_update_target(devfreq, freqs->new);
++	mutex_unlock(&devfreq->lock);
++	if (ret) {
++		parent_cpu_data->cur_freq = cur_freq;
++		dev_err(&devfreq->dev, "failed to update the frequency.\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++static int cpufreq_passive_unregister_notifier(struct devfreq *devfreq)
++{
++	struct devfreq_passive_data *p_data
++			= (struct devfreq_passive_data *)devfreq->data;
++	struct devfreq_cpu_data *parent_cpu_data;
++	int cpu, ret = 0;
++
++	if (p_data->nb.notifier_call) {
++		ret = cpufreq_unregister_notifier(&p_data->nb,
++					CPUFREQ_TRANSITION_NOTIFIER);
++		if (ret < 0)
++			return ret;
++	}
++
++	for_each_possible_cpu(cpu) {
++		struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
++		if (!policy) {
++			ret = -EINVAL;
++			continue;
++		}
++
++		parent_cpu_data = get_parent_cpu_data(p_data, policy);
++		if (!parent_cpu_data) {
++			cpufreq_cpu_put(policy);
++			continue;
++		}
++
++		list_del(&parent_cpu_data->node);
++		if (parent_cpu_data->opp_table)
++			dev_pm_opp_put_opp_table(parent_cpu_data->opp_table);
++		kfree(parent_cpu_data);
++		cpufreq_cpu_put(policy);
++	}
++
++	return ret;
++}
++
++static int cpufreq_passive_register_notifier(struct devfreq *devfreq)
++{
++	struct devfreq_passive_data *p_data
++			= (struct devfreq_passive_data *)devfreq->data;
++	struct device *dev = devfreq->dev.parent;
++	struct opp_table *opp_table = NULL;
++	struct devfreq_cpu_data *parent_cpu_data;
++	struct cpufreq_policy *policy;
++	struct device *cpu_dev;
++	unsigned int cpu;
++	int ret;
++
++	p_data->cpu_data_list
++		= (struct list_head)LIST_HEAD_INIT(p_data->cpu_data_list);
++
++	p_data->nb.notifier_call = cpufreq_passive_notifier_call;
++	ret = cpufreq_register_notifier(&p_data->nb, CPUFREQ_TRANSITION_NOTIFIER);
++	if (ret) {
++		dev_err(dev, "failed to register cpufreq notifier\n");
++		p_data->nb.notifier_call = NULL;
++		goto err;
++	}
++
++	for_each_possible_cpu(cpu) {
++		policy = cpufreq_cpu_get(cpu);
++		if (!policy) {
++			ret = -EPROBE_DEFER;
++			goto err;
++		}
++
++		parent_cpu_data = get_parent_cpu_data(p_data, policy);
++		if (parent_cpu_data) {
++			cpufreq_cpu_put(policy);
++			continue;
++		}
++
++		parent_cpu_data = kzalloc(sizeof(*parent_cpu_data),
++						GFP_KERNEL);
++		if (!parent_cpu_data) {
++			ret = -ENOMEM;
++			goto err_put_policy;
++		}
++
++		cpu_dev = get_cpu_device(cpu);
++		if (!cpu_dev) {
++			dev_err(dev, "failed to get cpu device\n");
++			ret = -ENODEV;
++			goto err_free_cpu_data;
++		}
++
++		opp_table = dev_pm_opp_get_opp_table(cpu_dev);
++		if (IS_ERR(opp_table)) {
++			dev_err(dev, "failed to get opp_table of cpu%d\n", cpu);
++			ret = PTR_ERR(opp_table);
++			goto err_free_cpu_data;
++		}
++
++		parent_cpu_data->dev = cpu_dev;
++		parent_cpu_data->opp_table = opp_table;
++		parent_cpu_data->first_cpu = cpumask_first(policy->related_cpus);
++		parent_cpu_data->cur_freq = policy->cur;
++		parent_cpu_data->min_freq = policy->cpuinfo.min_freq;
++		parent_cpu_data->max_freq = policy->cpuinfo.max_freq;
++
++		list_add_tail(&parent_cpu_data->node, &p_data->cpu_data_list);
++		cpufreq_cpu_put(policy);
++	}
++
++	mutex_lock(&devfreq->lock);
++	ret = devfreq_update_target(devfreq, 0L);
++	mutex_unlock(&devfreq->lock);
++	if (ret)
++		dev_err(dev, "failed to update the frequency\n");
++
++	return ret;
++
++err_free_cpu_data:
++	kfree(parent_cpu_data);
++err_put_policy:
++	cpufreq_cpu_put(policy);
++err:
++	WARN_ON(cpufreq_passive_unregister_notifier(devfreq));
++
++	return ret;
++}
++
+ static int devfreq_passive_notifier_call(struct notifier_block *nb,
+ 				unsigned long event, void *ptr)
+ {
+@@ -131,30 +373,55 @@ static int devfreq_passive_notifier_call(struct notifier_block *nb,
+ 	return NOTIFY_DONE;
+ }
+ 
+-static int devfreq_passive_event_handler(struct devfreq *devfreq,
+-				unsigned int event, void *data)
++static int devfreq_passive_unregister_notifier(struct devfreq *devfreq)
++{
++	struct devfreq_passive_data *p_data
++			= (struct devfreq_passive_data *)devfreq->data;
++	struct devfreq *parent = (struct devfreq *)p_data->parent;
++	struct notifier_block *nb = &p_data->nb;
++
++	return devfreq_unregister_notifier(parent, nb, DEVFREQ_TRANSITION_NOTIFIER);
++}
++
++static int devfreq_passive_register_notifier(struct devfreq *devfreq)
+ {
+ 	struct devfreq_passive_data *p_data
+ 			= (struct devfreq_passive_data *)devfreq->data;
+ 	struct devfreq *parent = (struct devfreq *)p_data->parent;
+ 	struct notifier_block *nb = &p_data->nb;
+-	int ret = 0;
+ 
+ 	if (!parent)
+ 		return -EPROBE_DEFER;
+ 
++	nb->notifier_call = devfreq_passive_notifier_call;
++	return devfreq_register_notifier(parent, nb, DEVFREQ_TRANSITION_NOTIFIER);
++}
++
++static int devfreq_passive_event_handler(struct devfreq *devfreq,
++				unsigned int event, void *data)
++{
++	struct devfreq_passive_data *p_data
++			= (struct devfreq_passive_data *)devfreq->data;
++	int ret = -EINVAL;
++
++	if (!p_data)
++		return -EINVAL;
++
++	if (!p_data->this)
++		p_data->this = devfreq;
++
+ 	switch (event) {
+ 	case DEVFREQ_GOV_START:
+-		if (!p_data->this)
+-			p_data->this = devfreq;
+-
+-		nb->notifier_call = devfreq_passive_notifier_call;
+-		ret = devfreq_register_notifier(parent, nb,
+-					DEVFREQ_TRANSITION_NOTIFIER);
++		if (p_data->parent_type == DEVFREQ_PARENT_DEV)
++			ret = devfreq_passive_register_notifier(devfreq);
++		else if (p_data->parent_type == CPUFREQ_PARENT_DEV)
++			ret = cpufreq_passive_register_notifier(devfreq);
+ 		break;
+ 	case DEVFREQ_GOV_STOP:
+-		WARN_ON(devfreq_unregister_notifier(parent, nb,
+-					DEVFREQ_TRANSITION_NOTIFIER));
++		if (p_data->parent_type == DEVFREQ_PARENT_DEV)
++			WARN_ON(devfreq_passive_unregister_notifier(devfreq));
++		else if (p_data->parent_type == CPUFREQ_PARENT_DEV)
++			WARN_ON(cpufreq_passive_unregister_notifier(devfreq));
+ 		break;
+ 	default:
+ 		break;
+diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+index d94b9ed..9a5246d 100644
+--- a/include/linux/devfreq.h
++++ b/include/linux/devfreq.h
+@@ -38,6 +38,7 @@ enum devfreq_timer {
+ 
+ struct devfreq;
+ struct devfreq_governor;
++struct devfreq_cpu_data;
+ struct thermal_cooling_device;
+ 
+ /**
+@@ -289,6 +290,11 @@ struct devfreq_simple_ondemand_data {
+ #endif
+ 
+ #if IS_ENABLED(CONFIG_DEVFREQ_GOV_PASSIVE)
++enum devfreq_parent_dev_type {
++	DEVFREQ_PARENT_DEV,
++	CPUFREQ_PARENT_DEV,
++};
++
+ /**
+  * struct devfreq_passive_data - ``void *data`` fed to struct devfreq
+  *	and devfreq_add_device
+@@ -300,8 +306,11 @@ struct devfreq_simple_ondemand_data {
+  *			using governors except for passive governor.
+  *			If the devfreq device has the specific method to decide
+  *			the next frequency, should use this callback.
+- * @this:	the devfreq instance of own device.
+- * @nb:		the notifier block for DEVFREQ_TRANSITION_NOTIFIER list
++ * @parent_type:	the parent type of the device.
++ * @this:		the devfreq instance of own device.
++ * @nb:			the notifier block for DEVFREQ_TRANSITION_NOTIFIER or
++ *			CPUFREQ_TRANSITION_NOTIFIER list.
++ * @cpu_data_list:	the list of cpu frequency data for all cpufreq_policy.
+  *
+  * The devfreq_passive_data have to set the devfreq instance of parent
+  * device with governors except for the passive governor. But, don't need to
+@@ -315,9 +324,13 @@ struct devfreq_passive_data {
+ 	/* Optional callback to decide the next frequency of passvice device */
+ 	int (*get_target_freq)(struct devfreq *this, unsigned long *freq);
+ 
++	/* Should set the type of parent device */
++	enum devfreq_parent_dev_type parent_type;
++
+ 	/* For passive governor's internal use. Don't need to set them */
+ 	struct devfreq *this;
+ 	struct notifier_block nb;
++	struct list_head cpu_data_list;
+ };
+ #endif
+ 
+-- 
+2.18.0
+
