@@ -1,0 +1,3366 @@
+diff -urN openwrt.cbe73ea33d/feeds/luci/build/mkbasepot.sh openwrt.GOOD.20240420/feeds/luci/build/mkbasepot.sh
+--- openwrt.cbe73ea33d/feeds/luci/build/mkbasepot.sh	2024-01-13 20:54:51.735154756 +0900
++++ openwrt.GOOD.20240420/feeds/luci/build/mkbasepot.sh	2024-04-06 21:00:32.146721491 +0900
+@@ -10,6 +10,7 @@
+ ./build/i18n-scan.pl \
+ 	modules/luci-base/ modules/luci-compat/ modules/luci-mod-admin-full/ \
+ 	modules/luci-mod-network modules/luci-mod-status modules/luci-mod-system/ \
++	modules/luci-mod-camera/ \
+ 	protocols/ themes/ \
+ > modules/luci-base/po/templates/base.pot
+ 
+diff -urN openwrt.cbe73ea33d/feeds/luci/collections/luci-ssl-nginx/Makefile openwrt.GOOD.20240420/feeds/luci/collections/luci-ssl-nginx/Makefile
+--- openwrt.cbe73ea33d/feeds/luci/collections/luci-ssl-nginx/Makefile	2024-01-13 20:54:51.735154756 +0900
++++ openwrt.GOOD.20240420/feeds/luci/collections/luci-ssl-nginx/Makefile	2024-04-06 21:00:32.150721468 +0900
+@@ -15,7 +15,7 @@
+  
+ LUCI_DEPENDS:= \
+ 	+nginx-ssl +nginx-mod-luci-ssl +luci-mod-admin-full +luci-theme-bootstrap \
+-	+luci-app-firewall +luci-app-opkg +luci-proto-ppp +libiwinfo-lua +IPV6:luci-proto-ipv6 \
++	+libiwinfo-lua +IPV6:luci-proto-ipv6 \
+ 	+rpcd-mod-rrdns +openssl-util
+ 
+ PKG_LICENSE:=Apache-2.0
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-base/po/ko/base.po openwrt.GOOD.20240420/feeds/luci/modules/luci-base/po/ko/base.po
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-base/po/ko/base.po	2024-01-13 20:54:51.819155506 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-base/po/ko/base.po	2024-04-06 21:00:32.150721468 +0900
+@@ -1139,7 +1139,7 @@
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:2831
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:3831
+ msgid "Browse…"
+-msgstr ""
++msgstr "찾아보기…"
+ 
+ #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/20_memory.js:40
+ msgid "Buffered"
+@@ -1279,7 +1279,7 @@
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:193
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:195
+ msgid "Checking image…"
+-msgstr ""
++msgstr "적합한 이미지인지 확인합니다..."
+ 
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:427
+ msgid "Choose mtdblock"
+@@ -1454,7 +1454,7 @@
+ 
+ #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:1288
+ msgid "Configure…"
+-msgstr ""
++msgstr "구성…"
+ 
+ #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:176
+ msgid "Confirm disconnect"
+@@ -1508,7 +1508,7 @@
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:132
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:269
+ msgid "Continue"
+-msgstr ""
++msgstr "계속"
+ 
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:4196
+ msgid ""
+@@ -1536,7 +1536,7 @@
+ 
+ #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:1164
+ msgid "Create interface"
+-msgstr ""
++msgstr "인터페이스 생성"
+ 
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js:191
+ msgid "Critical"
+@@ -5374,7 +5374,7 @@
+ 
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:3800
+ msgid "Please select the file to upload."
+-msgstr ""
++msgstr "업로딩할 파일을 선택해주세요."
+ 
+ #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/iptables.js:54
+ msgid "Policy"
+@@ -7600,7 +7600,7 @@
+ 
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:3892
+ msgid "Upload"
+-msgstr ""
++msgstr "업로드"
+ 
+ #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:441
+ msgid ""
+@@ -7617,7 +7617,7 @@
+ 
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:2837
+ msgid "Upload file"
+-msgstr ""
++msgstr "파일 업로드"
+ 
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:2812
+ msgid "Upload file…"
+@@ -7631,7 +7631,7 @@
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:3799
+ #: modules/luci-base/htdocs/luci-static/resources/ui.js:3853
+ msgid "Uploading file…"
+-msgstr ""
++msgstr "업로딩 파일…"
+ 
+ #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:795
+ msgid ""
+@@ -8683,6 +8683,38 @@
+ msgid "« Back"
+ msgstr "« 이전"
+ 
++# Add by LSS
++#: modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json
++msgid "Dashboard"
++msgstr "대시보드"
++
++msgid "Camera"
++msgstr "카메라"
++
++msgid "CAM 1"
++msgstr "카메라 1"
++
++msgid "CAM 2"
++msgstr "카메라 2"
++
++msgid "CAM 3"
++msgstr "카메라 3"
++
++msgid "CAM 4"
++msgstr "카메라 4"
++
++msgid "CAM 5"
++msgstr "카메라 5"
++
++msgid "CAM 6"
++msgstr "카메라 6"
++
++msgid "ETC 1"
++msgstr "기타장비 1"
++
++msgid "ETC 2"
++msgstr "기타장비 2"
++
+ #~ msgid "IPv4-Address"
+ #~ msgstr "IPv4-주소"
+ 
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-base/root/usr/share/luci/menu.d/luci-base.json openwrt.GOOD.20240420/feeds/luci/modules/luci-base/root/usr/share/luci/menu.d/luci-base.json
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-base/root/usr/share/luci/menu.d/luci-base.json	2024-01-13 20:54:51.855155828 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-base/root/usr/share/luci/menu.d/luci-base.json	2024-04-06 21:00:32.146721491 +0900
+@@ -77,6 +77,16 @@
+ 		"auth": {}
+ 	},
+ 
++	"admin/camera": {
++		"title": "Camera",
++		"order": 777,
++		"action": {
++			"type": "firstchild",
++			"preferred": "overview",
++			"recurse": true
++		}
++	},
++
+ 	"admin/logout": {
+ 		"title": "Logout",
+ 		"order": 999,
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-base/src/mkversion.sh openwrt.GOOD.20240420/feeds/luci/modules/luci-base/src/mkversion.sh
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-base/src/mkversion.sh	2024-01-13 20:54:51.855155828 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-base/src/mkversion.sh	2024-04-06 21:00:32.146721491 +0900
+@@ -19,6 +19,9 @@
+ 	distversion = "Development Snapshot"
+ end
+ 
++distname	= "OneIPSystem"
++distversion	= "V1.0.0"
++
+ luciname    = "${3:-LuCI}"
+ luciversion = "${2:-Git}"
+ EOF
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-admin-full/Makefile openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-admin-full/Makefile
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-admin-full/Makefile	2024-01-13 20:54:51.187149861 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-admin-full/Makefile	2024-04-06 21:00:32.146721491 +0900
+@@ -7,7 +7,7 @@
+ include $(TOPDIR)/rules.mk
+ 
+ LUCI_TITLE:=LuCI Administration - full-featured for full control
+-LUCI_DEPENDS:=+luci-base +luci-mod-status +luci-mod-system +luci-mod-network
++LUCI_DEPENDS:=+luci-base +luci-mod-system +luci-mod-network +luci-mod-camera
+ 
+ PKG_LICENSE:=Apache-2.0
+ 
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/connections2.svg openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/connections2.svg
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/connections2.svg	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/connections2.svg	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,17 @@
++<?xml version="1.0" standalone="no"?>
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++
++<svg width="100%" height="100%" version="1.1" xmlns="http://www.w3.org/2000/svg">
++	<polyline id="tcp" points="" style="fill:green;fill-opacity:0.4;stroke:green;stroke-width:1" />
++	<polyline id="udp" points="" style="fill:blue;fill-opacity:0.4;stroke:blue;stroke-width:1" />
++	<polyline id="other" points="" style="fill:red;fill-opacity:0.4;stroke:red;stroke-width:1" />
++
++	<line x1="0" y1="25%" x2="100%" y2="25%" style="stroke:black;stroke-width:0.1" />
++	<text id="label_75" x="20" y="24%" style="fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000"> </text>
++
++	<line x1="0" y1="50%" x2="100%" y2="50%" style="stroke:black;stroke-width:0.1" />
++	<text id="label_50" x="20" y="49%" style="fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000"> </text>
++
++	<line x1="0" y1="75%" x2="100%" y2="75%" style="stroke:black;stroke-width:0.1" />
++	<text id="label_25" x="20" y="74%" style="fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000"> </text>
++</svg>
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/load2.svg openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/load2.svg
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/load2.svg	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/svg/load2.svg	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,17 @@
++<?xml version="1.0" standalone="no"?>
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++
++<svg width="100%" height="100%" version="1.1" xmlns="http://www.w3.org/2000/svg">
++	<polyline id="load01" points="" style="fill:#ff0000;fill-opacity:0.4;stroke:#ff0000;stroke-width:1" />
++	<polyline id="load05" points="" style="fill:#ff6600;fill-opacity:0.4;stroke:#ff6600;stroke-width:1" />
++	<polyline id="load15" points="" style="fill:#ffaa00;fill-opacity:0.4;stroke:#ffaa00;stroke-width:1" />
++
++	<line x1="0" y1="25%" x2="100%" y2="25%" style="stroke:black;stroke-width:0.1" />
++	<text id="label_75" x="20" y="24%" style="fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000"> </text>
++
++	<line x1="0" y1="50%" x2="100%" y2="50%" style="stroke:black;stroke-width:0.1" />
++	<text id="label_50" x="20" y="49%" style="fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000"> </text>
++
++	<line x1="0" y1="75%" x2="100%" y2="75%" style="stroke:black;stroke-width:0.1" />
++	<text id="label_25" x="20" y="74%" style="fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000"> </text>
++</svg>
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/connections.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/connections.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/connections.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/connections.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,428 @@
++'use strict';
++'require view';
++'require poll';
++'require request';
++'require rpc';
++
++var callLuciRealtimeStats = rpc.declare({
++	object: 'luci',
++	method: 'getRealtimeStats',
++	params: [ 'mode', 'device' ],
++	expect: { result: [] }
++});
++
++var callLuciConntrackList = rpc.declare({
++	object: 'luci',
++	method: 'getConntrackList',
++	expect: { result: [] }
++});
++
++var callNetworkRrdnsLookup = rpc.declare({
++	object: 'network.rrdns',
++	method: 'lookup',
++	params: [ 'addrs', 'timeout', 'limit' ],
++	expect: { '': {} }
++});
++
++var graphPolls = [],
++    pollInterval = 3,
++    dns_cache = {},
++    enableLookups = false;
++
++var recheck_lookup_queue = {};
++
++Math.log2 = Math.log2 || function(x) { return Math.log(x) * Math.LOG2E; };
++
++return view.extend({
++	load: function() {
++		return Promise.all([
++			this.loadSVG(L.resource('svg/connections2.svg'))
++		]);
++	},
++
++	updateGraph: function(svg, lines, cb) {
++		var G = svg.firstElementChild;
++
++		var view = document.querySelector('#view');
++
++		var width  = view.offsetWidth - 2;
++		var height = 300 - 2;
++		var step   = 5;
++
++		var data_wanted = Math.floor(width / step);
++
++		var data_values = [],
++		    line_elements = [];
++
++		for (var i = 0; i < lines.length; i++)
++			if (lines[i] != null)
++				data_values.push([]);
++
++		var info = {
++			line_current: [],
++			line_average: [],
++			line_peak:    []
++		};
++
++		/* prefill datasets */
++		for (var i = 0; i < data_values.length; i++)
++			for (var j = 0; j < data_wanted; j++)
++					data_values[i][j] = 0;
++
++		/* plot horizontal time interval lines */
++		for (var i = width % (step * 60); i < width; i += step * 60) {
++			var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
++				line.setAttribute('x1', i);
++				line.setAttribute('y1', 0);
++				line.setAttribute('x2', i);
++				line.setAttribute('y2', '100%');
++				line.setAttribute('style', 'stroke:black;stroke-width:0.1');
++
++			var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
++				text.setAttribute('x', i + 5);
++				text.setAttribute('y', 15);
++				text.setAttribute('style', 'fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000');
++				text.appendChild(document.createTextNode(Math.round((width - i) / step / 60) + 'm'));
++
++			G.appendChild(line);
++			G.appendChild(text);
++		}
++
++		info.interval = pollInterval;
++		info.timeframe = data_wanted / 60;
++
++		graphPolls.push({
++			svg:    svg,
++			lines:  lines,
++			cb:     cb,
++			info:   info,
++			width:  width,
++			height: height,
++			step:   step,
++			values: data_values,
++			timestamp: 0,
++			fill: 1
++		});
++	},
++
++	updateConntrack: function(conn) {
++		var lookup_queue = [ ];
++		var rows = [];
++
++		conn.sort(function(a, b) {
++			return b.bytes - a.bytes;
++		});
++
++		for (var i = 0; i < conn.length; i++)
++		{
++			var c  = conn[i];
++
++			if ((c.src == '127.0.0.1' && c.dst == '127.0.0.1') ||
++				(c.src == '::1'       && c.dst == '::1'))
++				continue;
++
++			if (!dns_cache[c.src] && lookup_queue.indexOf(c.src) == -1)
++				lookup_queue.push(c.src);
++
++			if (!dns_cache[c.dst] && lookup_queue.indexOf(c.dst) == -1)
++				lookup_queue.push(c.dst);
++
++			var src = dns_cache[c.src] || (c.layer3 == 'ipv6' ? '[' + c.src + ']' : c.src);
++			var dst = dns_cache[c.dst] || (c.layer3 == 'ipv6' ? '[' + c.dst + ']' : c.dst);
++
++			rows.push([
++				c.layer3.toUpperCase(),
++				c.layer4.toUpperCase(),
++				'%h'.format(c.hasOwnProperty('sport') ? (src + ':' + c.sport) : src),
++				'%h'.format(c.hasOwnProperty('dport') ? (dst + ':' + c.dport) : dst),
++				'%1024.2mB (%d %s)'.format(c.bytes, c.packets, _('Pkts.'))
++			]);
++		}
++
++		cbi_update_table('#connections', rows, E('em', _('No information available')));
++
++		if (enableLookups && lookup_queue.length > 0) {
++			var reduced_lookup_queue = lookup_queue;
++
++			if (lookup_queue.length > 100)
++				reduced_lookup_queue = lookup_queue.slice(0, 100);
++
++			callNetworkRrdnsLookup(reduced_lookup_queue, 5000, 1000).then(function(replies) {
++				for (var index in reduced_lookup_queue) {
++					var address = reduced_lookup_queue[index];
++
++					if (!address)
++						continue;
++
++					if (replies[address]) {
++						dns_cache[address] = replies[address];
++						lookup_queue.splice(reduced_lookup_queue.indexOf(address), 1);
++						continue;
++					}
++
++					if (recheck_lookup_queue[address] > 2) {
++						dns_cache[address] = (address.match(/:/)) ? '[' + address + ']' : address;
++						lookup_queue.splice(index, 1);
++					}
++					else {
++						recheck_lookup_queue[address] = (recheck_lookup_queue[address] || 0) + 1;
++					}
++				}
++
++				var btn = document.querySelector('.btn.toggle-lookups');
++				if (btn) {
++					btn.firstChild.data = enableLookups ? _('Disable DNS lookups') : _('Enable DNS lookups');
++					btn.classList.remove('spinning');
++					btn.disabled = false;
++				}
++			});
++		}
++	},
++
++	pollData: function() {
++		poll.add(L.bind(function() {
++			var tasks = [
++				L.resolveDefault(callLuciConntrackList(), [])
++			];
++
++			for (var i = 0; i < graphPolls.length; i++) {
++				var ctx = graphPolls[i];
++				tasks.push(L.resolveDefault(callLuciRealtimeStats('conntrack'), []));
++			}
++
++			return Promise.all(tasks).then(L.bind(function(datasets) {
++				this.updateConntrack(datasets[0]);
++
++				for (var gi = 0; gi < graphPolls.length; gi++) {
++					var ctx = graphPolls[gi],
++					    data = datasets[gi + 1],
++					    values = ctx.values,
++					    lines = ctx.lines,
++					    info = ctx.info;
++
++					var data_scale = 0;
++					var data_wanted = Math.floor(ctx.width / ctx.step);
++					var last_timestamp = NaN;
++
++					for (var i = 0, di = 0; di < lines.length; di++) {
++						if (lines[di] == null)
++							continue;
++
++						var multiply = (lines[di].multiply != null) ? lines[di].multiply : 1,
++						    offset = (lines[di].offset != null) ? lines[di].offset : 0;
++
++						for (var j = ctx.timestamp ? 0 : 1; j < data.length; j++) {
++							/* skip overlapping entries */
++							if (data[j][0] <= ctx.timestamp)
++								continue;
++
++							if (i == 0) {
++								ctx.fill++;
++								last_timestamp = data[j][0];
++							}
++
++							info.line_current[i] = data[j][di + 1] * multiply;
++							info.line_current[i] -= Math.min(info.line_current[i], offset);
++							values[i].push(info.line_current[i]);
++						}
++
++						i++;
++					}
++
++					/* cut off outdated entries */
++					ctx.fill = Math.min(ctx.fill, data_wanted);
++
++					for (var i = 0; i < values.length; i++) {
++						var len = values[i].length;
++						values[i] = values[i].slice(len - data_wanted, len);
++
++						/* find peaks, averages */
++						info.line_peak[i] = NaN;
++						info.line_average[i] = 0;
++
++						for (var j = 0; j < values[i].length; j++) {
++							info.line_peak[i] = isNaN(info.line_peak[i]) ? values[i][j] : Math.max(info.line_peak[i], values[i][j]);
++							info.line_average[i] += values[i][j];
++						}
++
++						info.line_average[i] = info.line_average[i] / ctx.fill;
++					}
++
++					info.peak = Math.max.apply(Math, info.line_peak);
++
++					/* remember current timestamp, calculate horizontal scale */
++					if (!isNaN(last_timestamp))
++						ctx.timestamp = last_timestamp;
++
++					var size = Math.floor(Math.log2(info.peak)),
++					    div = Math.pow(2, size - (size % 10)),
++					    mult = info.peak / div,
++					    mult = (mult < 5) ? 2 : ((mult < 50) ? 10 : ((mult < 500) ? 100 : 1000));
++
++					info.peak = info.peak + (mult * div) - (info.peak % (mult * div));
++
++					data_scale = ctx.height / info.peak;
++
++					/* plot data */
++					for (var i = 0, di = 0; di < lines.length; di++) {
++						if (lines[di] == null)
++							continue;
++
++						var el = ctx.svg.firstElementChild.getElementById(lines[di].line),
++						    pt = '0,' + ctx.height,
++						    y = 0;
++
++						if (!el)
++							continue;
++
++						for (var j = 0; j < values[i].length; j++) {
++							var x = j * ctx.step;
++
++							y = ctx.height - Math.floor(values[i][j] * data_scale);
++							//y -= Math.floor(y % (1 / data_scale));
++
++							y = isNaN(y) ? ctx.height : y;
++
++							pt += ' ' + x + ',' + y;
++						}
++
++						pt += ' ' + ctx.width + ',' + y + ' ' + ctx.width + ',' + ctx.height;
++
++						el.setAttribute('points', pt);
++
++						i++;
++					}
++
++					info.label_25 = 0.25 * info.peak;
++					info.label_50 = 0.50 * info.peak;
++					info.label_75 = 0.75 * info.peak;
++
++					if (typeof(ctx.cb) == 'function')
++						ctx.cb(ctx.svg, info);
++				}
++			}, this));
++		}, this), pollInterval);
++	},
++
++	loadSVG: function(src) {
++		return request.get(src).then(function(response) {
++			if (!response.ok)
++				throw new Error(response.statusText);
++
++			return E('div', {
++				'style': 'width:100%;height:300px;border:1px solid #000;background:#fff'
++			}, E(response.text()));
++		});
++	},
++
++	render: function(data) {
++		var svg = data[0];
++
++		var v = E([], [
++			svg,
++			E('div', { 'class': 'right' }, E('small', { 'id': 'scale' }, '-')),
++			E('br'),
++
++			E('table', { 'class': 'table', 'style': 'width:100%;table-layout:fixed' }, [
++				E('tr', { 'class': 'tr' }, [
++					E('td', { 'class': 'td right top' }, E('strong', { 'style': 'border-bottom:2px solid blue' }, [ _('UDP:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_udp_cur' }, [ '0' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Average:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_udp_avg' }, [ '0' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Peak:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_udp_peak' }, [ '0' ])
++				]),
++				E('tr', { 'class': 'tr' }, [
++					E('td', { 'class': 'td right top' }, E('strong', { 'style': 'border-bottom:2px solid green' }, [ _('TCP:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_tcp_cur' }, [ '0' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Average:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_tcp_avg' }, [ '0' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Peak:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_tcp_peak' }, [ '0' ])
++				]),
++				E('tr', { 'class': 'tr' }, [
++					E('td', { 'class': 'td right top' }, E('strong', { 'style': 'border-bottom:2px solid red' }, [ _('Other:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_otr_cur' }, [ '0' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Average:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_otr_avg' }, [ '0' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Peak:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_otr_peak' }, [ '0' ])
++				])
++			]),
++
++			E('div', { 'class': 'right' }, [
++				E('button', {
++					'class': 'btn toggle-lookups',
++					'click': function(ev) {
++						if (!enableLookups) {
++							ev.currentTarget.classList.add('spinning');
++							ev.currentTarget.disabled = true;
++							enableLookups = true;
++						}
++						else {
++							ev.currentTarget.firstChild.data = _('Enable DNS lookups');
++							enableLookups = false;
++						}
++
++						this.blur();
++					}
++				}, [ enableLookups ? _('Disable DNS lookups') : _('Enable DNS lookups') ])
++			]),
++
++			E('br'),
++
++			E('div', { 'class': 'cbi-section-node' }, [
++				E('table', { 'class': 'table', 'id': 'connections' }, [
++					E('tr', { 'class': 'tr table-titles' }, [
++						E('th', { 'class': 'th col-2 hide-xs' }, [ _('Network') ]),
++						E('th', { 'class': 'th col-2' }, [ _('Protocol') ]),
++						E('th', { 'class': 'th col-7' }, [ _('Source') ]),
++						E('th', { 'class': 'th col-7' }, [ _('Destination') ]),
++						E('th', { 'class': 'th col-4' }, [ _('Transfer') ])
++					]),
++					E('tr', { 'class': 'tr placeholder' }, [
++						E('td', { 'class': 'td' }, [
++							E('em', {}, [ _('Collecting data...') ])
++						])
++					])
++				])
++			])
++		]);
++
++		this.updateGraph(svg, [ { line: 'udp' }, { line: 'tcp' }, { line: 'other' } ], function(svg, info) {
++			var G = svg.firstElementChild, tab = svg.parentNode;
++
++			G.getElementById('label_25').firstChild.data = '%d'.format(info.label_25);
++			G.getElementById('label_50').firstChild.data = '%d'.format(info.label_50);
++			G.getElementById('label_75').firstChild.data = '%d'.format(info.label_75);
++
++			tab.querySelector('#scale').firstChild.data = _('(%d minute window, %d second interval)').format(info.timeframe, info.interval);
++
++			tab.querySelector('#lb_udp_cur').firstChild.data = '%d'.format(info.line_current[0]);
++			tab.querySelector('#lb_udp_avg').firstChild.data = '%d'.format(info.line_average[0]);
++			tab.querySelector('#lb_udp_peak').firstChild.data = '%d'.format(info.line_peak[0]);
++
++			tab.querySelector('#lb_tcp_cur').firstChild.data = '%d'.format(info.line_current[1]);
++			tab.querySelector('#lb_tcp_avg').firstChild.data = '%d'.format(info.line_average[1]);
++			tab.querySelector('#lb_tcp_peak').firstChild.data = '%d'.format(info.line_peak[1]);
++
++			tab.querySelector('#lb_otr_cur').firstChild.data = '%d'.format(info.line_current[2]);
++			tab.querySelector('#lb_otr_avg').firstChild.data = '%d'.format(info.line_average[2]);
++			tab.querySelector('#lb_otr_peak').firstChild.data = '%d'.format(info.line_peak[2]);
++		});
++
++		this.pollData();
++
++		return v;
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/dmesg.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/dmesg.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/dmesg.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/dmesg.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,36 @@
++'use strict';
++'require view';
++'require fs';
++'require ui';
++
++return view.extend({
++	load: function() {
++		return fs.exec_direct('/bin/dmesg', [ '-r' ]).catch(function(err) {
++			ui.addNotification(null, E('p', {}, _('Unable to load log data: ' + err.message)));
++			return '';
++		});
++	},
++
++	render: function(logdata) {
++		var loglines = logdata.trim().split(/\n/).map(function(line) {
++			return line.replace(/^<\d+>/, '');
++		});
++
++		return E([], [
++			E('h2', {}, [ _('Kernel Log') ]),
++			E('div', { 'id': 'content_syslog' }, [
++				E('textarea', {
++					'id': 'syslog',
++					'style': 'font-size:12px',
++					'readonly': 'readonly',
++					'wrap': 'off',
++					'rows': loglines.length + 1
++				}, [ loglines.join('\n') ])
++			])
++		]);
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/10_system.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/10_system.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/10_system.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/10_system.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,80 @@
++'use strict';
++'require baseclass';
++'require fs';
++'require rpc';
++
++var callSystemBoard = rpc.declare({
++	object: 'system',
++	method: 'board'
++});
++
++var callSystemInfo = rpc.declare({
++	object: 'system',
++	method: 'info'
++});
++
++return baseclass.extend({
++	title: _('System'),
++
++	load: function() {
++		return Promise.all([
++			L.resolveDefault(callSystemBoard(), {}),
++			L.resolveDefault(callSystemInfo(), {}),
++			fs.lines('/usr/lib/lua/luci/version.lua')
++		]);
++	},
++
++	render: function(data) {
++		var boardinfo   = data[0],
++		    systeminfo  = data[1],
++		    luciversion = data[2];
++
++		luciversion = luciversion.filter(function(l) {
++			return l.match(/^\s*(luciname|luciversion)\s*=/);
++		}).map(function(l) {
++			return l.replace(/^\s*\w+\s*=\s*['"]([^'"]+)['"].*$/, '$1');
++		}).join(' ');
++
++		var datestr = null;
++
++		if (systeminfo.localtime) {
++			var date = new Date(systeminfo.localtime * 1000);
++
++			datestr = '%04d-%02d-%02d %02d:%02d:%02d'.format(
++				date.getUTCFullYear(),
++				date.getUTCMonth() + 1,
++				date.getUTCDate(),
++				date.getUTCHours(),
++				date.getUTCMinutes(),
++				date.getUTCSeconds()
++			);
++		}
++
++		var fields = [
++			_('Hostname'),         boardinfo.hostname,
++			_('Model'),            boardinfo.model,
++			_('Architecture'),     boardinfo.system,
++			_('Target Platform'),  (L.isObject(boardinfo.release) ? boardinfo.release.target : ''),
++			_('Firmware Version'), (L.isObject(boardinfo.release) ? boardinfo.release.description + ' / ' : '') + (luciversion || ''),
++			_('Kernel Version'),   boardinfo.kernel,
++			_('Local Time'),       datestr,
++			_('Uptime'),           systeminfo.uptime ? '%t'.format(systeminfo.uptime) : null,
++			_('Load Average'),     Array.isArray(systeminfo.load) ? '%.2f, %.2f, %.2f'.format(
++				systeminfo.load[0] / 65535.0,
++				systeminfo.load[1] / 65535.0,
++				systeminfo.load[2] / 65535.0
++			) : null
++		];
++
++		var table = E('table', { 'class': 'table' });
++
++		for (var i = 0; i < fields.length; i += 2) {
++			table.appendChild(E('tr', { 'class': 'tr' }, [
++				E('td', { 'class': 'td left', 'width': '33%' }, [ fields[i] ]),
++				E('td', { 'class': 'td left' }, [ (fields[i + 1] != null) ? fields[i + 1] : '?' ])
++			]));
++		}
++
++		return table;
++	}
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/20_memory.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/20_memory.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/20_memory.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/20_memory.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,61 @@
++'use strict';
++'require baseclass';
++'require rpc';
++
++var callSystemInfo = rpc.declare({
++	object: 'system',
++	method: 'info'
++});
++
++function progressbar(value, max, byte) {
++	var vn = parseInt(value) || 0,
++	    mn = parseInt(max) || 100,
++	    fv = byte ? String.format('%1024.2mB', value) : value,
++	    fm = byte ? String.format('%1024.2mB', max) : max,
++	    pc = Math.floor((100 / mn) * vn);
++
++	return E('div', {
++		'class': 'cbi-progressbar',
++		'title': '%s / %s (%d%%)'.format(fv, fm, pc)
++	}, E('div', { 'style': 'width:%.2f%%'.format(pc) }));
++}
++
++return baseclass.extend({
++	title: _('Memory'),
++
++	load: function() {
++		return L.resolveDefault(callSystemInfo(), {});
++	},
++
++	render: function(systeminfo) {
++		var mem = L.isObject(systeminfo.memory) ? systeminfo.memory : {},
++		    swap = L.isObject(systeminfo.swap) ? systeminfo.swap : {};
++
++		var fields = [
++			_('Total Available'), (mem.available) ? mem.available : (mem.total && mem.free && mem.buffered) ? mem.free + mem.buffered : null, mem.total,
++			_('Used'),            (mem.total && mem.free) ? (mem.total - mem.free) : null, mem.total,
++		];
++
++		if (mem.buffered)
++			fields.push(_('Buffered'), mem.buffered, mem.total);
++
++		if (mem.cached)
++			fields.push(_('Cached'), mem.cached, mem.total);
++
++		if (swap.total > 0)
++			fields.push(_('Swap free'), swap.free, swap.total);
++
++		var table = E('table', { 'class': 'table' });
++
++		for (var i = 0; i < fields.length; i += 3) {
++			table.appendChild(E('tr', { 'class': 'tr' }, [
++				E('td', { 'class': 'td left', 'width': '33%' }, [ fields[i] ]),
++				E('td', { 'class': 'td left' }, [
++					(fields[i + 1] != null) ? progressbar(fields[i + 1], fields[i + 2], true) : '?'
++				])
++			]));
++		}
++
++		return table;
++	}
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/30_network.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/30_network.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/30_network.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/30_network.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,108 @@
++'use strict';
++'require baseclass';
++'require fs';
++'require network';
++
++function progressbar(value, max, byte) {
++	var vn = parseInt(value) || 0,
++	    mn = parseInt(max) || 100,
++	    fv = byte ? String.format('%1024.2mB', value) : value,
++	    fm = byte ? String.format('%1024.2mB', max) : max,
++	    pc = Math.floor((100 / mn) * vn);
++
++	return E('div', {
++		'class': 'cbi-progressbar',
++		'title': '%s / %s (%d%%)'.format(fv, fm, pc)
++	}, E('div', { 'style': 'width:%.2f%%'.format(pc) }));
++}
++
++function renderbox(ifc, ipv6) {
++	var dev = ifc.getL3Device(),
++	    active = (dev && ifc.getProtocol() != 'none'),
++	    addrs = (ipv6 ? ifc.getIP6Addrs() : ifc.getIPAddrs()) || [],
++	    dnssrv = (ipv6 ? ifc.getDNS6Addrs() : ifc.getDNSAddrs()) || [],
++	    expires = (ipv6 ? null : ifc.getExpiry()),
++	    uptime = ifc.getUptime();
++
++	return E('div', { class: 'ifacebox' }, [
++		E('div', { class: 'ifacebox-head center ' + (active ? 'active' : '') },
++			E('strong', ipv6 ? _('IPv6 Upstream') : _('IPv4 Upstream'))),
++		E('div', { class: 'ifacebox-body left' }, [
++			L.itemlist(E('span'), [
++				_('Protocol'), ifc.getI18n() || E('em', _('Not connected')),
++				_('Prefix Delegated'), ipv6 ? ifc.getIP6Prefix() : null,
++				_('Address'), addrs[0],
++				_('Address'), addrs[1],
++				_('Address'), addrs[2],
++				_('Address'), addrs[3],
++				_('Address'), addrs[4],
++				_('Address'), addrs[5],
++				_('Address'), addrs[6],
++				_('Address'), addrs[7],
++				_('Address'), addrs[8],
++				_('Address'), addrs[9],
++				_('Gateway'), ipv6 ? (ifc.getGateway6Addr() || '::') : (ifc.getGatewayAddr() || '0.0.0.0'),
++				_('DNS') + ' 1', dnssrv[0],
++				_('DNS') + ' 2', dnssrv[1],
++				_('DNS') + ' 3', dnssrv[2],
++				_('DNS') + ' 4', dnssrv[3],
++				_('DNS') + ' 5', dnssrv[4],
++				_('Expires'), (expires != null && expires > -1) ? '%t'.format(expires) : null,
++				_('Connected'), (uptime > 0) ? '%t'.format(uptime) : null
++			]),
++			E('div', {}, renderBadge(
++				L.resource('icons/%s.png').format(dev ? dev.getType() : 'ethernet_disabled'), null,
++				_('Device'), dev ? dev.getI18n() : '-',
++				_('MAC address'), dev.getMAC())
++			)
++		])
++	]);
++}
++
++return baseclass.extend({
++	title: _('Network'),
++
++	load: function() {
++		return Promise.all([
++			fs.trimmed('/proc/sys/net/netfilter/nf_conntrack_count'),
++			fs.trimmed('/proc/sys/net/netfilter/nf_conntrack_max'),
++			network.getWANNetworks(),
++			network.getWAN6Networks()
++		]);
++	},
++
++	render: function(data) {
++		var ct_count  = +data[0],
++		    ct_max    = +data[1],
++		    wan_nets  = data[2],
++		    wan6_nets = data[3];
++
++		var fields = [
++			_('Active Connections'), ct_max ? ct_count : null
++		];
++
++		var ctstatus = E('table', { 'class': 'table' });
++
++		for (var i = 0; i < fields.length; i += 2) {
++			ctstatus.appendChild(E('tr', { 'class': 'tr' }, [
++				E('td', { 'class': 'td left', 'width': '33%' }, [ fields[i] ]),
++				E('td', { 'class': 'td left' }, [
++					(fields[i + 1] != null) ? progressbar(fields[i + 1], ct_max) : '?'
++				])
++			]));
++		}
++
++		var netstatus = E('div', { 'class': 'network-status-table' });
++
++		for (var i = 0; i < wan_nets.length; i++)
++			netstatus.appendChild(renderbox(wan_nets[i], false));
++
++		for (var i = 0; i < wan6_nets.length; i++)
++			netstatus.appendChild(renderbox(wan6_nets[i], true));
++
++		return E([
++			netstatus,
++			ctstatus
++		]);
++	}
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/40_dhcp.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/40_dhcp.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/40_dhcp.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/include/40_dhcp.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,195 @@
++'use strict';
++'require baseclass';
++'require rpc';
++'require uci';
++'require network';
++'require validation';
++
++var callLuciDHCPLeases = rpc.declare({
++	object: 'luci-rpc',
++	method: 'getDHCPLeases',
++	expect: { '': {} }
++});
++
++return baseclass.extend({
++	title: '',
++
++	isMACStatic: {},
++	isDUIDStatic: {},
++
++	load: function() {
++		return Promise.all([
++			callLuciDHCPLeases(),
++			network.getHostHints(),
++			L.resolveDefault(uci.load('dhcp'))
++		]);
++	},
++
++	handleCreateStaticLease: function(lease, ev) {
++		ev.currentTarget.classList.add('spinning');
++		ev.currentTarget.disabled = true;
++		ev.currentTarget.blur();
++
++		var cfg = uci.add('dhcp', 'host');
++		uci.set('dhcp', cfg, 'name', lease.hostname);
++		uci.set('dhcp', cfg, 'ip', lease.ipaddr);
++		uci.set('dhcp', cfg, 'mac', lease.macaddr.toUpperCase());
++
++		return uci.save()
++			.then(L.bind(L.ui.changes.init, L.ui.changes))
++			.then(L.bind(L.ui.changes.displayChanges, L.ui.changes));
++	},
++
++	handleCreateStaticLease6: function(lease, ev) {
++		ev.currentTarget.classList.add('spinning');
++		ev.currentTarget.disabled = true;
++		ev.currentTarget.blur();
++
++		var cfg = uci.add('dhcp', 'host'),
++		    ip6arr = lease.ip6addrs[0] ? validation.parseIPv6(lease.ip6addrs[0]) : null;
++
++		uci.set('dhcp', cfg, 'name', lease.hostname);
++		uci.set('dhcp', cfg, 'duid', lease.duid.toUpperCase());
++		uci.set('dhcp', cfg, 'mac', lease.macaddr);
++		if (ip6arr)
++			uci.set('dhcp', cfg, 'hostid', (ip6arr[6] * 0xFFFF + ip6arr[7]).toString(16));
++
++		return uci.save()
++			.then(L.bind(L.ui.changes.init, L.ui.changes))
++			.then(L.bind(L.ui.changes.displayChanges, L.ui.changes));
++	},
++
++	renderLeases: function(data) {
++		var leases = Array.isArray(data[0].dhcp_leases) ? data[0].dhcp_leases : [],
++		    leases6 = Array.isArray(data[0].dhcp6_leases) ? data[0].dhcp6_leases : [],
++		    machints = data[1].getMACHints(false),
++		    hosts = uci.sections('dhcp', 'host'),
++		    isReadonlyView = !L.hasViewPermission();
++
++		for (var i = 0; i < hosts.length; i++) {
++			var host = hosts[i];
++
++			if (host.mac) {
++				var macs = L.toArray(host.mac);
++				for (var j = 0; j < macs.length; j++) {
++					var mac = macs[j].toUpperCase();
++					this.isMACStatic[mac] = true;
++				}
++			}
++			if (host.duid) {
++				var duid = host.duid.toUpperCase();
++				this.isDUIDStatic[duid] = true;
++			}
++		};
++
++		var table = E('table', { 'class': 'table lases' }, [
++			E('tr', { 'class': 'tr table-titles' }, [
++				E('th', { 'class': 'th' }, _('Hostname')),
++				E('th', { 'class': 'th' }, _('IPv4 address')),
++				E('th', { 'class': 'th' }, _('MAC address')),
++				E('th', { 'class': 'th' }, _('Lease time remaining')),
++				isReadonlyView ? E([]) : E('th', { 'class': 'th cbi-section-actions' }, _('Static Lease'))
++			])
++		]);
++
++		cbi_update_table(table, leases.map(L.bind(function(lease) {
++			var exp, rows;
++
++			if (lease.expires === false)
++				exp = E('em', _('unlimited'));
++			else if (lease.expires <= 0)
++				exp = E('em', _('expired'));
++			else
++				exp = '%t'.format(lease.expires);
++
++			var hint = lease.macaddr ? machints.filter(function(h) { return h[0] == lease.macaddr })[0] : null,
++			    host = null;
++
++			if (hint && lease.hostname && lease.hostname != hint[1])
++				host = '%s (%s)'.format(lease.hostname, hint[1]);
++			else if (lease.hostname)
++				host = lease.hostname;
++
++			rows = [
++				host || '-',
++				lease.ipaddr,
++				lease.macaddr,
++				exp
++			];
++
++			if (!isReadonlyView && lease.macaddr != null) {
++				var mac = lease.macaddr.toUpperCase();
++				rows.push(E('button', {
++					'class': 'cbi-button cbi-button-apply',
++					'click': L.bind(this.handleCreateStaticLease, this, lease),
++					'disabled': this.isMACStatic[mac]
++				}, [ _('Set Static') ]));
++			}
++
++			return rows;
++		}, this)), E('em', _('There are no active leases')));
++
++		var table6 = E('table', { 'class': 'table leases6' }, [
++			E('tr', { 'class': 'tr table-titles' }, [
++				E('th', { 'class': 'th' }, _('Host')),
++				E('th', { 'class': 'th' }, _('IPv6 address')),
++				E('th', { 'class': 'th' }, _('DUID')),
++				E('th', { 'class': 'th' }, _('Lease time remaining')),
++				isReadonlyView ? E([]) : E('th', { 'class': 'th cbi-section-actions' }, _('Static Lease'))
++			])
++		]);
++
++		cbi_update_table(table6, leases6.map(L.bind(function(lease) {
++			var exp, rows;
++
++			if (lease.expires === false)
++				exp = E('em', _('unlimited'));
++			else if (lease.expires <= 0)
++				exp = E('em', _('expired'));
++			else
++				exp = '%t'.format(lease.expires);
++
++			var hint = lease.macaddr ? machints.filter(function(h) { return h[0] == lease.macaddr })[0] : null,
++			    host = null;
++
++			if (hint && lease.hostname && lease.hostname != hint[1] && lease.ip6addr != hint[1])
++				host = '%s (%s)'.format(lease.hostname, hint[1]);
++			else if (lease.hostname)
++				host = lease.hostname;
++			else if (hint)
++				host = hint[1];
++
++			rows = [
++				host || '-',
++				lease.ip6addrs ? lease.ip6addrs.join(' ') : lease.ip6addr,
++				lease.duid,
++				exp
++			];
++
++			if (!isReadonlyView && lease.duid != null) {
++				var duid = lease.duid.toUpperCase();
++				rows.push(E('button', {
++					'class': 'cbi-button cbi-button-apply',
++					'click': L.bind(this.handleCreateStaticLease6, this, lease),
++					'disabled': this.isDUIDStatic[duid]
++				}, [ _('Set Static') ]));
++			}
++
++			return rows;
++		}, this)), E('em', _('There are no active leases')));
++
++		return E([
++			E('h3', _('Active DHCP Leases')),
++			table,
++			E('h3', _('Active DHCPv6 Leases')),
++			table6
++		]);
++	},
++
++	render: function(data) {
++		if (L.hasSystemFeature('dnsmasq') || L.hasSystemFeature('odhcpd'))
++			return this.renderLeases(data);
++
++		return E([]);
++	}
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,109 @@
++'use strict';
++'require view';
++'require dom';
++'require poll';
++'require fs';
++'require network';
++
++function invokeIncludesLoad(includes) {
++	var tasks = [], has_load = false;
++
++	for (var i = 0; i < includes.length; i++) {
++		if (typeof(includes[i].load) == 'function') {
++			tasks.push(includes[i].load().catch(L.bind(function() {
++				this.failed = true;
++			}, includes[i])));
++
++			has_load = true;
++		}
++		else {
++			tasks.push(null);
++		}
++	}
++
++	return has_load ? Promise.all(tasks) : Promise.resolve(null);
++}
++
++function startPolling(includes, containers) {
++	var step = function() {
++		return network.flushCache().then(function() {
++			return invokeIncludesLoad(includes);
++		}).then(function(results) {
++			for (var i = 0; i < includes.length; i++) {
++				var content = null;
++
++				if (includes[i].failed)
++					continue;
++
++				if (typeof(includes[i].render) == 'function')
++					content = includes[i].render(results ? results[i] : null);
++				else if (includes[i].content != null)
++					content = includes[i].content;
++
++				if (content != null) {
++					containers[i].parentNode.style.display = '';
++					containers[i].parentNode.classList.add('fade-in');
++
++					dom.content(containers[i], content);
++				}
++			}
++
++			var ssi = document.querySelector('div.includes');
++			if (ssi) {
++				ssi.style.display = '';
++				ssi.classList.add('fade-in');
++			}
++		});
++	};
++
++	return step().then(function() {
++		poll.add(step);
++	});
++}
++
++return view.extend({
++	load: function() {
++		return L.resolveDefault(fs.list('/www' + L.resource('view/camera/include')), []).then(function(entries) {
++			return Promise.all(entries.filter(function(e) {
++				return (e.type == 'file' && e.name.match(/\.js$/));
++			}).map(function(e) {
++				return 'view.camera.include.' + e.name.replace(/\.js$/, '');
++			}).sort().map(function(n) {
++				return L.require(n);
++			}));
++		});
++	},
++
++	render: function(includes) {
++		var rv = E([]), containers = [];
++
++		for (var i = 0; i < includes.length; i++) {
++			var title = null;
++
++			if (includes[i].title != null)
++				title = includes[i].title;
++			else
++				title = String(includes[i]).replace(/^\[ViewCameraInclude\d+_(.+)Class\]$/,
++					function(m, n) { return n.replace(/(^|_)(.)/g,
++						function(m, s, c) { return (s ? ' ' : '') + c.toUpperCase() })
++					});
++
++			var container = E('div');
++
++			rv.appendChild(E('div', { 'class': 'cbi-section', 'style': 'display:none' }, [
++				title != '' ? E('h3', title) : '',
++				container
++			]));
++
++			containers.push(container);
++		}
++
++		return startPolling(includes, containers).then(function() {
++			return rv;
++		});
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/iptables.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/iptables.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/iptables.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/iptables.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,371 @@
++'use strict';
++'require view';
++'require poll';
++'require fs';
++'require ui';
++
++var table_names = [ 'Filter', 'NAT', 'Mangle', 'Raw' ],
++    raw_style = 'font-family:monospace;font-size:smaller;text-align:right';
++
++return view.extend({
++	load: function() {
++		return L.resolveDefault(fs.stat('/usr/sbin/ip6tables'));
++	},
++
++	createTableSection: function(is_ipv6, table) {
++		var idiv = document.querySelector('div[data-tab="%s"]'.format(is_ipv6 ? 'ip6tables' : 'iptables')),
++		    tdiv = idiv.querySelector('[data-table="%s-%s"]'.format(is_ipv6 ? 'ipv6' : 'ipv4', table)),
++		    title = '%s: %s'.format(_('Table'), table);
++
++		if (!tdiv) {
++			tdiv = E('div', { 'data-table': '%s-%s'.format(is_ipv6 ? 'ipv6' : 'ipv4', table) }, [
++				E('h3', {}, title),
++				E('div')
++			]);
++
++			if (idiv.firstElementChild.nodeName.toLowerCase() === 'p')
++				idiv.removeChild(idiv.firstElementChild);
++
++			var added = false, thisIdx = table_names.indexOf(table);
++
++			idiv.querySelectorAll('[data-table]').forEach(function(child) {
++				var childIdx = table_names.indexOf(child.getAttribute('data-table').split(/-/)[1]);
++
++				if (added === false && childIdx > thisIdx) {
++					idiv.insertBefore(tdiv, child);
++					added = true;
++				}
++			});
++
++			if (added === false)
++				idiv.appendChild(tdiv);
++		}
++
++		return tdiv.lastElementChild;
++	},
++
++	createChainSection: function(is_ipv6, table, chain, policy, packets, bytes, references) {
++		var tdiv = this.createTableSection(is_ipv6, table),
++		    cdiv = tdiv.querySelector('[data-chain="%s"]'.format(chain)),
++		    title;
++
++		if (policy)
++			title = '%s <em>%s</em> <span>(%s: <em>%s</em>, %d %s, %.2mB %s)</span>'
++				.format(_('Chain'), chain, _('Policy'), policy, packets, _('Packets'), bytes, _('Traffic'));
++		else
++			title = '%s <em>%s</em> <span class="references">(%d %s)</span>'
++				.format(_('Chain'), chain, references, _('References'));
++
++		if (!cdiv) {
++			cdiv = E('div', { 'data-chain': chain }, [
++				E('h4', { 'id': 'rule_%s-%s_%s'.format(is_ipv6 ? 'ipv6' : 'ipv4', table.toLowerCase(), chain) }, title),
++				E('table', { 'class': 'table' }, [
++					E('tr', { 'class': 'tr table-titles' }, [
++						E('th', { 'class': 'th' }, _('Pkts.')),
++						E('th', { 'class': 'th' }, _('Traffic')),
++						E('th', { 'class': 'th' }, _('Target')),
++						E('th', { 'class': 'th' }, _('Prot.')),
++						E('th', { 'class': 'th' }, _('In')),
++						E('th', { 'class': 'th' }, _('Out')),
++						E('th', { 'class': 'th' }, _('Source')),
++						E('th', { 'class': 'th' }, _('Destination')),
++						E('th', { 'class': 'th' }, _('Options')),
++						E('th', { 'class': 'th' }, _('Comment'))
++					])
++				])
++			]);
++
++			tdiv.appendChild(cdiv);
++		}
++		else {
++			cdiv.firstElementChild.innerHTML = title;
++		}
++
++		return cdiv.lastElementChild;
++	},
++
++	updateChainSection: function(chaintable, rows) {
++		if (!chaintable)
++			return;
++
++		cbi_update_table(chaintable, rows, _('No rules in this chain.'));
++
++		if (rows.length === 0 &&
++		    document.querySelector('[data-hide-empty="true"]'))
++			chaintable.parentNode.style.display = 'none';
++		else
++			chaintable.parentNode.style.display = '';
++
++		chaintable.parentNode.setAttribute('data-empty', rows.length === 0);
++	},
++
++	parseIptablesDump: function(is_ipv6, table, s) {
++		var current_chain = null;
++		var current_rules = [];
++		var seen_chains = {};
++		var chain_refs = {};
++		var re = /([^\n]*)\n/g;
++		var m, m2;
++		var raw = document.querySelector('[data-raw-counters="true"]');
++
++		while ((m = re.exec(s)) != null) {
++			if (m[1].match(/^Chain (.+) \(policy (\w+) (\d+) packets, (\d+) bytes\)$/)) {
++				var chain = RegExp.$1,
++				    policy = RegExp.$2,
++				    packets = +RegExp.$3,
++				    bytes = +RegExp.$4;
++
++				this.updateChainSection(current_chain, current_rules);
++
++				seen_chains[chain] = true;
++				current_chain = this.createChainSection(is_ipv6, table, chain, policy, packets, bytes);
++				current_rules = [];
++			}
++			else if (m[1].match(/^Chain (.+) \((\d+) references\)$/)) {
++				var chain = RegExp.$1,
++				    references = +RegExp.$2;
++
++				this.updateChainSection(current_chain, current_rules);
++
++				seen_chains[chain] = true;
++				current_chain = this.createChainSection(is_ipv6, table, chain, null, null, null, references);
++				current_rules = [];
++			}
++			else if (m[1].match(/^num /)) {
++				continue;
++			}
++			else if ((m2 = m[1].match(/^(\d+) +(\d+) +(\d+) +(.*?) +(\S+) +(\S*) +(\S+) +(\S+) +(!?[a-f0-9:.]+(?:\/[a-f0-9:.]+)?) +(!?[a-f0-9:.]+(?:\/[a-f0-9:.]+)?) +(.+)$/)) !== null) {
++				var num = +m2[1],
++				    pkts = +m2[2],
++				    bytes = +m2[3],
++				    target = m2[4],
++				    proto = m2[5],
++				    indev = m2[7],
++				    outdev = m2[8],
++				    srcnet = m2[9],
++				    dstnet = m2[10],
++				    options = m2[11] || '-',
++				    comment = '-';
++
++				options = options.trim().replace(/(?:^| )\/\* (.+) \*\//,
++					function(m1, m2) {
++						comment = m2.replace(/^!fw3(: |$)/, '').trim() || '-';
++						return '';
++					}) || '-';
++
++				current_rules.push([
++					E('div', {
++						'class': 'nowrap',
++						'style': raw ? raw_style : null,
++						'data-format': '%.2m',
++						'data-value': pkts
++					}, (raw ? '%d' : '%.2m').format(pkts)),
++					E('div', {
++						'class': 'nowrap',
++						'style': raw ? raw_style : null,
++						'data-format': '%.2mB',
++						'data-value': bytes
++					}, (raw ? '%d' : '%.2mB').format(bytes)),
++					target ? '<span class="target">%s</span>'.format(target) : '-',
++					proto,
++					(indev !== '*') ? '<span class="ifacebadge nowrap">%s</span>'.format(indev) : '*',
++					(outdev !== '*') ? '<span class="ifacebadge nowrap">%s</span>'.format(outdev) : '*',
++					srcnet,
++					dstnet,
++					options,
++					[ comment ]
++				]);
++
++				if (target) {
++					chain_refs[target] = chain_refs[target] || [];
++					chain_refs[target].push([ current_chain, num ]);
++				}
++			}
++		}
++
++		this.updateChainSection(current_chain, current_rules);
++
++		document.querySelectorAll('[data-table="%s-%s"] [data-chain]'.format(is_ipv6 ? 'ipv6' : 'ipv4', table)).forEach(L.bind(function(cdiv) {
++			if (!seen_chains[cdiv.getAttribute('data-chain')]) {
++				cdiv.parentNode.removeChild(cdiv);
++				return;
++			}
++
++			cdiv.querySelectorAll('.target').forEach(L.bind(function(tspan) {
++				if (seen_chains[tspan.textContent]) {
++					tspan.classList.add('jump');
++					tspan.addEventListener('click', this.handleJumpTarget);
++				}
++			}, this));
++
++			cdiv.querySelectorAll('.references').forEach(L.bind(function(rspan) {
++				var refs = chain_refs[cdiv.getAttribute('data-chain')];
++				if (refs && refs.length) {
++					rspan.classList.add('cbi-tooltip-container');
++					rspan.appendChild(E('small', { 'class': 'cbi-tooltip ifacebadge', 'style': 'top:1em; left:auto' }, [ E('ul') ]));
++
++					refs.forEach(L.bind(function(ref) {
++						var chain = ref[0].parentNode.getAttribute('data-chain'),
++						    num = ref[1];
++
++						rspan.lastElementChild.lastElementChild.appendChild(E('li', {}, [
++							_('Chain'), ' ',
++							E('span', {
++								'class': 'jump',
++								'data-num': num,
++								'click': this.handleJumpTarget
++							}, chain),
++							', %s #%d'.format(_('Rule'), num)
++						]));
++					}, this));
++				}
++			}, this));
++		}, this));
++	},
++
++	pollFirewallLists: function(has_ip6tables) {
++		var cmds = [ '/usr/sbin/iptables' ];
++
++		if (has_ip6tables)
++			cmds.push('/usr/sbin/ip6tables');
++
++		poll.add(L.bind(function() {
++			var tasks = [];
++
++			for (var i = 0; i < cmds.length; i++) {
++				for (var j = 0; j < table_names.length; j++) {
++					tasks.push(L.resolveDefault(
++						fs.exec_direct(cmds[i], [ '--line-numbers', '-w', '-nvxL', '-t', table_names[j].toLowerCase() ])
++							.then(this.parseIptablesDump.bind(this, i > 0, table_names[j]))));
++				}
++			}
++
++			return Promise.all(tasks);
++		}, this));
++	},
++
++	handleJumpTarget: function(ev) {
++		var link = ev.target,
++		    table = findParent(link, '[data-table]').getAttribute('data-table'),
++		    chain = link.textContent,
++		    num = +link.getAttribute('data-num'),
++		    elem = document.getElementById('rule_%s_%s'.format(table.toLowerCase(), chain));
++
++		if (elem) {
++			(document.documentElement || document.body.parentNode || document.body).scrollTop = elem.offsetTop - 40;
++			elem.classList.remove('flash');
++			void elem.offsetWidth;
++			elem.classList.add('flash');
++
++			if (num) {
++				var rule = elem.nextElementSibling.childNodes[num];
++				if (rule) {
++					rule.classList.remove('flash');
++					void rule.offsetWidth;
++					rule.classList.add('flash');
++				}
++			}
++		}
++	},
++
++	handleRawCounters: function(ev) {
++		var btn = ev.currentTarget,
++		    raw = (btn.getAttribute('data-raw-counters') === 'false');
++
++		btn.setAttribute('data-raw-counters', raw);
++		btn.firstChild.data = raw ? _('Human-readable counters') : _('Show raw counters');
++		btn.blur();
++
++		document.querySelectorAll('[data-value]')
++			.forEach(function(div) {
++				var fmt = raw ? '%d' : div.getAttribute('data-format');
++
++				div.style = raw ? raw_style : '';
++				div.innerText = fmt.format(div.getAttribute('data-value'));
++			});
++	},
++
++	handleHideEmpty: function(ev) {
++		var btn = ev.currentTarget,
++		    hide = (btn.getAttribute('data-hide-empty') === 'false');
++
++		btn.setAttribute('data-hide-empty', hide);
++		btn.firstChild.data = hide ? _('Show empty chains') : _('Hide empty chains');
++		btn.blur();
++
++		document.querySelectorAll('[data-chain][data-empty="true"]')
++			.forEach(function(chaintable) {
++				chaintable.style.display = hide ? 'none' : '';
++			});
++	},
++
++	handleCounterReset: function(has_ip6tables, ev) {
++		return Promise.all([
++			fs.exec('/usr/sbin/iptables', [ '-Z' ])
++				.catch(function(err) { ui.addNotification(null, E('p', {}, _('Unable to reset iptables counters: %s').format(err.message))) }),
++			has_ip6tables ? fs.exec('/usr/sbin/ip6tables', [ '-Z' ])
++				.catch(function(err) { ui.addNotification(null, E('p', {}, _('Unable to reset ip6tables counters: %s').format(err.message))) }) : null
++		]);
++	},
++
++	handleRestart: function(ev) {
++		return fs.exec_direct('/etc/init.d/firewall', [ 'restart' ])
++				.catch(function(err) { ui.addNotification(null, E('p', {}, _('Unable to restart firewall: %s').format(err.message))) });
++	},
++
++	render: function(has_ip6tables) {
++		var view = E([], [
++			E('style', { 'type': 'text/css' }, [
++				'.cbi-tooltip-container, span.jump { border-bottom:1px dotted #00f;cursor:pointer }',
++				'ul { list-style:none }',
++				'.references { position:relative }',
++				'.references .cbi-tooltip { left:0!important;top:1.5em!important }',
++				'h4>span { font-size:90% }'
++			]),
++
++			E('h2', {}, [ _('Firewall Status') ]),
++			E('div', { 'class': 'right', 'style': 'margin-bottom:-1.5em' }, [
++				E('button', {
++					'class': 'cbi-button',
++					'data-hide-empty': false,
++					'click': ui.createHandlerFn(this, 'handleHideEmpty')
++				}, [ _('Hide empty chains') ]),
++				' ',
++				E('button', {
++					'class': 'cbi-button',
++					'data-raw-counters': false,
++					'click': ui.createHandlerFn(this, 'handleRawCounters')
++				}, [ _('Show raw counters') ]),
++				' ',
++				E('button', {
++					'class': 'cbi-button',
++					'click': ui.createHandlerFn(this, 'handleCounterReset', has_ip6tables)
++				}, [ _('Reset Counters') ]),
++				' ',
++				E('button', {
++					'class': 'cbi-button',
++					'click': ui.createHandlerFn(this, 'handleRestart')
++				}, [ _('Restart Firewall') ])
++			]),
++			E('div', {}, [
++				E('div', { 'data-tab': 'iptables', 'data-tab-title': has_ip6tables ? _('IPv4 Firewall') : null, 'data-tab-active': has_ip6tables ? null : true }, [
++					E('p', {}, E('em', { 'class': 'spinning' }, [ _('Collecting data...') ]))
++				]),
++				has_ip6tables ? E('div', { 'data-tab': 'ip6tables', 'data-tab-title': _('IPv6 Firewall') }, [
++					E('p', {}, E('em', { 'class': 'spinning' }, [ _('Collecting data...') ]))
++				]) : E([])
++			])
++		]);
++
++		if (has_ip6tables)
++			ui.tabs.initTabGroup(view.lastElementChild.childNodes);
++
++		this.pollFirewallLists(has_ip6tables);
++
++		return view;
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/load.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/load.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/load.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/load.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,295 @@
++'use strict';
++'require view';
++'require poll';
++'require request';
++'require rpc';
++
++var callLuciRealtimeStats = rpc.declare({
++	object: 'luci',
++	method: 'getRealtimeStats',
++	params: [ 'mode', 'device' ],
++	expect: { result: [] }
++});
++
++var graphPolls = [],
++    pollInterval = 3;
++
++Math.log2 = Math.log2 || function(x) { return Math.log(x) * Math.LOG2E; };
++
++return view.extend({
++	load: function() {
++		return Promise.all([
++			this.loadSVG(L.resource('svg/load2.svg'))
++		]);
++	},
++
++	updateGraph: function(svg, lines, cb) {
++		var G = svg.firstElementChild;
++
++		var view = document.querySelector('#view');
++
++		var width  = view.offsetWidth - 2;
++		var height = 300 - 2;
++		var step   = 5;
++
++		var data_wanted = Math.floor(width / step);
++
++		var data_values = [],
++		    line_elements = [];
++
++		for (var i = 0; i < lines.length; i++)
++			if (lines[i] != null)
++				data_values.push([]);
++
++		var info = {
++			line_current: [],
++			line_average: [],
++			line_peak:    []
++		};
++
++		/* prefill datasets */
++		for (var i = 0; i < data_values.length; i++)
++			for (var j = 0; j < data_wanted; j++)
++					data_values[i][j] = 0;
++
++		/* plot horizontal time interval lines */
++		for (var i = width % (step * 60); i < width; i += step * 60) {
++			var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
++				line.setAttribute('x1', i);
++				line.setAttribute('y1', 0);
++				line.setAttribute('x2', i);
++				line.setAttribute('y2', '100%');
++				line.setAttribute('style', 'stroke:black;stroke-width:0.1');
++
++			var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
++				text.setAttribute('x', i + 5);
++				text.setAttribute('y', 15);
++				text.setAttribute('style', 'fill:#eee; font-size:9pt; font-family:sans-serif; text-shadow:1px 1px 1px #000');
++				text.appendChild(document.createTextNode(Math.round((width - i) / step / 60) + 'm'));
++
++			G.appendChild(line);
++			G.appendChild(text);
++		}
++
++		info.interval = pollInterval;
++		info.timeframe = data_wanted / 60;
++
++		graphPolls.push({
++			svg:    svg,
++			lines:  lines,
++			cb:     cb,
++			info:   info,
++			width:  width,
++			height: height,
++			step:   step,
++			values: data_values,
++			timestamp: 0,
++			fill: 1
++		});
++	},
++
++	pollData: function() {
++		poll.add(L.bind(function() {
++			var tasks = [];
++
++			for (var i = 0; i < graphPolls.length; i++) {
++				var ctx = graphPolls[i];
++				tasks.push(L.resolveDefault(callLuciRealtimeStats('load'), []));
++			}
++
++			return Promise.all(tasks).then(L.bind(function(datasets) {
++				for (var gi = 0; gi < graphPolls.length; gi++) {
++					var ctx = graphPolls[gi],
++					    data = datasets[gi],
++					    values = ctx.values,
++					    lines = ctx.lines,
++					    info = ctx.info;
++
++					var data_scale = 0;
++					var data_wanted = Math.floor(ctx.width / ctx.step);
++					var last_timestamp = NaN;
++
++					for (var i = 0, di = 0; di < lines.length; di++) {
++						if (lines[di] == null)
++							continue;
++
++						var multiply = (lines[di].multiply != null) ? lines[di].multiply : 1,
++						    offset = (lines[di].offset != null) ? lines[di].offset : 0;
++
++						for (var j = ctx.timestamp ? 0 : 1; j < data.length; j++) {
++							/* skip overlapping entries */
++							if (data[j][0] <= ctx.timestamp)
++								continue;
++
++							if (i == 0) {
++								ctx.fill++;
++								last_timestamp = data[j][0];
++							}
++
++							info.line_current[i] = data[j][di + 1] * multiply;
++							info.line_current[i] -= Math.min(info.line_current[i], offset);
++							values[i].push(info.line_current[i]);
++						}
++
++						i++;
++					}
++
++					/* cut off outdated entries */
++					ctx.fill = Math.min(ctx.fill, data_wanted);
++
++					for (var i = 0; i < values.length; i++) {
++						var len = values[i].length;
++						values[i] = values[i].slice(len - data_wanted, len);
++
++						/* find peaks, averages */
++						info.line_peak[i] = NaN;
++						info.line_average[i] = 0;
++
++						for (var j = 0; j < values[i].length; j++) {
++							info.line_peak[i] = isNaN(info.line_peak[i]) ? values[i][j] : Math.max(info.line_peak[i], values[i][j]);
++							info.line_average[i] += values[i][j];
++						}
++
++						info.line_average[i] = info.line_average[i] / ctx.fill;
++					}
++
++					info.peak = Math.max.apply(Math, info.line_peak);
++
++					/* remember current timestamp, calculate horizontal scale */
++					if (!isNaN(last_timestamp))
++						ctx.timestamp = last_timestamp;
++
++					var size = Math.floor(Math.log2(info.peak)),
++					    div = Math.pow(2, size - (size % 10)),
++					    mult = info.peak / div,
++					    mult = (mult < 5) ? 2 : ((mult < 50) ? 10 : ((mult < 500) ? 100 : 1000));
++
++					info.peak = info.peak + (mult * div) - (info.peak % (mult * div));
++
++					data_scale = ctx.height / info.peak;
++
++					/* plot data */
++					for (var i = 0, di = 0; di < lines.length; di++) {
++						if (lines[di] == null)
++							continue;
++
++						var el = ctx.svg.firstElementChild.getElementById(lines[di].line),
++						    pt = '0,' + ctx.height,
++						    y = 0;
++
++						if (!el)
++							continue;
++
++						for (var j = 0; j < values[i].length; j++) {
++							var x = j * ctx.step;
++
++							y = ctx.height - Math.floor(values[i][j] * data_scale);
++							//y -= Math.floor(y % (1 / data_scale));
++
++							y = isNaN(y) ? ctx.height : y;
++
++							pt += ' ' + x + ',' + y;
++						}
++
++						pt += ' ' + ctx.width + ',' + y + ' ' + ctx.width + ',' + ctx.height;
++
++						el.setAttribute('points', pt);
++
++						i++;
++					}
++
++					info.label_25 = 0.25 * info.peak;
++					info.label_50 = 0.50 * info.peak;
++					info.label_75 = 0.75 * info.peak;
++
++					if (typeof(ctx.cb) == 'function')
++						ctx.cb(ctx.svg, info);
++				}
++			}, this));
++		}, this), pollInterval);
++	},
++
++	loadSVG: function(src) {
++		return request.get(src).then(function(response) {
++			if (!response.ok)
++				throw new Error(response.statusText);
++
++			return E('div', {
++				'style': 'width:100%;height:300px;border:1px solid #000;background:#fff'
++			}, E(response.text()));
++		});
++	},
++
++	render: function(data) {
++		var svg = data[0];
++
++		var v = E([], [
++			svg,
++			E('div', { 'class': 'right' }, E('small', { 'id': 'scale' }, '-')),
++			E('br'),
++
++			E('table', { 'class': 'table', 'style': 'width:100%;table-layout:fixed' }, [
++				E('tr', { 'class': 'tr' }, [
++					E('td', { 'class': 'td right top' }, E('strong', { 'style': 'border-bottom:2px solid #f00' }, [ _('1 Minute Load:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load01_cur' }, [ '0.00' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Average:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load01_avg' }, [ '0.00' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Peak:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load01_peak' }, [ '0.00' ])
++				]),
++				E('tr', { 'class': 'tr' }, [
++					E('td', { 'class': 'td right top' }, E('strong', { 'style': 'border-bottom:2px solid #f60' }, [ _('5 Minute Load:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load05_cur' }, [ '0.00' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Average:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load05_avg' }, [ '0.00' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Peak:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load05_peak' }, [ '0.00' ])
++				]),
++				E('tr', { 'class': 'tr' }, [
++					E('td', { 'class': 'td right top' }, E('strong', { 'style': 'border-bottom:2px solid #fa0' }, [ _('15 Minute Load:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load15_cur' }, [ '0.00' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Average:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load15_avg' }, [ '0.00' ]),
++
++					E('td', { 'class': 'td right top' }, E('strong', {}, [ _('Peak:') ])),
++					E('td', { 'class': 'td', 'id': 'lb_load15_peak' }, [ '0.00' ])
++				])
++			])
++		]);
++
++		this.updateGraph(svg, [ { line: 'load01' }, { line: 'load05' }, { line: 'load15' } ], function(svg, info) {
++			var G = svg.firstElementChild, tab = svg.parentNode;
++
++			G.getElementById('label_25').firstChild.data = '%.2f'.format(info.label_25 / 100);
++			G.getElementById('label_50').firstChild.data = '%.2f'.format(info.label_50 / 100);
++			G.getElementById('label_75').firstChild.data = '%.2f'.format(info.label_75 / 100);
++
++			tab.querySelector('#scale').firstChild.data = _('(%d minute window, %d second interval)').format(info.timeframe, info.interval);
++
++			tab.querySelector('#lb_load01_cur').firstChild.data = '%.2f'.format(info.line_current[0] / 100);
++			tab.querySelector('#lb_load01_avg').firstChild.data = '%.2f'.format(info.line_average[0] / 100);
++			tab.querySelector('#lb_load01_peak').firstChild.data = '%.2f'.format(info.line_peak[0] / 100);
++
++			tab.querySelector('#lb_load05_cur').firstChild.data = '%.2f'.format(info.line_current[1] / 100);
++			tab.querySelector('#lb_load05_avg').firstChild.data = '%.2f'.format(info.line_average[1] / 100);
++			tab.querySelector('#lb_load05_peak').firstChild.data = '%.2f'.format(info.line_peak[1] / 100);
++
++			tab.querySelector('#lb_load15_cur').firstChild.data = '%.2f'.format(info.line_current[2] / 100);
++			tab.querySelector('#lb_load15_avg').firstChild.data = '%.2f'.format(info.line_average[2] / 100);
++			tab.querySelector('#lb_load15_peak').firstChild.data = '%.2f'.format(info.line_peak[2] / 100);
++		});
++
++		this.pollData();
++
++		return v;
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/routes.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/routes.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/routes.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/routes.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,217 @@
++'use strict';
++'require view';
++'require fs';
++'require rpc';
++'require validation';
++
++var callNetworkInterfaceDump = rpc.declare({
++	object: 'network.interface',
++	method: 'dump',
++	expect: { interface: [] }
++});
++
++function applyMask(addr, mask, v6) {
++	var words = v6 ? validation.parseIPv6(addr) : validation.parseIPv4(addr);
++
++	if (!words || mask < 0 || mask > (v6 ? 128 : 32))
++		return null;
++
++	for (var i = 0; i < words.length; i++) {
++		var b = Math.min(mask, v6 ? 16 : 8);
++		words[i] &= ((1 << b) - 1);
++		mask -= b;
++	}
++
++	return String.prototype.format.apply(
++		v6 ? '%x:%x:%x:%x:%x:%x:%x:%x' : '%d.%d.%d.%d', words);
++}
++
++return view.extend({
++	load: function() {
++		return Promise.all([
++			callNetworkInterfaceDump(),
++			L.resolveDefault(fs.exec('/sbin/ip', [ '-4', 'neigh', 'show' ]), {}),
++			L.resolveDefault(fs.exec('/sbin/ip', [ '-4', 'route', 'show', 'table', 'all' ]), {}),
++			L.resolveDefault(fs.exec('/sbin/ip', [ '-6', 'neigh', 'show' ]), {}),
++			L.resolveDefault(fs.exec('/sbin/ip', [ '-6', 'route', 'show', 'table', 'all' ]), {})
++		]);
++	},
++
++	getNetworkByDevice(networks, dev, addr, mask, v6) {
++		var addr_arrays = [ 'ipv4-address', 'ipv6-address', 'ipv6-prefix', 'ipv6-prefix-assignment', 'route' ],
++		    matching_iface = null,
++		    matching_prefix = -1;
++
++		for (var i = 0; i < networks.length; i++) {
++			if (!L.isObject(networks[i]))
++				continue;
++
++			if (networks[i].l3_device != dev && networks[i].device != dev)
++				continue;
++
++			for (var j = 0; j < addr_arrays.length; j++) {
++				var addr_list = networks[i][addr_arrays[j]];
++
++				if (!Array.isArray(addr_list) || addr_list.length == 0)
++					continue;
++
++				for (var k = 0; k < addr_list.length; k++) {
++					var cmp_addr = addr_list[k].address || addr_list[k].target,
++					    cmp_mask = addr_list[k].mask;
++
++					if (cmp_addr == null)
++						continue;
++
++					var addr1 = applyMask(cmp_addr, cmp_mask, v6),
++					    addr2 = applyMask(addr, cmp_mask, v6);
++
++					if (addr1 != addr2 || mask < cmp_mask)
++						continue;
++
++					if (cmp_mask > matching_prefix) {
++						matching_iface = networks[i].interface;
++						matching_prefix = cmp_mask;
++					}
++				}
++			}
++		}
++
++		return matching_iface;
++	},
++
++	parseNeigh: function(s, networks, v6) {
++		var lines = s.trim().split(/\n/),
++		    res = [];
++
++		for (var i = 0; i < lines.length; i++) {
++			var m = lines[i].match(/^([0-9a-f:.]+) (.+) (\S+)$/),
++			    addr = m ? m[1] : null,
++			    flags = m ? m[2].trim().split(/\s+/) : [],
++			    state = (m ? m[3] : null) || 'FAILED';
++
++			if (!addr || state == 'FAILED' || addr.match(/^fe[89a-f][0-9a-f]:/))
++				continue;
++
++			for (var j = 0; j < flags.length; j += 2)
++				flags[flags[j]] = flags[j + 1];
++
++			if (!flags.lladdr)
++				continue;
++
++			var net = this.getNetworkByDevice(networks, flags.dev, addr, v6 ? 128 : 32, v6);
++
++			res.push([
++				addr,
++				flags.lladdr.toUpperCase(),
++				E('span', { 'class': 'ifacebadge' }, [ net ? net : '(%s)'.format(flags.dev) ])
++			]);
++		}
++
++		return res;
++	},
++
++	parseRoute: function(s, networks, v6) {
++		var lines = s.trim().split(/\n/),
++		    res = [];
++
++		for (var i = 0; i < lines.length; i++) {
++			var m = lines[i].match(/^(?:([a-z_]+|\d+) )?(default|[0-9a-f:.\/]+) (.+)$/),
++			    type = (m ? m[1] : null) || 'unicast',
++			    dest = m ? (m[2] == 'default' ? (v6 ? '::/0' : '0.0.0.0/0') : m[2]) : null,
++			    flags = m ? m[3].trim().split(/\s+/) : [];
++
++			if (!dest || type != 'unicast' || dest == 'fe80::/64' || dest == 'ff00::/8')
++				continue;
++
++			for (var j = 0; j < flags.length; j += 2)
++				flags[flags[j]] = flags[j + 1];
++
++			var addr = dest.split('/'),
++			    bits = (addr[1] != null) ? +addr[1] : (v6 ? 128 : 32),
++			    net = this.getNetworkByDevice(networks, flags.dev, addr[0], bits, v6);
++
++			res.push([
++				E('span', { 'class': 'ifacebadge' }, [ net ? net : '(%s)'.format(flags.dev) ]),
++				dest,
++				(v6 ? flags.from : flags.via) || '-',
++				String(flags.metric || 0),
++				flags.table || 'main',
++				flags.proto,
++			]);
++		}
++
++		return res;
++	},
++
++	render: function(data) {
++		var networks = data[0],
++		    ip4neigh = data[1].stdout || '',
++		    ip4route = data[2].stdout || '',
++		    ip6neigh = data[3].stdout || '',
++		    ip6route = data[4].stdout || '';
++
++		var neigh4tbl = E('table', { 'class': 'table' }, [
++			E('tr', { 'class': 'tr table-titles' }, [
++				E('th', { 'class': 'th' }, [ _('IPv4 address') ]),
++				E('th', { 'class': 'th' }, [ _('MAC address') ]),
++				E('th', { 'class': 'th' }, [ _('Interface') ])
++			])
++		]);
++
++		var route4tbl = E('table', { 'class': 'table' }, [
++			E('tr', { 'class': 'tr table-titles' }, [
++				E('th', { 'class': 'th' }, [ _('Network') ]),
++				E('th', { 'class': 'th' }, [ _('Target') ]),
++				E('th', { 'class': 'th' }, [ _('IPv4 gateway') ]),
++				E('th', { 'class': 'th' }, [ _('Metric') ]),
++				E('th', { 'class': 'th' }, [ _('Table') ]),
++				E('th', { 'class': 'th' }, [ _('Protocol') ]),
++			])
++		]);
++
++		var neigh6tbl = E('table', { 'class': 'table' }, [
++			E('tr', { 'class': 'tr table-titles' }, [
++				E('th', { 'class': 'th' }, [ _('IPv6 address') ]),
++				E('th', { 'class': 'th' }, [ _('MAC address') ]),
++				E('th', { 'class': 'th' }, [ _('Interface') ])
++			])
++		]);
++
++		var route6tbl = E('table', { 'class': 'table' }, [
++			E('tr', { 'class': 'tr table-titles' }, [
++				E('th', { 'class': 'th' }, [ _('Network') ]),
++				E('th', { 'class': 'th' }, [ _('Target') ]),
++				E('th', { 'class': 'th' }, [ _('Source') ]),
++				E('th', { 'class': 'th' }, [ _('Metric') ]),
++				E('th', { 'class': 'th' }, [ _('Table') ]),
++				E('th', { 'class': 'th' }, [ _('Protocol') ]),
++			])
++		]);
++
++		cbi_update_table(neigh4tbl, this.parseNeigh(ip4neigh, networks, false));
++		cbi_update_table(route4tbl, this.parseRoute(ip4route, networks, false));
++		cbi_update_table(neigh6tbl, this.parseNeigh(ip6neigh, networks, true));
++		cbi_update_table(route6tbl, this.parseRoute(ip6route, networks, true));
++
++		return E([], [
++			E('h2', {}, [ _('Routes') ]),
++			E('p', {}, [ _('The following rules are currently active on this system.') ]),
++
++			E('h3', {}, [ _('ARP') ]),
++			neigh4tbl,
++
++			E('h3', {}, _('Active <abbr title="Internet Protocol Version 4">IPv4</abbr>-Routes')),
++			route4tbl,
++
++			E('h3', {}, [ _('IPv6 Neighbours') ]),
++			neigh6tbl,
++
++			E('h3', {}, _('Active <abbr title="Internet Protocol Version 6">IPv6</abbr>-Routes')),
++			route6tbl
++		]);
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/syslog.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/syslog.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/syslog.js	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/syslog.js	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,41 @@
++'use strict';
++'require view';
++'require fs';
++'require ui';
++
++return view.extend({
++	load: function() {
++		return Promise.all([
++			L.resolveDefault(fs.stat('/sbin/logread'), null),
++			L.resolveDefault(fs.stat('/usr/sbin/logread'), null)
++		]).then(function(stat) {
++			var logger = stat[0] ? stat[0].path : stat[1] ? stat[1].path : null;
++
++			return fs.exec_direct(logger, [ '-e', '^' ]).catch(function(err) {
++				ui.addNotification(null, E('p', {}, _('Unable to load log data: ' + err.message)));
++				return '';
++			});
++		});
++	},
++
++	render: function(logdata) {
++		var loglines = logdata.trim().split(/\n/);
++
++		return E([], [
++			E('h2', {}, [ _('System Log') ]),
++			E('div', { 'id': 'content_syslog' }, [
++				E('textarea', {
++					'id': 'syslog',
++					'style': 'font-size:12px',
++					'readonly': 'readonly',
++					'wrap': 'off',
++					'rows': loglines.length + 1
++				}, [ loglines.join('\n') ])
++			])
++		]);
++	},
++
++	handleSaveApply: null,
++	handleSave: null,
++	handleReset: null
++});
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua	2024-04-12 14:37:33.549978933 +0900
+@@ -0,0 +1,142 @@
++-- Copyright 2008 Steven Barth <steven@midlink.org>
++-- Licensed to the public under the Apache License 2.0.
++
++sys = require "luci.sys"
++http = require "luci.http"
++util = require "luci.util"
++
++module("luci.camera", package.seeall)
++
++function get_ip_address(intf)
++	res = sys.exec("/sbin/ifconfig " .. intf .. " | awk -F ' *|:' '/inet addr/{print $4}'")
++	-- remove line feed
++	retVal = util.split(res, "\n")
++	return retVal[1]
++end
++
++function cam1_redirect()
++	local rv
++	local port = "8081"
++	local wanIP = get_ip_address("eth1")
++	local intfIP = get_ip_address("eth0.1")
++	local ip8 = util.split(intfIP,".")
++	rv = sys.exec("ps aux | grep socat | grep :" .. port)
++	if(rv == nil) then
++		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
++	end
++	http.redirect("https://" .. wanIP .. ":" .. port)
++end
++
++function cam2_redirect()
++	local rv
++	local port = "8082"
++	local wanIP = get_ip_address("eth1")
++	local intfIP = get_ip_address("eth0.2")
++	local ip8 = util.split(intfIP,".")
++	rv = sys.exec("ps aux | grep socat | grep :" .. port)
++	if(rv == nil) then
++		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
++	end
++	http.redirect("https://" .. wanIP .. ":" .. port)
++end
++
++function cam3_redirect()
++	local rv
++	local port = "8083"
++	local wanIP = get_ip_address("eth1")
++	local intfIP = get_ip_address("eth0.3")
++	local ip8 = util.split(intfIP,".")
++	rv = sys.exec("ps aux | grep socat | grep :" .. port)
++	if(rv == nil) then
++		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
++	end
++	http.redirect("https://" .. wanIP .. ":" .. port)
++end
++
++function cam4_redirect()
++	local rv
++	local port = "8084"
++	local wanIP = get_ip_address("eth1")
++	local intfIP = get_ip_address("eth0.4")
++	local ip8 = util.split(intfIP,".")
++	rv = sys.exec("ps aux | grep socat | grep :" .. port)
++	if(rv == nil) then
++		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
++	end
++	http.redirect("https://" .. wanIP .. ":" .. port)
++end
++
++function cam5_redirect()
++	local rv
++	local port = "8085"
++	local wanIP = get_ip_address("eth1")
++	local intfIP = get_ip_address("eth0.5")
++	local ip8 = util.split(intfIP,".")
++	rv = sys.exec("ps aux | grep socat | grep :" .. port)
++	if(rv == nil) then
++		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
++	end
++	http.redirect("https://" .. wanIP .. ":" .. port)
++end
++
++function cam6_redirect()
++	local rv
++	local port = "8086"
++	local wanIP = get_ip_address("eth1")
++	local intfIP = get_ip_address("eth0.6")
++	local ip8 = util.split(intfIP,".")
++	rv = sys.exec("ps aux | grep socat | grep :" .. port)
++	if(rv == nil) then
++		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
++	end
++	http.redirect("https://" .. wanIP .. ":" .. port)
++end
++
++function etc1_redirect()
++    local dsp = require "luci.dispatcher"
++    local utl = require "luci.util"
++
++    local acls = utl.ubus("session", "access", { ubus_rpc_session = http.getcookie("sysauth") })
++    local menu = dsp.menu_json(acls or {}) or {}
++
++    http.prepare_content("application/json")
++    http.write_json(menu)
++end
++
++function etc2_redirect()
++    local parser = require "luci.jsonc".new()
++
++    luci.http.context.request:setfilehandler(function(_, s)
++        if not s then
++            return nil
++        end
++
++        local ok, err = parser:parse(s)
++        return (not err or nil)
++    end)
++
++    luci.http.context.request:content()
++
++    local json = parser:get()
++    if json == nil or type(json) ~= "table" then
++        luci.http.prepare_content("application/json")
++        luci.http.write_json(ubus_reply(nil, nil, -32700, "Parse error"))
++        return
++    end
++
++    local response
++    if #json == 0 then
++        response = ubus_request(json)
++    else
++        response = {}
++
++        local _, request
++        for _, request in ipairs(json) do
++            response[_] = ubus_request(request)
++        end
++    end
++
++    luci.http.prepare_content("application/json")
++    luci.http.write_json(response)
++end
++
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/luasrc/view/admin_camera/index.htm openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/luasrc/view/admin_camera/index.htm
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/luasrc/view/admin_camera/index.htm	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/luasrc/view/admin_camera/index.htm	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,78 @@
++<%#
++ Copyright 2008 Steven Barth <steven@midlink.org>
++ Copyright 2008-2018 Jo-Philipp Wich <jo@mein.io>
++ Licensed to the public under the Apache License 2.0.
++-%>
++
++<%+header%>
++
++<h2 name="content"><%:Camera%></h2>
++
++<div id="view">
++	<div class="spinning"><%:Loading view…%></div>
++</div>
++
++<script type="text/javascript">//<![CDATA[
++function progressbar(query, value, max, byte)
++{
++	var pg = document.querySelector(query),
++	    vn = parseInt(value) || 0,
++	    mn = parseInt(max) || 100,
++	    fv = byte ? String.format('%1024.2mB', value) : value,
++	    fm = byte ? String.format('%1024.2mB', max) : max,
++	    pc = Math.floor((100 / mn) * vn);
++
++	if (pg) {
++		pg.firstElementChild.style.width = pc + '%';
++		pg.setAttribute('title', '%s / %s (%d%%)'.format(fv, fm, pc));
++	}
++}
++
++function renderBox(title, active, childs) {
++	childs = childs || [];
++	childs.unshift(L.itemlist(E('span'), [].slice.call(arguments, 3)));
++
++	return E('div', { class: 'ifacebox' }, [
++		E('div', { class: 'ifacebox-head center ' + (active ? 'active' : '') },
++			E('strong', title)),
++		E('div', { class: 'ifacebox-body left' }, childs)
++	]);
++}
++
++function renderBadge(icon, title) {
++	return E('span', { class: 'ifacebadge' }, [
++		E('img', { src: icon, title: title || '' }),
++		L.itemlist(E('span'), [].slice.call(arguments, 2))
++	]);
++}
++
++//]]></script>
++
++<div class="includes" style="display:none">
++<%-
++	local util = require "luci.util"
++	local fs = require "nixio.fs"
++
++	local incdir = util.libpath() .. "/view/admin_camera/index/"
++	if fs.access(incdir) then
++		local _, inc
++		local includes = {}
++		for inc in fs.dir(incdir) do
++			if inc:match("%.htm$") then
++				includes[#includes + 1] = inc:gsub("%.htm$", "")
++			end
++		end
++		for _, inc in luci.util.vspairs(includes) do
++			include("admin_camera/index/" .. inc)
++		end
++	end
++-%>
++</div>
++
++<script type="text/javascript">
++	L.require('ui').then(function(ui) {
++		ui.instantiateView('camera/index');
++	});
++</script>
++
++<%+footer%>
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/Makefile openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/Makefile
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/Makefile	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/Makefile	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,18 @@
++#
++# Copyright (C) 2008-2014 The LuCI Team <luci@lists.subsignal.org>
++#
++# This is free software, licensed under the Apache License, Version 2.0 .
++#
++
++include $(TOPDIR)/rules.mk
++
++LUCI_TITLE:=LuCI Camera Pages
++LUCI_DEPENDS:=+luci-base +libiwinfo
++
++PKG_BUILD_DEPENDS:=iwinfo
++PKG_LICENSE:=Apache-2.0
++
++include ../../luci.mk
++
++# call BuildPackage - OpenWrt buildroot signature
++
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json	2024-04-13 11:41:54.770980037 +0900
+@@ -0,0 +1,117 @@
++{
++	"admin/camera/overview": {
++		"title": "Overview",
++		"order": 100,
++		"action": {
++			"type": "template",
++			"path": "admin_camera/index"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/cam1": {
++		"title": "CAM 1",
++		"order": 110,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "cam1_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/cam2": {
++		"title": "CAM 2",
++		"order": 120,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "cam2_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/cam3": {
++		"title": "CAM 3",
++		"order": 130,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "cam3_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/cam4": {
++		"title": "CAM 4",
++		"order": 140,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "cam4_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/cam5": {
++		"title": "CAM 5",
++		"order": 150,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "cam5_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/cam6": {
++		"title": "CAM 6",
++		"order": 160,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "cam6_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/etc1": {
++		"title": "ETC 1",
++		"order": 170,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "etc1_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	},
++
++	"admin/camera/etc2": {
++		"title": "ETC 2",
++		"order": 180,
++		"action": {
++			"type": "call",
++			"module": "luci.camera",
++			"function": "etc1_redirect"
++		},
++		"depends": {
++			"acl": [ "luci-mod-camera-index" ]
++		}
++	}
++}
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json	2024-04-06 21:00:32.146721491 +0900
+@@ -0,0 +1,50 @@
++{
++	"luci-mod-camera-index": {
++		"description": "Grant access to main status display",
++		"read": {
++			"file": {
++				"/proc/sys/net/netfilter/nf_conntrack_count": [ "read" ],
++				"/proc/sys/net/netfilter/nf_conntrack_max": [ "read" ],
++				"/usr/lib/lua/luci/version.lua": [ "read" ],
++				"/www/luci-static/resources/view/camera/include": [ "list" ]
++			},
++			"ubus": {
++				"file": [ "list", "read" ],
++				"system": [ "board", "info" ]
++			}
++		},
++		"write": {
++			"uci": [ "dhcp" ]
++		}
++	},
++
++	"luci-mod-camera-routes": {
++		"description": "Grant access to the system route status",
++		"read": {
++			"file": {
++				"/sbin/ip -[46] neigh show": [ "exec" ],
++				"/sbin/ip -[46] route show table all": [ "exec" ]
++			},
++			"ubus": {
++				"file": [ "exec" ]
++			}
++		}
++	},
++
++	"luci-mod-camera-logs": {
++		"description": "Grant access to system logs",
++		"read": {
++			"cgi-io": [ "exec" ],
++			"file": {
++				"/bin/dmesg -r": [ "exec" ],
++				"/sbin/logread": [ "stat" ],
++				"/sbin/logread -e ^": [ "exec" ],
++				"/usr/sbin/logread": [ "stat" ],
++				"/usr/sbin/logread -e ^": [ "exec" ]
++			},
++			"ubus": {
++				"file": [ "stat" ]
++			}
++		}
++	}
++}
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-network/root/usr/share/luci/menu.d/luci-mod-network.json openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-network/root/usr/share/luci/menu.d/luci-mod-network.json
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-network/root/usr/share/luci/menu.d/luci-mod-network.json	2024-01-13 20:54:51.859155863 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-network/root/usr/share/luci/menu.d/luci-mod-network.json	2024-04-06 21:00:32.146721491 +0900
+@@ -13,27 +13,6 @@
+ 		}
+ 	},
+ 
+-	"admin/network/wireless": {
+-		"title": "Wireless",
+-		"order": 15,
+-		"action": {
+-			"type": "view",
+-			"path": "network/wireless"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-network-config" ],
+-			"uci": { "wireless": { "@wifi-device": true } }
+-		}
+-	},
+-
+-	"admin/network/remote_addr/*": {
+-		"action": {
+-			"type": "call",
+-			"module": "luci.controller.admin.network",
+-			"function": "remote_addr"
+-		}
+-	},
+-
+ 	"admin/network/network": {
+ 		"title": "Interfaces",
+ 		"order": 10,
+@@ -44,58 +23,5 @@
+ 		"depends": {
+ 			"acl": [ "luci-mod-network-config" ]
+ 		}
+-	},
+-
+-	"admin/network/dhcp": {
+-		"title": "DHCP and DNS",
+-		"order": 30,
+-		"action": {
+-			"type": "view",
+-			"path": "network/dhcp"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-network-dhcp" ],
+-			"fs": {
+-				"/usr/sbin/dnsmasq": "executable"
+-			},
+-			"uci": { "dhcp": true }
+-		}
+-	},
+-
+-	"admin/network/hosts": {
+-		"title": "Hostnames",
+-		"order": 40,
+-		"action": {
+-			"type": "view",
+-			"path": "network/hosts"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-network-dhcp" ],
+-			"uci": { "dhcp": true }
+-		}
+-	},
+-
+-	"admin/network/routes": {
+-		"title": "Static Routes",
+-		"order": 50,
+-		"action": {
+-			"type": "view",
+-			"path": "network/routes"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-network-config" ]
+-		}
+-	},
+-
+-	"admin/network/diagnostics": {
+-		"title": "Diagnostics",
+-		"order": 60,
+-		"action": {
+-			"type": "view",
+-			"path": "network/diagnostics"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-network-diagnostics" ]
+-		}
+ 	}
+ }
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js	2024-01-13 20:54:51.199149968 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js	2024-04-06 21:00:32.146721491 +0900
+@@ -388,6 +388,8 @@
+ 		s = m.section(form.NamedSection, 'actions', _('Actions'));
+ 
+ 
++// Remove Block by LSS
++/*
+ 		o = s.option(form.SectionValue, 'actions', form.NamedSection, 'actions', 'actions', _('Backup'), _('Click "Generate archive" to download a tar archive of the current configuration files.'));
+ 		ss = o.subsection;
+ 
+@@ -434,7 +436,7 @@
+ 			o.inputtitle = _('Save mtdblock');
+ 			o.onclick = L.bind(this.handleBlock, this, hostname);
+ 		}
+-
++*/
+ 
+ 		o = s.option(form.SectionValue, 'actions', form.NamedSection, 'actions', 'actions', _('Flash new firmware image'),
+ 			has_sysupgrade
+@@ -450,9 +452,10 @@
+ 			o.onclick = L.bind(this.handleSysupgrade, this, storage_size, has_rootfs_data);
+ 		}
+ 
+-
+-		s = m.section(form.NamedSection, 'config', 'config', _('Configuration'), _('This is a list of shell glob patterns for matching files and directories to include during sysupgrade. Modified files in /etc/config/ and certain other configurations are automatically preserved.'));
+-		s.render = L.bind(function(view /*, ... */) {
++// Remove Block by LSS
++		//s = m.section(form.NamedSection, 'config', 'config', _('Configuration'), _('This is a list of shell glob patterns for matching files and directories to include during sysupgrade. Modified files in /etc/config/ and certain other configurations are automatically preserved.'));
++		//s.render = L.bind(function(view /*, ... */) {
++		/*
+ 			return form.NamedSection.prototype.render.apply(this, this.varargs(arguments, 1))
+ 				.then(L.bind(function(node) {
+ 					node.appendChild(E('div', { 'class': 'cbi-page-actions' }, [
+@@ -478,7 +481,7 @@
+ 		o.load = function(section_id) {
+ 			return L.resolveDefault(fs.read('/etc/sysupgrade.conf'), '');
+ 		};
+-
++*/
+ 
+ 		return m.render();
+ 	},
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js	2024-01-13 20:54:51.859155863 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js	2024-04-06 21:00:32.146721491 +0900
+@@ -120,9 +120,9 @@
+ 		s.addremove = false;
+ 
+ 		s.tab('general', _('General Settings'));
+-		s.tab('logging', _('Logging'));
++		//s.tab('logging', _('Logging'));
+ 		s.tab('timesync', _('Time Synchronization'));
+-		s.tab('language', _('Language and Style'));
++		//s.tab('language', _('Language and Style'));
+ 
+ 		/*
+ 		 * System Properties
+@@ -159,6 +159,7 @@
+ 		 * Logging
+ 		 */
+ 
++/* Remove Block by LSS
+ 		o = s.taboption('logging', form.Value, 'log_size', _('System log buffer size'), "kiB")
+ 		o.optional    = true
+ 		o.placeholder = 16
+@@ -197,6 +198,7 @@
+ 		o.value(5, _('Debug'))
+ 		o.value(8, _('Normal'))
+ 		o.value(9, _('Warning'))
++*/
+ 
+ 		/*
+ 		 * Zram Properties
+@@ -222,6 +224,7 @@
+ 		 * Language & Style
+ 		 */
+ 
++/* Remove Block by LSS
+ 		o = s.taboption('language', form.ListValue, '_lang', _('Language'))
+ 		o.uciconfig = 'luci';
+ 		o.ucisection = 'main';
+@@ -242,6 +245,7 @@
+ 		for (var i = 0; i < k.length; i++)
+ 			if (k[i].charAt(0) != '.')
+ 				o.value(uci.get('luci', 'themes', k[i]), k[i]);
++*/
+ 
+ 		/*
+ 		 * NTP
+diff -urN openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
+--- openwrt.cbe73ea33d/feeds/luci/modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json	2024-01-13 20:54:51.863155899 +0900
++++ openwrt.GOOD.20240420/feeds/luci/modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json	2024-04-06 21:00:32.146721491 +0900
+@@ -60,56 +60,6 @@
+ 		}
+ 	},
+ 
+-	"admin/system/startup": {
+-		"title": "Startup",
+-		"order": 45,
+-		"action": {
+-			"type": "view",
+-			"path": "system/startup"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-system-init" ]
+-		}
+-	},
+-
+-	"admin/system/crontab": {
+-		"title": "Scheduled Tasks",
+-		"order": 46,
+-		"action": {
+-			"type": "view",
+-			"path": "system/crontab"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-system-cron" ]
+-		}
+-	},
+-
+-	"admin/system/mounts": {
+-		"title": "Mount Points",
+-		"order": 50,
+-		"action": {
+-			"type": "view",
+-			"path": "system/mounts"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-system-mounts" ],
+-			"fs": { "/sbin/block": "executable" }
+-		}
+-	},
+-
+-	"admin/system/leds": {
+-		"title": "LED Configuration",
+-		"order": 60,
+-		"action": {
+-			"type": "view",
+-			"path": "system/leds"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-system-config" ],
+-			"fs": { "/sys/class/leds": "directory" }
+-		}
+-	},
+-
+ 	"admin/system/flash": {
+ 		"title": "Backup / Flash Firmware",
+ 		"order": 70,
+diff -urN openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/cascade.css openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/cascade.css
+--- openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/cascade.css	2024-01-13 20:54:51.863155899 +0900
++++ openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/cascade.css	2024-04-06 21:00:32.186721263 +0900
+@@ -63,13 +63,13 @@
+  */
+ 
+ #menubar {
+-	background-color: var(--main-bright-color);
++	background-color: var(--secondary-bright-color);
+ 	background-image: url("logo.svg");
+ 	background-position: 10px center;
+-	background-size: 50px 50px;
++	background-size: 200px 50px;
+ 	background-repeat: no-repeat;
+-	padding: 0 1em 0 70px;
+-	min-height: 70px;
++	padding: 0 1em 0 200px;
++	min-height: 60px;
+ 	display: flex;
+ 	align-items: center;
+ 	color: var(--secondary-bright-color);
+@@ -79,7 +79,7 @@
+ }
+ 
+ #menubar > * {
+-	flex: 1 1 auto;
++	flex: 1 1 25%;
+ }
+ 
+ #menubar .hostname {
+@@ -88,10 +88,14 @@
+ 	white-space: nowrap;
+ 	overflow: hidden;
+ 	text-overflow: ellipsis;
++	flex: 1 1 25%;
++	text-align: center;
++	color: var(--main-bright-color);
+ }
+ 
+ #menubar .distversion {
+ 	flex: 3;
++	color: var(--main-bright-color);
+ }
+ 
+ #indicators {
+@@ -100,8 +104,8 @@
+ }
+ 
+ #indicators > * {
+-	background: var(--secondary-bright-color);
+-	color: var(--main-bright-color);
++	background: var(--main-bright-color);
++	color: var(--secondary-bright-color);
+ 	display: inline-block;
+ 	font-size: .85em;
+ 	line-height: 1.5em;
+@@ -113,9 +117,9 @@
+ }
+ 
+ #indicators > [data-style="inactive"] {
+-	background: var(--main-bright-color);
+-	color: var(--secondary-bright-color);
+-	border: 2px solid var(--secondary-bright-color);
++	background: var(--secondary-bright-color);
++	color: var(--main-bright-color);
++	border: 2px solid var(--main-bright-color);
+ 	line-height: calc(1.5em - 4px);
+ 	padding: 0 calc(.5em - 2px);
+ }
+diff -urN openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/logo.svg openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/logo.svg
+--- openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/logo.svg	2024-01-13 20:54:51.863155899 +0900
++++ openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/logo.svg	2024-04-06 21:00:32.186721263 +0900
+@@ -1,7 +1,349 @@
+-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 81 98">
+-  <path d="m 40.5,50.8 a 6.6,6.6 0 1 0 0,13.2 6.6,6.6 0 0 0 0,-13.2 m -40.5,-33.9 7,6.8 a 47.5,47.5 0 0 1 67.2,0 l 7,-6.8 a 57.2,57.2 0 0 0 -81.2,0" style="fill:#fff" />
+-  <path d="m 12.5,29.2 6.8,7 a 30,30 0 0 1 42.6,0 l 6.8,-7 a 39.7,39.7 0 0 0 -56.3,0" style="fill:#fff" />
+-  <path d="m 24.8,41.6 6.8,6.9 a 12.6,12.6 0 0 1 18,0 l 6.8,-6.9 a 22.3,22.3 0 0 0 -31.6,0" style="fill:#fff" />
+-  <path d="m 64.9,39.7 a 30.2,30.2 0 1 1 -48.7,0 l -6.9,-7 a 39.9,39.9 0 1 0 62.5,0 z" style="fill:#072342" />
+-</svg>
++<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 width="100%" viewBox="0 0 1216 241" enable-background="new 0 0 1216 241" xml:space="preserve">
++<path fill="#FFFEFE" opacity="1.000000" stroke="none" 
++	d="
++M824.000000,242.000000 
++	C549.333313,242.000000 275.166656,242.000000 1.000000,242.000000 
++	C1.000000,161.666672 1.000000,81.333336 1.000000,1.000000 
++	C406.333344,1.000000 811.666687,1.000000 1217.000000,1.000000 
++	C1217.000000,81.333336 1217.000000,161.666672 1217.000000,242.000000 
++	C1086.166626,242.000000 955.333313,242.000000 824.000000,242.000000 
++M438.288055,84.157494 
++	C438.350616,84.525536 438.413147,84.893570 438.475708,85.261612 
++	C438.811584,84.995728 439.147491,84.729843 439.800293,84.039886 
++	C439.753510,83.784409 439.706726,83.528938 439.659943,83.273460 
++	C439.400940,83.474174 439.141937,83.674881 438.288055,84.157494 
++M409.050293,204.653458 
++	C409.277954,204.648529 409.505585,204.643585 409.733246,204.638657 
++	C409.662384,204.269150 409.591553,203.899643 409.190308,202.941788 
++	C380.153168,169.060516 377.898773,122.967438 403.370453,88.256912 
++	C428.014099,54.674805 474.502533,39.107613 519.984802,60.084049 
++	C519.061340,58.868416 517.946289,57.865810 516.704285,57.058651 
++	C497.003784,44.255322 475.396210,39.800541 452.309296,43.223999 
++	C399.723358,51.021744 364.426239,103.386490 377.181305,154.832993 
++	C382.109619,174.710815 391.951752,191.790680 409.050293,204.653458 
++M765.115845,96.276306 
++	C763.076233,80.294411 761.036621,64.312508 758.954651,47.998951 
++	C744.009216,47.998951 729.371582,48.093285 714.737061,47.922970 
++	C711.641296,47.886940 710.106812,48.837116 708.716980,51.648338 
++	C696.926392,75.496658 684.947754,99.252014 673.012329,123.028610 
++	C672.245239,124.556747 671.368958,126.030060 670.543457,127.528870 
++	C670.281494,127.435097 670.019531,127.341331 669.757629,127.247566 
++	C668.995056,100.891258 668.232422,74.534958 667.471008,48.218765 
++	C650.930847,48.218765 635.153931,48.218765 619.129333,48.218765 
++	C619.129333,50.218719 619.025635,52.010021 619.144470,53.786449 
++	C622.144897,98.655548 625.211060,143.520355 628.109375,188.396011 
++	C628.344849,192.041611 629.818848,192.689713 633.036194,192.655731 
++	C646.530762,192.513138 660.030212,192.448044 673.521912,192.689545 
++	C677.354980,192.758148 679.349792,191.678772 681.130676,188.121979 
++	C694.821289,160.779831 708.775513,133.569672 722.661743,106.325600 
++	C723.184631,105.299667 723.849121,104.345932 724.882507,102.641052 
++	C728.969604,133.219788 732.927368,162.830414 736.905273,192.592392 
++	C753.082581,192.592392 768.569031,192.692657 784.049316,192.431534 
++	C785.536499,192.406448 787.637695,190.430313 788.353394,188.858734 
++	C796.753052,170.414520 805.004578,151.901947 813.171814,133.353073 
++	C824.961365,106.576942 836.651611,79.757019 848.375366,52.951908 
++	C849.019104,51.480000 849.581970,49.972736 850.313354,48.156956 
++	C833.964050,48.156956 818.172302,48.156956 802.135132,48.156956 
++	C791.456055,74.655884 780.768066,101.176926 770.080078,127.697968 
++	C769.802246,127.580971 769.524353,127.463974 769.246521,127.346977 
++	C767.904175,117.284851 766.561829,107.222733 765.115845,96.276306 
++M1054.757324,58.174370 
++	C1046.350220,102.756737 1037.943115,147.339096 1029.461304,192.317749 
++	C1045.932617,192.317749 1061.679321,192.317749 1077.579468,192.317749 
++	C1082.512085,166.352676 1087.399414,140.625977 1092.443237,114.075378 
++	C1098.563965,123.887596 1104.373047,132.910339 1109.889648,142.108475 
++	C1119.219238,157.664459 1128.322388,173.356201 1137.652100,188.912109 
++	C1138.555908,190.419098 1140.363281,192.403397 1141.780029,192.426880 
++	C1157.071289,192.680450 1172.368408,192.585083 1187.947388,192.585083 
++	C1197.045776,144.264130 1206.072632,96.323128 1215.129883,48.220871 
++	C1198.651489,48.220871 1182.876831,48.220871 1166.810791,48.220871 
++	C1161.851074,74.708069 1156.921021,101.037567 1151.784668,128.467651 
++	C1139.011353,106.753433 1126.880249,86.113693 1114.729126,65.485756 
++	C1111.350708,59.750538 1109.185059,51.769974 1104.151978,48.962212 
++	C1098.904785,46.035053 1090.866943,48.054527 1084.048584,48.012768 
++	C1074.937256,47.956966 1065.825317,47.998970 1056.592407,47.998970 
++	C1055.962036,51.474854 1055.431274,54.401527 1054.757324,58.174370 
++M159.438583,64.075310 
++	C147.323029,51.804325 131.764389,48.594894 115.516159,48.262211 
++	C92.040260,47.781551 68.549026,48.048225 45.064331,47.999531 
++	C40.759899,47.990604 36.455437,47.998257 31.919159,47.998257 
++	C22.836720,96.252937 13.814336,144.188553 4.703187,192.595764 
++	C21.002174,192.595764 36.478687,192.805084 51.946957,192.537476 
++	C67.742676,192.264206 83.648872,192.559341 99.296669,190.769424 
++	C131.433701,187.093353 154.565643,170.320847 165.519043,139.378494 
++	C169.402191,128.408966 171.375946,116.511086 172.475693,104.872070 
++	C173.875854,90.053589 170.334442,76.072777 159.438583,64.075310 
++M841.956177,130.692642 
++	C838.730591,163.079117 857.521606,186.862198 888.955322,192.518356 
++	C904.678833,195.347610 920.427979,195.754257 936.206604,193.762512 
++	C952.630981,191.689224 967.948914,186.333740 981.305420,176.313629 
++	C1005.469421,158.185547 1016.111267,133.080582 1016.843201,103.689194 
++	C1017.547668,75.402023 1001.531006,55.664547 973.960693,49.009956 
++	C957.065674,44.932037 939.985901,44.869411 922.842285,46.941689 
++	C877.790588,52.387440 846.439148,84.523170 841.956177,130.692642 
++M350.752014,153.194962 
++	C358.799164,139.850891 363.176666,125.304848 364.747772,109.883919 
++	C367.782013,80.101631 353.231049,58.250397 324.467712,49.801838 
++	C306.740082,44.594769 288.604309,44.766895 270.459595,46.993793 
++	C223.481796,52.759354 191.092331,88.369606 189.674240,135.646759 
++	C188.834442,163.644730 204.408401,184.221848 231.591293,191.191376 
++	C248.458847,195.516098 265.566925,195.995499 282.697662,193.895279 
++	C311.004425,190.424881 334.420837,178.347000 350.752014,153.194962 
++M476.453400,85.888489 
++	C455.465027,98.722824 449.485748,124.702927 463.037079,144.182465 
++	C472.738953,158.128464 489.920197,165.373093 505.759247,161.620316 
++	C523.149658,157.499985 534.822693,146.768387 538.371521,129.118500 
++	C541.625244,112.936378 536.138245,98.889732 523.016052,88.920624 
++	C508.764160,78.093269 493.101654,77.213257 476.453400,85.888489 
++M404.204865,34.698517 
++	C388.879089,48.719948 378.963348,70.362381 378.197937,81.742104 
++	C400.104919,30.274565 449.873413,17.256134 484.828766,25.326658 
++	C507.222137,30.496864 525.359985,42.520561 538.960388,61.230572 
++	C552.501465,79.859001 557.680603,100.785034 556.250671,123.589775 
++	C566.779907,86.437172 549.951782,44.333366 516.486267,23.563511 
++	C480.630951,1.310451 436.334503,5.528653 404.204865,34.698517 
++M526.456421,215.030197 
++	C565.995300,212.829269 594.001282,193.602921 609.766968,157.394974 
++	C618.896545,136.427643 618.269714,101.876350 609.175598,92.577827 
++	C615.106689,122.877304 607.503601,149.300385 587.601440,171.566193 
++	C567.384521,194.184052 541.297363,204.333130 511.030334,201.707397 
++	C481.211975,199.120575 458.103333,184.214005 440.688904,160.019699 
++	C457.961639,195.458954 485.880676,214.321945 526.456421,215.030197 
++M426.271240,170.083603 
++	C416.029175,140.080902 420.787292,112.070274 437.660858,85.608063 
++	C415.465149,108.297462 406.054688,135.417175 412.540192,166.305069 
++	C420.647278,204.915909 444.897003,229.599670 483.454132,238.387939 
++	C512.449036,244.996719 538.816101,237.822678 561.561218,218.317413 
++	C545.302856,226.950638 528.075134,231.646744 509.569794,230.982788 
++	C490.934937,230.314194 473.924133,224.670715 458.895935,213.592407 
++	C443.925568,202.556808 432.818848,188.491562 426.271240,170.083603 
++M555.826843,30.660273 
++	C578.415710,53.311485 588.439880,80.614822 582.701904,112.098083 
++	C575.963684,149.069702 552.880615,172.676147 517.834229,185.117249 
++	C549.884216,180.826172 574.046570,164.195694 588.309631,135.608704 
++	C605.320740,101.513794 601.073364,68.083710 577.885071,38.057133 
++	C556.728149,10.660944 527.466919,1.993303 493.843536,5.762928 
++	C517.465637,6.049776 538.103088,13.810075 555.826843,30.660273 
++z"/>
++<path fill="#3C2E85" opacity="1.000000" stroke="none" 
++	d="
++M765.167664,96.718460 
++	C766.561829,107.222733 767.904175,117.284851 769.246521,127.346977 
++	C769.524353,127.463974 769.802246,127.580971 770.080078,127.697968 
++	C780.768066,101.176926 791.456055,74.655884 802.135132,48.156956 
++	C818.172302,48.156956 833.964050,48.156956 850.313354,48.156956 
++	C849.581970,49.972736 849.019104,51.480000 848.375366,52.951908 
++	C836.651611,79.757019 824.961365,106.576942 813.171814,133.353073 
++	C805.004578,151.901947 796.753052,170.414520 788.353394,188.858734 
++	C787.637695,190.430313 785.536499,192.406448 784.049316,192.431534 
++	C768.569031,192.692657 753.082581,192.592392 736.905273,192.592392 
++	C732.927368,162.830414 728.969604,133.219788 724.882507,102.641052 
++	C723.849121,104.345932 723.184631,105.299667 722.661743,106.325600 
++	C708.775513,133.569672 694.821289,160.779831 681.130676,188.121979 
++	C679.349792,191.678772 677.354980,192.758148 673.521912,192.689545 
++	C660.030212,192.448044 646.530762,192.513138 633.036194,192.655731 
++	C629.818848,192.689713 628.344849,192.041611 628.109375,188.396011 
++	C625.211060,143.520355 622.144897,98.655548 619.144470,53.786449 
++	C619.025635,52.010021 619.129333,50.218719 619.129333,48.218765 
++	C635.153931,48.218765 650.930847,48.218765 667.471008,48.218765 
++	C668.232422,74.534958 668.995056,100.891258 669.757629,127.247566 
++	C670.019531,127.341331 670.281494,127.435097 670.543457,127.528870 
++	C671.368958,126.030060 672.245239,124.556747 673.012329,123.028610 
++	C684.947754,99.252014 696.926392,75.496658 708.716980,51.648338 
++	C710.106812,48.837116 711.641296,47.886940 714.737061,47.922970 
++	C729.371582,48.093285 744.009216,47.998951 758.954651,47.998951 
++	C761.036621,64.312508 763.076233,80.294411 765.167664,96.718460 
++z"/>
++<path fill="#3C2E85" opacity="1.000000" stroke="none" 
++	d="
++M1054.828857,57.751286 
++	C1055.431274,54.401527 1055.962036,51.474854 1056.592407,47.998970 
++	C1065.825317,47.998970 1074.937256,47.956966 1084.048584,48.012768 
++	C1090.866943,48.054527 1098.904785,46.035053 1104.151978,48.962212 
++	C1109.185059,51.769974 1111.350708,59.750538 1114.729126,65.485756 
++	C1126.880249,86.113693 1139.011353,106.753433 1151.784668,128.467651 
++	C1156.921021,101.037567 1161.851074,74.708069 1166.810791,48.220871 
++	C1182.876831,48.220871 1198.651489,48.220871 1215.129883,48.220871 
++	C1206.072632,96.323128 1197.045776,144.264130 1187.947388,192.585083 
++	C1172.368408,192.585083 1157.071289,192.680450 1141.780029,192.426880 
++	C1140.363281,192.403397 1138.555908,190.419098 1137.652100,188.912109 
++	C1128.322388,173.356201 1119.219238,157.664459 1109.889648,142.108475 
++	C1104.373047,132.910339 1098.563965,123.887596 1092.443237,114.075378 
++	C1087.399414,140.625977 1082.512085,166.352676 1077.579468,192.317749 
++	C1061.679321,192.317749 1045.932617,192.317749 1029.461304,192.317749 
++	C1037.943115,147.339096 1046.350220,102.756737 1054.828857,57.751286 
++z"/>
++<path fill="#3C2E85" opacity="1.000000" stroke="none" 
++	d="
++M159.686600,64.328445 
++	C170.334442,76.072777 173.875854,90.053589 172.475693,104.872070 
++	C171.375946,116.511086 169.402191,128.408966 165.519043,139.378494 
++	C154.565643,170.320847 131.433701,187.093353 99.296669,190.769424 
++	C83.648872,192.559341 67.742676,192.264206 51.946957,192.537476 
++	C36.478687,192.805084 21.002174,192.595764 4.703187,192.595764 
++	C13.814336,144.188553 22.836720,96.252937 31.919159,47.998257 
++	C36.455437,47.998257 40.759899,47.990604 45.064331,47.999531 
++	C68.549026,48.048225 92.040260,47.781551 115.516159,48.262211 
++	C131.764389,48.594894 147.323029,51.804325 159.686600,64.328445 
++M113.322319,140.697174 
++	C118.956039,128.729034 121.038734,116.019127 120.869118,102.922531 
++	C120.728508,92.065857 115.723763,85.130470 105.002541,82.998085 
++	C95.968826,81.201340 86.596207,81.108528 77.145454,80.240517 
++	C72.062157,107.101494 67.167145,132.967514 62.228382,159.064743 
++	C69.856766,159.064743 76.974754,159.170929 84.088463,159.041641 
++	C97.141647,158.804428 107.156303,153.461868 113.322319,140.697174 
++z"/>
++<path fill="#3C2E85" opacity="1.000000" stroke="none" 
++	d="
++M841.977539,130.220276 
++	C846.439148,84.523170 877.790588,52.387440 922.842285,46.941689 
++	C939.985901,44.869411 957.065674,44.932037 973.960693,49.009956 
++	C1001.531006,55.664547 1017.547668,75.402023 1016.843201,103.689194 
++	C1016.111267,133.080582 1005.469421,158.185547 981.305420,176.313629 
++	C967.948914,186.333740 952.630981,191.689224 936.206604,193.762512 
++	C920.427979,195.754257 904.678833,195.347610 888.955322,192.518356 
++	C857.521606,186.862198 838.730591,163.079117 841.977539,130.220276 
++M924.135498,81.285667 
++	C914.185181,84.481087 906.329163,90.431404 901.550720,99.753151 
++	C895.530396,111.497269 892.658569,124.129272 893.149414,137.338135 
++	C893.518433,147.267136 897.854797,155.080444 907.480042,158.815979 
++	C921.397461,164.217239 945.613159,162.156357 956.226013,142.523285 
++	C963.297241,129.441986 966.292419,115.451027 964.959595,100.675056 
++	C964.315857,93.538033 960.872009,87.751465 954.480469,84.021881 
++	C945.079529,78.536285 935.083069,79.041573 924.135498,81.285667 
++z"/>
++<path fill="#3C2E85" opacity="1.000000" stroke="none" 
++	d="
++M350.537445,153.490021 
++	C334.420837,178.347000 311.004425,190.424881 282.697662,193.895279 
++	C265.566925,195.995499 248.458847,195.516098 231.591293,191.191376 
++	C204.408401,184.221848 188.834442,163.644730 189.674240,135.646759 
++	C191.092331,88.369606 223.481796,52.759354 270.459595,46.993793 
++	C288.604309,44.766895 306.740082,44.594769 324.467712,49.801838 
++	C353.231049,58.250397 367.782013,80.101631 364.747772,109.883919 
++	C363.176666,125.304848 358.799164,139.850891 350.537445,153.490021 
++M270.477783,161.216705 
++	C285.226227,161.035431 297.046204,155.418900 304.335846,142.192993 
++	C311.415527,129.347977 314.252563,115.431602 312.948151,100.833153 
++	C312.293488,93.506081 308.749298,87.659515 302.169769,83.847488 
++	C288.365356,75.849579 266.894623,79.088455 255.734665,91.334747 
++	C244.290955,103.892395 241.409790,119.565636 241.126892,135.790848 
++	C240.889908,149.382858 248.340851,158.073135 261.569427,160.669571 
++	C264.158142,161.177673 266.868317,161.066879 270.477783,161.216705 
++z"/>
++<path fill="#EB7A24" opacity="1.000000" stroke="none" 
++	d="
++M476.772400,85.700142 
++	C493.101654,77.213257 508.764160,78.093269 523.016052,88.920624 
++	C536.138245,98.889732 541.625244,112.936378 538.371521,129.118500 
++	C534.822693,146.768387 523.149658,157.499985 505.759247,161.620316 
++	C489.920197,165.373093 472.738953,158.128464 463.037079,144.182465 
++	C449.485748,124.702927 455.465027,98.722824 476.772400,85.700142 
++z"/>
++<path fill="#EC7C29" opacity="1.000000" stroke="none" 
++	d="
++M404.457764,34.453007 
++	C436.334503,5.528653 480.630951,1.310451 516.486267,23.563511 
++	C549.951782,44.333366 566.779907,86.437172 556.250671,123.589775 
++	C557.680603,100.785034 552.501465,79.859001 538.960388,61.230572 
++	C525.359985,42.520561 507.222137,30.496864 484.828766,25.326658 
++	C449.873413,17.256134 400.104919,30.274565 378.197937,81.742104 
++	C378.963348,70.362381 388.879089,48.719948 404.457764,34.453007 
++z"/>
++<path fill="#EC7D29" opacity="1.000000" stroke="none" 
++	d="
++M408.828827,204.180084 
++	C391.951752,191.790680 382.109619,174.710815 377.181305,154.832993 
++	C364.426239,103.386490 399.723358,51.021744 452.309296,43.223999 
++	C475.396210,39.800541 497.003784,44.255322 516.704285,57.058651 
++	C517.946289,57.865810 519.061340,58.868416 519.984802,60.084049 
++	C474.502533,39.107613 428.014099,54.674805 403.370453,88.256912 
++	C377.898773,122.967438 380.153168,169.060516 409.177551,203.393158 
++	C409.164825,203.844543 408.828827,204.180084 408.828827,204.180084 
++z"/>
++<path fill="#EB7C28" opacity="1.000000" stroke="none" 
++	d="
++M525.967346,215.041016 
++	C485.880676,214.321945 457.961639,195.458954 440.688904,160.019699 
++	C458.103333,184.214005 481.211975,199.120575 511.030334,201.707397 
++	C541.297363,204.333130 567.384521,194.184052 587.601440,171.566193 
++	C607.503601,149.300385 615.106689,122.877304 609.175598,92.577827 
++	C618.269714,101.876350 618.896545,136.427643 609.766968,157.394974 
++	C594.001282,193.602921 565.995300,212.829269 525.967346,215.041016 
++z"/>
++<path fill="#EB7C28" opacity="1.000000" stroke="none" 
++	d="
++M426.438232,170.438080 
++	C432.818848,188.491562 443.925568,202.556808 458.895935,213.592407 
++	C473.924133,224.670715 490.934937,230.314194 509.569794,230.982788 
++	C528.075134,231.646744 545.302856,226.950638 561.561218,218.317413 
++	C538.816101,237.822678 512.449036,244.996719 483.454132,238.387939 
++	C444.897003,229.599670 420.647278,204.915909 412.540192,166.305069 
++	C406.054688,135.417175 415.465149,108.297462 437.660858,85.608063 
++	C420.787292,112.070274 416.029175,140.080902 426.438232,170.438080 
++z"/>
++<path fill="#EC7C29" opacity="1.000000" stroke="none" 
++	d="
++M555.566040,30.422302 
++	C538.103088,13.810075 517.465637,6.049776 493.843536,5.762928 
++	C527.466919,1.993303 556.728149,10.660944 577.885071,38.057133 
++	C601.073364,68.083710 605.320740,101.513794 588.309631,135.608704 
++	C574.046570,164.195694 549.884216,180.826172 517.834229,185.117249 
++	C552.880615,172.676147 575.963684,149.069702 582.701904,112.098083 
++	C588.439880,80.614822 578.415710,53.311485 555.566040,30.422302 
++z"/>
++<path fill="#EB7C28" opacity="1.000000" stroke="none" 
++	d="
++M439.483368,84.463959 
++	C439.147491,84.729843 438.811584,84.995728 438.475708,85.261612 
++	C438.413147,84.893570 438.350616,84.525536 438.731995,84.167328 
++	C439.175903,84.177170 439.483368,84.463959 439.483368,84.463959 
++z"/>
++<path fill="#EB7C28" opacity="1.000000" stroke="none" 
++	d="
++M439.029419,84.026382 
++	C439.141937,83.674881 439.400940,83.474174 439.659943,83.273460 
++	C439.706726,83.528938 439.753510,83.784409 439.641846,84.251923 
++	C439.483368,84.463959 439.175903,84.177170 439.029419,84.026382 
++z"/>
++<path fill="#EC7D29" opacity="1.000000" stroke="none" 
++	d="
++M409.342773,203.687347 
++	C409.591553,203.899643 409.662384,204.269150 409.733246,204.638657 
++	C409.505585,204.643585 409.277954,204.648529 408.939575,204.416779 
++	C408.828827,204.180084 409.164825,203.844543 409.342773,203.687347 
++z"/>
++<path fill="#FEFDFE" opacity="1.000000" stroke="none" 
++	d="
++M113.169891,141.039032 
++	C107.156303,153.461868 97.141647,158.804428 84.088463,159.041641 
++	C76.974754,159.170929 69.856766,159.064743 62.228382,159.064743 
++	C67.167145,132.967514 72.062157,107.101494 77.145454,80.240517 
++	C86.596207,81.108528 95.968826,81.201340 105.002541,82.998085 
++	C115.723763,85.130470 120.728508,92.065857 120.869118,102.922531 
++	C121.038734,116.019127 118.956039,128.729034 113.169891,141.039032 
++z"/>
++<path fill="#FEFEFE" opacity="1.000000" stroke="none" 
++	d="
++M924.534302,81.178177 
++	C935.083069,79.041573 945.079529,78.536285 954.480469,84.021881 
++	C960.872009,87.751465 964.315857,93.538033 964.959595,100.675056 
++	C966.292419,115.451027 963.297241,129.441986 956.226013,142.523285 
++	C945.613159,162.156357 921.397461,164.217239 907.480042,158.815979 
++	C897.854797,155.080444 893.518433,147.267136 893.149414,137.338135 
++	C892.658569,124.129272 895.530396,111.497269 901.550720,99.753151 
++	C906.329163,90.431404 914.185181,84.481087 924.534302,81.178177 
++z"/>
++<path fill="#FEFEFE" opacity="1.000000" stroke="none" 
++	d="
++M270.000122,161.229126 
++	C266.868317,161.066879 264.158142,161.177673 261.569427,160.669571 
++	C248.340851,158.073135 240.889908,149.382858 241.126892,135.790848 
++	C241.409790,119.565636 244.290955,103.892395 255.734665,91.334747 
++	C266.894623,79.088455 288.365356,75.849579 302.169769,83.847488 
++	C308.749298,87.659515 312.293488,93.506081 312.948151,100.833153 
++	C314.252563,115.431602 311.415527,129.347977 304.335846,142.192993 
++	C297.046204,155.418900 285.226227,161.035431 270.000122,161.229126 
++z"/>
++</svg>
+\ No newline at end of file
+diff -urN openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/openwrt.svg openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/openwrt.svg
+--- openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/openwrt.svg	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/htdocs/luci-static/openwrt2020/openwrt.svg	2024-04-06 21:00:32.186721263 +0900
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8" standalone="no"?>
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 81 98">
++  <path d="m 40.5,50.8 a 6.6,6.6 0 1 0 0,13.2 6.6,6.6 0 0 0 0,-13.2 m -40.5,-33.9 7,6.8 a 47.5,47.5 0 0 1 67.2,0 l 7,-6.8 a 57.2,57.2 0 0 0 -81.2,0" style="fill:#fff" />
++  <path d="m 12.5,29.2 6.8,7 a 30,30 0 0 1 42.6,0 l 6.8,-7 a 39.7,39.7 0 0 0 -56.3,0" style="fill:#fff" />
++  <path d="m 24.8,41.6 6.8,6.9 a 12.6,12.6 0 0 1 18,0 l 6.8,-6.9 a 22.3,22.3 0 0 0 -31.6,0" style="fill:#fff" />
++  <path d="m 64.9,39.7 a 30.2,30.2 0 1 1 -48.7,0 l -6.9,-7 a 39.9,39.9 0 1 0 62.5,0 z" style="fill:#072342" />
++</svg>
+diff -urN openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/footer.htm openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/footer.htm
+--- openwrt.cbe73ea33d/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/footer.htm	2024-01-13 20:54:51.863155899 +0900
++++ openwrt.GOOD.20240420/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/footer.htm	2024-04-06 21:00:32.186721263 +0900
+@@ -8,7 +8,7 @@
+ 
+ <p class="luci">
+ 	<% local ver = require "luci.version" -%>
+-	Powered by <%= ver.luciname %> (<%= ver.luciversion %>)
++	Powered by Doowon
+ </p>
+ 
+ <script type="text/javascript">L.require('menu-openwrt2020')</script>
+diff -urN openwrt.cbe73ea33d/feeds/mtk_openwrt_feed/feed/mtkhnat_util/files/99-firewall openwrt.GOOD.20240420/feeds/mtk_openwrt_feed/feed/mtkhnat_util/files/99-firewall
+--- openwrt.cbe73ea33d/feeds/mtk_openwrt_feed/feed/mtkhnat_util/files/99-firewall	2024-01-13 20:55:26.139462043 +0900
++++ openwrt.GOOD.20240420/feeds/mtk_openwrt_feed/feed/mtkhnat_util/files/99-firewall	2024-03-16 23:27:31.036887329 +0900
+@@ -1,7 +1,8 @@
+-echo "iptables -I OUTPUT -t raw -p tcp --dport 1723 -j CT  --helper pptp" >> /etc/firewall.user
+-echo "iptables -t mangle -A FORWARD -m dscp --dscp-class BE -j MARK --set-mark 0" >> /etc/firewall.user
+-echo "iptables -t mangle -A FORWARD -m dscp --dscp-class CS2 -j MARK --set-mark 2" >> /etc/firewall.user
+-echo "iptables -t mangle -A FORWARD -m dscp --dscp-class CS4 -j MARK --set-mark 4" >> /etc/firewall.user
+-echo "iptables -t mangle -A FORWARD -m dscp --dscp-class CS6 -j MARK --set-mark 6" >> /etc/firewall.user
++#echo "iptables -I OUTPUT -t raw -p tcp --dport 1723 -j CT  --helper pptp" >> /etc/firewall.user
++#echo "iptables -t mangle -A FORWARD -m dscp --dscp-class BE -j MARK --set-mark 0" >> /etc/firewall.user
++#echo "iptables -t mangle -A FORWARD -m dscp --dscp-class CS2 -j MARK --set-mark 2" >> /etc/firewall.user
++#echo "iptables -t mangle -A FORWARD -m dscp --dscp-class CS4 -j MARK --set-mark 4" >> /etc/firewall.user
++#echo "iptables -t mangle -A FORWARD -m dscp --dscp-class CS6 -j MARK --set-mark 6" >> /etc/firewall.user
++#echo "iptables -t filter -I INPUT -i eth1 -s 0.0.0.0./0 -j ACCEPT" >> /etc/firewall.user
+ 
+ exit 0
+diff -urN openwrt.cbe73ea33d/feeds/mtk_openwrt_feed/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network openwrt.GOOD.20240420/feeds/mtk_openwrt_feed/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+--- openwrt.cbe73ea33d/feeds/mtk_openwrt_feed/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network	2024-01-13 20:55:26.199462580 +0900
++++ openwrt.GOOD.20240420/feeds/mtk_openwrt_feed/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network	2024-03-10 23:13:05.800297488 +0900
+@@ -17,7 +17,7 @@
+ 	*gsw*)
+ 		ucidef_set_interfaces_lan_wan "eth0" "eth1"
+ 		ucidef_add_switch "switch0" \
+-			"0:lan" "1:lan" "2:lan" "3:lan" "4:lan" "6u@eth0"
++			"0:lan" "1:lan" "2:lan" "3:lan" "4:lan" "5:lan" "6:lan" "7:lan" "8u@eth0"
+ 		;;
+ 	*2500wan-p5*)
+ 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3 lan4" wan

@@ -1,0 +1,28 @@
+Build procedure
+
+
+1. Feeds patch
+~/SDK/openwrt$ cd feeds
+~/SDK/openwrt/feeds$ patch -p2 < ../../feeds.patch
+patching file luci/modules/luci-base/po/ko/base.po
+patching file luci/modules/luci-base/root/etc/config/camera_default
+patching file luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
+patching file luci/modules/luci-mod-camera/luasrc/camera.lua
+patching file luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json
+patching file luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json 
+
+
+2. Package patch
+~/SDK/openwrt/feeds$ cd ../package/
+~/SDK/openwrt/package$ patch -p2 < ../../package.patch 
+patching file network/services/dnsmasq/files/check_link.sh
+
+
+3.Icon copy
+~/SDK$ cp circle_green.png circle_red.png openwrt/feeds/luci/modules/luci-base/htdocs/luci-static/resources/icons/
+
+
+4. Compile
+~/SDK/openwrt$ make dirclean
+~/SDK/openwrt$ make -j $(($(nproc)+1))
+

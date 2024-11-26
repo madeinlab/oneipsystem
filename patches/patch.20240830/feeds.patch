@@ -1,0 +1,653 @@
+Binary files openwrt_240809/feeds/luci/modules/luci-base/htdocs/luci-static/resources/icons/circle_green.png and openwrt_240830/feeds/luci/modules/luci-base/htdocs/luci-static/resources/icons/circle_green.png differ
+Binary files openwrt_240809/feeds/luci/modules/luci-base/htdocs/luci-static/resources/icons/circle_red.png and openwrt_240830/feeds/luci/modules/luci-base/htdocs/luci-static/resources/icons/circle_red.png differ
+diff -Nur openwrt_240809/feeds/luci/modules/luci-base/po/ko/base.po openwrt_240830/feeds/luci/modules/luci-base/po/ko/base.po
+--- openwrt_240809/feeds/luci/modules/luci-base/po/ko/base.po	2024-08-30 18:28:24.430721342 +0900
++++ openwrt_240830/feeds/luci/modules/luci-base/po/ko/base.po	2024-08-30 18:44:23.532646000 +0900
+@@ -8783,4 +8783,13 @@
+ msgstr "시스템이 설정 파티션을 지우고 있으며, 완료되면 자동으로 재부팅됩니다."
+ 
+ msgid "Erasing..."
+-msgstr "삭제 중..."
+\ No newline at end of file
++msgstr "삭제 중..."
++
++msgid "Model name"
++msgstr "모델명"
++
++msgid "Manufacturer"
++msgstr "제조사"
++
++msgid "linked"
++msgstr "link 됨"
+\ No newline at end of file
+diff -Nur openwrt_240809/feeds/luci/modules/luci-base/root/etc/config/camera_default openwrt_240830/feeds/luci/modules/luci-base/root/etc/config/camera_default
+--- openwrt_240809/feeds/luci/modules/luci-base/root/etc/config/camera_default	1970-01-01 09:00:00.000000000 +0900
++++ openwrt_240830/feeds/luci/modules/luci-base/root/etc/config/camera_default	2024-08-28 14:02:57.616082700 +0900
+@@ -0,0 +1,31 @@
++config camera 'cam1'
++        option name 'cam1'
++        option switchPort '1'
++
++config camera 'cam2'
++        option name 'cam2'
++        option switchPort '2'
++
++config camera 'cam3'
++        option name 'cam3'
++        option switchPort '3'
++
++config camera 'cam4'
++        option name 'cam4'
++        option switchPort '4'
++        
++config camera 'cam5'
++        option name 'cam5'
++        option switchPort '5'
++
++config camera 'cam6'
++        option name 'cam6'
++        option switchPort '6'
++
++config camera 'cam7'
++        option name 'cam7'
++        option switchPort '7'
++
++config camera 'cam8'
++        option name 'cam8'
++        option switchPort '8'
+\ No newline at end of file
+diff -Nur openwrt_240809/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js openwrt_240830/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
+--- openwrt_240809/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js	2024-08-30 18:28:24.526735881 +0900
++++ openwrt_240830/feeds/luci/modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js	2024-08-30 17:23:56.447555200 +0900
+@@ -11,32 +11,66 @@
+ 'require tools.widgets as widgets';
+ 
+ var isReadonlyView = !L.hasViewPermission() || null;
++var wanIP = null;
+ 
+-var initCameraConfig = rpc.declare({
+-	object: 'luci',
+-	method: 'initCameraConfig',
+-	expect: { '': {} }
+-});
++const debug = true;
++function consoleLog(msg, ...args) {
++    if (debug) {
++        console.log(msg, ...args);
++    }
++}
+ 
+-var cameraRedirect = rpc.declare({
+-	object: 'luci',
+-	method: 'cameraRedirect',
+-	params: [ 'ip', 'port' ],
+-	expect: { '': {} }
+-});
++function render_port_status(node, portstate) {
++	if (!node) {
++		console.log("render_port_status node is null")
++		return null;
++	}
+ 
+-var rtspRedirect = rpc.declare({
+-	object: 'luci',
+-	method: 'rtspRedirect',
+-	params: [ 'url', 'port' ],
+-	expect: { '': {} }
+-});
++	if (!portstate || !portstate.link)
++		dom.content(node, [
++			E('img', { src: L.resource('icons/circle_red.png') })
++		]);
++	else
++		dom.content(node, [
++			E('img', { src: L.resource('icons/circle_green.png') })
++		]);
+ 
+-function handleButtonClick(section_id, type) {
+-	var section = uci.get('camera', section_id);
++	return node;
++}
++
++function update_port_status(topologies) {
++	consoleLog('[debug] update_port_status')
++
++	var tasks = [];
+ 
++	// camera config 에서 포트 번호는 1부터 시작(1 ~ 8). 
++	// portstate는 0부터 시작(0 ~ 8). 8개의 포트와 1개의 wan 포트(8번) 로 구성.
++	for (var switch_name in topologies)
++		tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(switch_name, portstate) {
++			consoleLog('[debug] portstate ', portstate)
++			for (var i = 0; i < (portstate.length - 1); i++) { // portstate.length - 1: wan 포트(8번) 제외
++				// 카메라 테이블의 상태 업데이트				
++				var cameraNodes = document.querySelectorAll('[data-camera-port="%d"]'.format(portstate[i].port + 1));
++				for (var j = 0; j < cameraNodes.length; j++) {
++					render_port_status(cameraNodes[j], portstate[i]);
++				}
++			}
++		}, topologies[switch_name], switch_name)));
++
++	return Promise.all(tasks);
++}
++
++function handleButtonClick(section_id, type) {		
++	var section = uci.get('camera', section_id);
+ 	if (!section) {
+-		alert('Section not found');
++		//alert('Section not found');
++		console.log('[handleButtonClick] Section not found')
++		return;
++	}
++
++	if (!wanIP) {
++		//alert('wanIP is null');
++		console.log('[handleButtonClick] wanIP is null')
+ 		return;
+ 	}
+ 	
+@@ -44,12 +78,11 @@
+ 	var port = type == 'webpage' ? section['httpForwardingPort'] : section['rtspForwardingPort']
+ 	if (type === 'webpage') {
+ 		value = section['ip'];
+-		window.open('https://192.168.1.100:' + port, '_blank')
++		window.open(`https://${wanIP}:${port}`, '_blank');
+ 	} else if (type === 'rtsp') {
+ 		value = section['rtsp'];
+-		window.open('rtsp://192.168.1.100:' + port, '_blank')
++		window.open(`rtsp://${wanIP}:${port}`, '_blank');
+ 	}
+-	console.log('%s button clicked for: %s %s', type, value, port);
+ }
+ 
+ function getPort(section_id, type) {
+@@ -59,105 +92,306 @@
+ 	return String(port);
+ }
+ 
++async function updateCameraInfo() {
++    try {
++        if (typeof uci.unload === 'function') {
++            await uci.unload('camera');
++        }
++
++        if (typeof uci.load === 'function') {
++            await uci.load('camera');
++        }
++
++        var cameraSections = uci.sections('camera');
++
++        cameraSections.forEach(function (section) {
++            var section_id = section['.name'];
++
++            var ip = uci.get('camera', section_id, 'ip');
++            var isIpValid = ip && ip.trim() !== '';
++
++            var model = uci.get('camera', section_id, 'model') || '-';
++            var manufacturer = uci.get('camera', section_id, 'manufacturer') || '-';
++            var rtspForwardingPort = uci.get('camera', section_id, 'rtspForwardingPort');
++            var rtspUrl = rtspForwardingPort ? `rtsp://${wanIP}:${rtspForwardingPort}` : '-';
++
++            var modelElement = document.querySelector(`div[data-camera-id="${section_id}"].model`);
++            var manufacturerElement = document.querySelector(`div[data-camera-id="${section_id}"].manufacturer`);
++            var rtspElement = document.querySelector(`div[data-camera-id="${section_id}"].rtsp`);
++
++            if (modelElement) {
++                modelElement.textContent = model;
++            }
++
++            if (manufacturerElement) {
++                manufacturerElement.textContent = manufacturer;
++            }
++
++            if (rtspElement) {
++                rtspElement.textContent = rtspUrl;
++            }
++
++            var rowElement = document.querySelector(`tr[data-sid="${section_id}"]`);
++            if (rowElement) {
++                var actionCell = rowElement.querySelector('.cbi-section-actions');
++
++                if (actionCell) {
++                    while (actionCell.firstChild) {
++                        actionCell.removeChild(actionCell.firstChild);
++                    }
++
++                    if (isIpValid) {
++                        dom.append(actionCell,
++                            E('button', {
++                                'title': _('Webpage'),
++                                'class': 'cbi-button cbi-button-webpage',
++                                'click': handleButtonClick.bind(this, section_id, 'webpage')
++                            }, [ _('Webpage') ])
++                        );
++
++                        dom.append(actionCell,
++                            E('button', {
++                                'title': _('RTSP'),
++                                'class': 'cbi-button cbi-button-rtsp',
++                                'click': handleButtonClick.bind(this, section_id, 'rtsp')
++                            }, [ _('RTSP') ])
++                        );
++                    }
++                }
++            }
++        });
++    } catch (error) {
++        console.log("Error in updateCameraInfo: ", error);
++    }
++}
++
++var initCameraConfig = rpc.declare({
++	object: 'luci',
++	method: 'initCameraConfig',
++	expect: { '': {} }
++});
++
++var cameraRedirect = rpc.declare({
++	object: 'luci',
++	method: 'cameraRedirect',
++	params: [ 'ip', 'port' ],
++	expect: { '': {} }
++});
++
++var rtspRedirect = rpc.declare({
++	object: 'luci',
++	method: 'rtspRedirect',
++	params: [ 'url', 'port' ],
++	expect: { '': {} }
++});
++
++var callSwconfigFeatures = rpc.declare({
++	object: 'luci',
++	method: 'getSwconfigFeatures',
++	params: [ 'switch' ],
++	expect: { '': {} }
++});
++
++var callSwconfigPortState = rpc.declare({
++	object: 'luci',
++	method: 'getSwconfigPortState',
++	params: [ 'switch' ],
++	expect: { result: [] }
++});
++
+ return view.extend({
+ 
+ 	load: function() {
+-		return Promise.all([
+-			//initCameraConfig()
+-			uci.load('camera')
+-		]);
++		var i = 0
++		return network.getSwitchTopologies().then(function(topologies) {
++			
++			var tasks = [];
++
++			for (var switch_name in topologies) {
++				tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(ports) {
++					this.portstate = ports;
++				}, topologies[switch_name])));
++			}
++
++			return Promise.all(tasks).then(function() { return topologies });
++		});
+ 	},
+ 
+-	render: function(data) {
++	// switchSections.length: 1
++	// switch_name: switch0
++	// topologies[switch0].legnth: 6 (Port1, Port2, Port3, Port4, Port5, CPU(eth0))	
++	render: function(topologies) {
+ 		var m, s, o
+ 
++		wanIP = uci.get('network', 'wan', 'ipaddr');
++
+ 		m = new form.Map('camera')
++		m.chain('network');
++
++		var switch_name = 'switch0'
++		var topology = topologies[switch_name];
++		if (!topology) {
++			ui.addNotification(null, _('Switch %q has an unknown topology - the VLAN settings might not be accurate.').replace(/%q/, switch_name));
++
++			topologies[switch_name] = topology = {
++				features: {},
++				netdevs: {
++					5: 'eth0'
++				},
++				ports: [
++					{ num: 0, label: 'Port 1' },
++					{ num: 1, label: 'Port 2' },
++					{ num: 2, label: 'Port 3' },
++					{ num: 3, label: 'Port 4' },
++					{ num: 4, label: 'Port 5' },
++					{ num: 5, label: 'CPU (eth0)', device: 'eth0', need_tag: false }
++				]
++			};
++		}
++		consoleLog('[debug] topology:', topology);
+ 
+ 		s = m.section(form.TableSection, 'camera', null)
+ 		s.anonymous = true
+ 		s.addremove = false
++		s.topology = topology;
++
++		o = s.option(form.DummyValue, 'switchPort', _('Port'))
++		o.datatype = "string"
++		o.readonly = true
+ 
+-		o = s.option(form.DummyValue, "name")
++		o = s.option(form.DummyValue, 'model', _('Model name'))
+ 		o.datatype = "string"
+ 		o.readonly = true
++		o.cfgvalue = function(section_id) {
++			var model = uci.get('camera', section_id, 'ip') ? uci.get('camera', section_id, 'model') : '-'
++
++			return E('div', { 'data-camera-id': section_id, 'class': 'model' }, model);
++		};
+ 
+-		o = s.option(form.DummyValue, "manufacturer")
++		o = s.option(form.DummyValue, 'manufacturer', _('Manufacturer'))
+ 		o.datatype = "string"
+ 		o.readonly = true
++		o.cfgvalue = function(section_id) {
++			var manufacturer = uci.get('camera', section_id, 'ip') ? uci.get('camera', section_id, 'manufacturer') : '-'
+ 
+-		o = s.option(form.DummyValue, "model")
++			return E('div', { 'data-camera-id': section_id, 'class': 'manufacturer' }, manufacturer);
++		};
++
++		o = s.option(form.DummyValue, "rtsp", _('RTSP Url'))
+ 		o.datatype = "string"
+ 		o.readonly = true
++		o.cfgvalue = L.bind(function(section_id) {
++			var port, rtspUrl
++			if (uci.get('camera', section_id, 'ip')) {
++				port = uci.get('camera', section_id, 'rtspForwardingPort')
++				rtspUrl = `rtsp://${wanIP}:${port}`				
++			} else {
++				rtspUrl = '-'
++			}
++
++			return E('div', { 'data-camera-id': section_id, 'class': 'rtsp' }, rtspUrl);
++		});
++
++		//>> Profiles dropdown.
++		// o = s.option(form.ListValue, 'profileList');
++		// o.renderWidget = function(section_id, option_id, cfgvalue) {
++		// 	console.log("Rendering for section_id: " + section_id);
+ 		
+-		o = s.option(form.ListValue, 'profileList');
+-		o.renderWidget = function(section_id, option_id, cfgvalue) {
+-			console.log("Rendering for section_id: " + section_id);
+-		
+-			var selectElement = document.createElement('select');
+-			selectElement.id = 'widget.cbid.camera.' + section_id + '.profileList';
+-			selectElement.className = 'cbi-input-select';
++		// 	var selectElement = document.createElement('select');
++		// 	selectElement.id = 'widget.cbid.camera.' + section_id + '.profileList';
++		// 	selectElement.className = 'cbi-input-select';
+ 		
+-			var profiles = uci.get('camera', section_id, 'profile');
+-			var selectedProfile = uci.get('camera', section_id, 'selectedProfile');
++		// 	var profiles = uci.get('camera', section_id, 'profile');
++		// 	var selectedProfile = uci.get('camera', section_id, 'selectedProfile');
+ 		
+-			if (!Array.isArray(profiles)) {
+-				profiles = [profiles];
+-			}
++		// 	if (!Array.isArray(profiles)) {
++		// 		profiles = [profiles];
++		// 	}
+ 		
+-			if (!selectedProfile || !profiles.includes(selectedProfile)) {
+-				selectedProfile = profiles[0];
+-			}
+-
+-			profiles.forEach(function(profile, index) {
+-				var option = document.createElement('option');
+-				option.value = profile;
+-				option.textContent = profile;
++		// 	if (!selectedProfile || !profiles.includes(selectedProfile)) {
++		// 		selectedProfile = profiles[0];
++		// 	}
++
++		// 	profiles.forEach(function(profile, index) {
++		// 		var option = document.createElement('option');
++		// 		option.value = profile;
++		// 		option.textContent = profile;
+ 		
+-				if (profile === selectedProfile) {
+-					option.selected = true;
+-				}
++		// 		if (profile === selectedProfile) {
++		// 			option.selected = true;
++		// 		}
+ 		
+-				selectElement.appendChild(option);
+-			});
++		// 		selectElement.appendChild(option);
++		// 	});
+ 		
+-			selectElement.addEventListener('change', function() {
+-				o.write(section_id, selectElement.value);
+-			});
++		// 	selectElement.addEventListener('change', function() {
++		// 		o.write(section_id, selectElement.value);
++		// 	});
++
++		// 	return selectElement;
++		// };
++		// o.write = function(section_id, formvalue) {
++		// 	uci.set('camera', section_id, 'selectedProfile', formvalue);
++		// };
++		//<< Profiles dropdown.
+ 
+-			return selectElement;
+-		};
+-		o.write = function(section_id, formvalue) {
+-			uci.set('camera', section_id, 'selectedProfile', formvalue);
+-		};
++		o = s.option(form.DummyValue, "status", _('Status'))
++		o.datatype = "string"
++		o.readonly = true
++		o.cfgvalue = L.bind(function(section_id) {		
++			var portstate
++			var port_num = parseInt(uci.get('camera', section_id, 'switchPort'), 10)
++			if (isNaN(port_num))
++				portstate = false
++			else {
++				portstate = Array.isArray(topology.portstate) ? topology.portstate[port_num - 1] : null
++			}
++
++			var statusNode = E('small', {
++				'data-camera-port': port_num // 카메라 포트 속성 추가
++			});
++		
++			return render_port_status(statusNode, portstate)
++		})
+ 		
+ 		s.renderRowActions = function(section_id) {
++			var ip = uci.get('camera', section_id, 'ip');
++
+ 			var tdEl = E('td', {
+ 				'class': 'td cbi-section-table-cell nowrap cbi-section-actions'
+ 			}, E('div'));
+ 
+-			dom.append(tdEl.lastElementChild,
+-				E('button', {
+-					'title': _('Webpage'),
+-					'class': 'cbi-button cbi-button-webpage',
+-					'click': handleButtonClick.bind(this, section_id, 'webpage')
+-				}, [ _('Webpage') ])
+-			);
+-			
+-			dom.append(tdEl.lastElementChild,
+-				E('button', {
+-					'title': _('RTSP'),
+-					'class': 'cbi-button cbi-button-rtsp',
+-					'click': handleButtonClick.bind(this, section_id, 'rtsp')
+-				}, [ _('RTSP') ])
+-			);
++			var isIpValid = ip && ip.trim() !== '';
++			if (isIpValid) {
++
++				dom.append(tdEl.lastElementChild,
++					E('button', {
++						'title': _('Webpage'),
++						'class': 'cbi-button cbi-button-webpage',
++						'click': handleButtonClick.bind(this, section_id, 'webpage')
++					}, [ _('Webpage') ])
++				);
++				
++				dom.append(tdEl.lastElementChild,
++					E('button', {
++						'title': _('RTSP'),
++						'class': 'cbi-button cbi-button-rtsp',
++						'click': handleButtonClick.bind(this, section_id, 'rtsp')
++					}, [ _('RTSP') ])
++				);
++			}
+ 
+ 			return tdEl;
+ 		};
+ 
++		poll.add(L.bind(update_port_status, m, topologies));
++		poll.add(L.bind(updateCameraInfo));
++
++		
+ 		return m.render();
+ 	},
+ 
+-	//handleSaveApply: null,
+-	//handleSave: null,
+-	handleReset: null
++	//handleSaveApply: null,	// 저장&적용 버튼
++	//handleSave: null,			// 저장 버튼
++	handleReset: null			// 리셋 버튼
+ });
+diff -Nur openwrt_240809/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua openwrt_240830/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua
+--- openwrt_240809/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua	2024-08-30 18:28:24.526735881 +0900
++++ openwrt_240830/feeds/luci/modules/luci-mod-camera/luasrc/camera.lua	2024-08-30 18:50:31.311518600 +0900
+@@ -374,7 +374,8 @@
+ 	sys.exec("rm -rf " .. filepath)
+ 
+ 	-- remove config
+-	clear_uci_config(config_file, config_section_type, filename)
++	--clear_uci_config(config_file, config_section_type, filename)
++	delete_uci_config_options(config_file, config_section_type, filename, {"ip", "manufacturer", "model", "httpForwardingPort", "rtspForwardingPort", "rtsp", "profile"})
+ 
+ 	return
+ end
+@@ -438,6 +439,33 @@
+     return camera_info
+ end	
+ 
++function delete_uci_config_options(config_file, config_section_type, config_section_name, options)
++    -- Check if the section exists
++    local section_found = false
++    uci:foreach(config_file, config_section_type, function(section)
++        if section['.name'] == config_section_name then
++            section_found = true
++            return false -- Exit loop
++        end
++    end)
++
++    if section_found then
++        -- Delete specified options from the section
++        for _, option in ipairs(options) do
++            uci:delete(config_file, config_section_name, option)
++        end
++
++        -- Commit the changes
++		uci:save(config_file)
++        uci:commit(config_file)
++        nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
++    else
++		nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
++    end
++
++	return;
++end
++
+ function clear_uci_config(config_file, config_section_type, config_section_name)
+ 
+ 	-- local result = uci:delete(config_file, config_section_type, config_section_name)
+@@ -500,7 +528,7 @@
+ 
+ function write_to_uci_config(config_file, config_section_type, camera_info, section_id)
+ 
+-	sys.exec("touch /etc/config/camera")
++	-- sys.exec("touch /etc/config/camera")
+ 
+ 	local webPort = createPortNum(section_id, 'webpage')
+ 	local rtspPort = createPortNum(section_id, 'rtsp')
+@@ -520,8 +548,12 @@
+ 		uci:commit(config_file)
+ 	end
+ 
++	local match = section_id:match("%d+$")
++	local switchPort = (match ~= nil) and tonumber(match) or 0 
++
+ 	-- Set options
+ 	uci:set(config_file, section_id, 'name', section_id)
++	uci:set(config_file, section_id, 'switchPort', switchPort)
+ 	uci:set(config_file, section_id, 'ip', camera_info.ip)
+ 	uci:set(config_file, section_id, 'manufacturer', camera_info.manufacturer)
+ 	uci:set(config_file, section_id, 'model', camera_info.model)
+diff -Nur openwrt_240809/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json openwrt_240830/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json
+--- openwrt_240809/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json	2024-08-30 18:28:24.526735881 +0900
++++ openwrt_240830/feeds/luci/modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json	2024-08-30 18:51:07.774878500 +0900
+@@ -6,7 +6,7 @@
+ 			"path": "admin_camera/index"
+ 		},
+ 		"depends": {
+-			"acl": [ "luci-mod-camera-index" ]
++			"acl": [ "luci-mod-camera-index", "luci-mod-network-config"]
+ 		}
+ 	}
+ }
+diff -Nur openwrt_240809/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json openwrt_240830/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json
+--- openwrt_240809/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json	2024-08-30 18:28:24.526735881 +0900
++++ openwrt_240830/feeds/luci/modules/luci-mod-camera/root/usr/share/rpcd/acl.d/luci-mod-camera.json	2024-08-30 18:51:15.175381100 +0900
+@@ -19,5 +19,39 @@
+ 				"luci": [ "cameraRedirect", "rtspRedirect", "addCamera", "removeCamera" ]
+ 			}
+ 		}
++	}, 
++
++	"luci-mod-network-config": {
++		"description": "Grant access to network configuration",
++		"read": {
++			"cgi-io": [ "exec" ],
++			"file": {
++				"/etc/iproute2/rt_tables": [ "read" ],
++				"/proc/sys/net/ipv6/conf/*/mtu": [ "read" ],
++				"/proc/sys/net/ipv6/conf/*/hop_limit": [ "read" ],
++				"/usr/libexec/luci-peeraddr": [ "exec" ],
++				"/usr/lib/opkg/info/netifd.control": [ "read" ]
++			},
++			"ubus": {
++				"file": [ "exec" ],
++				"iwinfo": [ "assoclist", "countrylist", "freqlist", "txpowerlist" ],
++				"luci": [ "getSwconfigFeatures", "getSwconfigPortState" ]
++			},
++			"uci": [ "dhcp", "firewall", "network", "wireless" ]
++		},
++		"write": {
++			"cgi-io": [ "exec" ],
++			"file": {
++				"/sbin/ifup": [ "exec" ],
++				"/sbin/ifdown": [ "exec" ],
++				"/sbin/wifi": [ "exec" ]
++			},
++			"ubus": {
++				"file": [ "exec" ],
++				"hostapd.*": [ "del_client" ],
++				"iwinfo": [ "scan" ]
++			},
++			"uci": [ "dhcp", "firewall", "network", "wireless" ]
++		}
+ 	}
+ }

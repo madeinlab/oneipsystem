@@ -1,0 +1,73 @@
+--- libonvif-2.0.9/onvif-util/src/onvif-util.cpp	2024-04-02 03:46:36.000000000 +0000
++++ libonvif-2.0.9.mod/onvif-util/src/onvif-util.cpp	2024-07-03 11:29:35.547868143 +0000
+@@ -24,6 +24,7 @@
+ #include <sstream>
+ #include <vector>
+ #include <string>
++#include <cstring>
+ #include <sstream>
+ #include <stdio.h>
+ #include <string.h>
+@@ -41,6 +42,7 @@
+              { "user",       required_argument, NULL,      'u'},
+              { "password",   required_argument, NULL,      'p'},
+              { "all",        no_argument,       NULL,      'a'},
++             { "dump",        no_argument,       NULL,      'd'},
+ 			 { "safe_off",   no_argument,       NULL,      's'},
+              { "help",       required_argument, NULL,      'h'},
+ 			 { "version",    no_argument,       NULL,      'v'},
+@@ -53,7 +55,7 @@
+ 
+ static void usage()
+ {
+-	std::cout << "Usage: onvif-util [-ahsv] [-u <user>] [-p <password>] [command]" << std::endl;
++	std::cout << "Usage: onvif-util [-adhsv] [-u <user>] [-p <password>] [command]" << std::endl;
+ }
+ 
+ static void showAll()
+@@ -188,9 +190,10 @@
+ {
+ 	bool safe_mode = true;
+ 	bool time_sync = false;
++	bool dump_mode = false;
+ 
+ 	int ch;
+-	while ((ch = getopt_long(argc, argv, "u:p:ahsvt", longopts, NULL)) != -1) {
++	while ((ch = getopt_long(argc, argv, "u:p:adhsvt", longopts, NULL)) != -1) {
+ 		switch (ch) {
+             case 'u':
+ 				username = optarg;
+@@ -201,6 +204,9 @@
+ 			case 'a':
+ 				showAll();
+ 				exit(0);
++			case 'd':
++				dump_mode = true;
++				break;
+ 			case 'h':
+ 				usage();
+ 				showHelp();
+@@ -281,7 +287,12 @@
+ 	char kybd_buf[128] = {0};
+ 	while (strcmp(kybd_buf, "quit")) {
+ 		memset(kybd_buf, 0, 128);
+-		fgets(kybd_buf, 128, stdin);
++		if (dump_mode) {
++			strncpy(kybd_buf, "dump", 4);
++		}
++		else {
++			fgets(kybd_buf, 128, stdin);
++		}
+ 		kybd_buf[strcspn(kybd_buf, "\r\n")] = 0;
+ 
+ 		std::string cmd(kybd_buf);
+@@ -709,6 +720,9 @@
+ 			else if (args[0] == "dump") {
+ 				dumpConfigAll (onvif_data);
+ 				std::cout << std::endl;
++				if (dump_mode) {
++					exit(0);
++				}
+ 			}
+ 			else if (args[0] == "safe") {
+ 				safe_mode = true;

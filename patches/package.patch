@@ -1,0 +1,843 @@
+diff -urN openwrt.cbe73ea33d/package/base-files/files/bin/config_generate openwrt.GOOD.20240420/package/base-files/files/bin/config_generate
+--- openwrt.cbe73ea33d/package/base-files/files/bin/config_generate	2024-01-13 20:31:04.354410391 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/bin/config_generate	2024-03-12 16:16:44.152597700 +0900
+@@ -302,7 +302,7 @@
+ 	uci -q batch <<-EOF
+ 		delete system.@system[0]
+ 		add system system
+-		set system.@system[-1].hostname='OpenWrt'
++		set system.@system[-1].hostname='OneIPSystem'
+ 		set system.@system[-1].timezone='UTC'
+ 		set system.@system[-1].ttylogin='0'
+ 		set system.@system[-1].log_size='64'
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/banner openwrt.GOOD.20240420/package/base-files/files/etc/banner
+--- openwrt.cbe73ea33d/package/base-files/files/etc/banner	2024-01-06 14:36:23.557078336 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/banner	2024-04-06 20:07:31.796562511 +0900
+@@ -1,8 +1,11 @@
+-  _______                     ________        __
+- |       |.-----.-----.-----.|  |  |  |.----.|  |_
+- |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+- |_______||   __|_____|__|__||________||__|  |____|
+-          |__| W I R E L E S S   F R E E D O M
+- -----------------------------------------------------
+- %D %V, %C
+- -----------------------------------------------------
++  ____                    __      __                     
++ /\  _`\                 /\ \  __/\ \                    
++ \ \ \/\ \    ___     ___\ \ \/\ \ \ \    ___     ___    
++  \ \ \ \ \  / __`\  / __`\ \ \ \ \ \ \  / __`\ /' _ `\  
++   \ \ \_\ \/\ \L\ \/\ \L\ \ \ \_/ \_\ \/\ \L\ \/\ \/\ \ 
++    \ \____/\ \____/\ \____/\ `\___x___/\ \____/\ \_\ \_\
++     \/___/  \/___/  \/___/  '\/__//__/  \/___/  \/_/\/_/
++ --------------------------------------------------------
++    ONE IP SYSTEM
++ --------------------------------------------------------
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/banner.openwrt openwrt.GOOD.20240420/package/base-files/files/etc/banner.openwrt
+--- openwrt.cbe73ea33d/package/base-files/files/etc/banner.openwrt	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/banner.openwrt	2024-01-06 14:36:23.557078336 +0900
+@@ -0,0 +1,8 @@
++  _______                     ________        __
++ |       |.-----.-----.-----.|  |  |  |.----.|  |_
++ |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
++ |_______||   __|_____|__|__||________||__|  |____|
++          |__| W I R E L E S S   F R E E D O M
++ -----------------------------------------------------
++ %D %V, %C
++ -----------------------------------------------------
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network openwrt.GOOD.20240420/package/base-files/files/etc/config/network
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network	2024-04-07 19:01:56.329073030 +0900
+@@ -0,0 +1,120 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++
++config interface 'vlan1'
++        option proto 'static'
++        option ipaddr '209.142.1.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.1'
++
++config interface 'vlan2'
++        option proto 'static'
++        option ipaddr '209.142.2.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.2'
++
++config interface 'vlan3'
++        option proto 'static'
++        option ipaddr '209.142.3.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.3'
++
++config interface 'vlan4'
++        option proto 'static'
++        option ipaddr '209.142.4.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.4'
++
++config interface 'vlan5'
++        option proto 'static'
++        option ipaddr '209.142.5.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.5'
++
++config interface 'vlan6'
++        option proto 'static'
++        option ipaddr '209.142.6.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.6'
++
++config interface 'vlan7'
++        option proto 'static'
++        option ipaddr '209.142.7.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.7'
++
++config interface 'vlan8'
++        option proto 'static'
++        option ipaddr '209.142.8.1'
++        option netmask '255.255.255.0'
++        option device 'eth0.8'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '209.142.0.1'
++        option netmask '255.255.240.0'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'static'
++		option ipaddr '192.168.1.100'
++		option netmask '255.255.255.0'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan 'eth0_1'
++        option device 'switch0'
++        option vlan '1'
++        option ports '8t 0'
++
++config switch_vlan 'eth0_2'
++        option device 'switch0'
++        option vlan '2'
++        option ports '8t 1'
++
++config switch_vlan 'eth0_3'
++        option device 'switch0'
++        option vlan '3'
++        option ports '8t 2'
++
++config switch_vlan 'eth0_4'
++        option device 'switch0'
++        option vlan '4'
++        option ports '8t 3'
++
++config switch_vlan 'eth0_5'
++        option device 'switch0'
++        option vlan '5'
++        option ports '8t 4'
++
++config switch_vlan 'eth0_6'
++        option device 'switch0'
++        option vlan '6'
++        option ports '8t 5'
++
++config switch_vlan 'eth0_7'
++        option device 'switch0'
++        option vlan '7'
++        option ports '8t 6'
++
++config switch_vlan 'eth0_8'
++        option device 'switch0'
++        option vlan '8'
++        option ports '8t 7'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network.eth0.eth1.static openwrt.GOOD.20240420/package/base-files/files/etc/config/network.eth0.eth1.static
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network.eth0.eth1.static	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network.eth0.eth1.static	2024-03-29 08:27:43.639052507 +0900
+@@ -0,0 +1,38 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '209.142.67.1'
++        option netmask '255.255.255.0'
++        option ip6assign '60'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'static'
++        option ipaddr '192.168.1.100'
++        option netmask '255.255.255.0'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan
++        option device 'switch0'
++        option vlan '1'
++        option ports '0 1 2 3 4 5 6 7 8'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network.eth1.static openwrt.GOOD.20240420/package/base-files/files/etc/config/network.eth1.static
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network.eth1.static	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network.eth1.static	2024-03-27 09:00:55.852311627 +0900
+@@ -0,0 +1,42 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '192.168.0.1'
++        option netmask '255.255.255.0'
++        option ip6assign '60'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'static'
++        option ipaddr '10.1.1.1'
++        option netmask '255.255.255.0'
++
++config interface 'wan6'
++        option device 'eth1'
++        option proto 'dhcpv6'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan
++        option device 'switch0'
++        option vlan '1'
++        option ports '0 1 2 3 4 5 6 7 8'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan	2024-03-13 19:33:53.852939855 +0900
+@@ -0,0 +1,83 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++        list ports 'eth0.1'
++        list ports 'eth0.2'
++        list ports 'eth0.3'
++        list ports 'eth0.4'
++        list ports 'eth0.5'
++        list ports 'eth0.6'
++        list ports 'eth0.7'
++        list ports 'eth0.8'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '192.168.0.1'
++        option netmask '255.255.255.0'
++        option ip6assign '60'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'dhcp'
++
++config interface 'wan6'
++        option device 'eth1'
++        option proto 'dhcpv6'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan 'eth0_1'
++        option device 'switch0'
++        option vlan '1'
++        option ports '8t 0'
++
++config switch_vlan 'eth0_2'
++        option device 'switch0'
++        option vlan '2'
++        option ports '8t 1'
++
++config switch_vlan 'eth0_3'
++        option device 'switch0'
++        option vlan '3'
++        option ports '8t 2'
++
++config switch_vlan 'eth0_4'
++        option device 'switch0'
++        option vlan '4'
++        option ports '8t 3'
++
++config switch_vlan 'eth0_5'
++        option device 'switch0'
++        option vlan '5'
++        option ports '8t 4'
++
++config switch_vlan 'eth0_6'
++        option device 'switch0'
++        option vlan '6'
++        option ports '8t 5'
++
++config switch_vlan 'eth0_7'
++        option device 'switch0'
++        option vlan '7'
++        option ports '8t 6'
++
++config switch_vlan 'eth0_8'
++        option device 'switch0'
++        option vlan '8'
++        option ports '8t 7'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan.interface openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan.interface
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan.interface	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan.interface	2024-04-07 01:22:09.236049158 +0900
+@@ -0,0 +1,121 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++
++config interface 'vlan1'
++        option proto 'static'
++        option ipaddr '209.142.67.8'
++        option netmask '255.255.255.248'
++        option device 'eth0.1'
++
++config interface 'vlan2'
++        option proto 'static'
++        option ipaddr '209.142.67.16'
++        option netmask '255.255.255.248'
++        option device 'eth0.2'
++
++config interface 'vlan3'
++        option proto 'static'
++        option ipaddr '209.142.67.24'
++        option netmask '255.255.255.248'
++        option device 'eth0.3'
++
++config interface 'vlan4'
++        option proto 'static'
++        option ipaddr '209.142.67.32'
++        option netmask '255.255.255.240'
++        option device 'eth0.4'
++
++config interface 'vlan5'
++        option proto 'static'
++        option ipaddr '209.142.67.48'
++        option netmask '255.255.255.248'
++        option device 'eth0.5'
++
++config interface 'vlan6'
++        option proto 'static'
++        option ipaddr '209.142.67.56'
++        option netmask '255.255.255.248'
++        option device 'eth0.6'
++
++config interface 'vlan7'
++        option proto 'static'
++        option ipaddr '209.142.67.64'
++        option netmask '255.255.255.248'
++        option device 'eth0.7'
++
++config interface 'vlan8'
++        option proto 'static'
++        option ipaddr '209.142.67.96'
++        option netmask '255.255.255.248'
++        option device 'eth0.8'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '209.142.67.1'
++        option netmask '255.255.255.0'
++        option ip6assign '60'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'static'
++		option ipaddr '192.168.1.100'
++		option netmask '255.255.255.0'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan 'eth0_1'
++        option device 'switch0'
++        option vlan '1'
++        option ports '8t 0'
++
++config switch_vlan 'eth0_2'
++        option device 'switch0'
++        option vlan '2'
++        option ports '8t 1'
++
++config switch_vlan 'eth0_3'
++        option device 'switch0'
++        option vlan '3'
++        option ports '8t 2'
++
++config switch_vlan 'eth0_4'
++        option device 'switch0'
++        option vlan '4'
++        option ports '8t 3'
++
++config switch_vlan 'eth0_5'
++        option device 'switch0'
++        option vlan '5'
++        option ports '8t 4'
++
++config switch_vlan 'eth0_6'
++        option device 'switch0'
++        option vlan '6'
++        option ports '8t 5'
++
++config switch_vlan 'eth0_7'
++        option device 'switch0'
++        option vlan '7'
++        option ports '8t 6'
++
++config switch_vlan 'eth0_8'
++        option device 'switch0'
++        option vlan '8'
++        option ports '8t 7'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan.interface.IPband openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan.interface.IPband
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan.interface.IPband	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan.interface.IPband	2024-04-07 18:56:16.071031877 +0900
+@@ -0,0 +1,121 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++
++config interface 'vlan1'
++        option proto 'static'
++        option ipaddr '209.142.67.8'
++        option netmask '255.255.255.248'
++        option device 'eth0.1'
++
++config interface 'vlan2'
++        option proto 'static'
++        option ipaddr '209.142.67.16'
++        option netmask '255.255.255.248'
++        option device 'eth0.2'
++
++config interface 'vlan3'
++        option proto 'static'
++        option ipaddr '209.142.67.24'
++        option netmask '255.255.255.248'
++        option device 'eth0.3'
++
++config interface 'vlan4'
++        option proto 'static'
++        option ipaddr '209.142.67.32'
++        option netmask '255.255.255.240'
++        option device 'eth0.4'
++
++config interface 'vlan5'
++        option proto 'static'
++        option ipaddr '209.142.67.48'
++        option netmask '255.255.255.248'
++        option device 'eth0.5'
++
++config interface 'vlan6'
++        option proto 'static'
++        option ipaddr '209.142.67.56'
++        option netmask '255.255.255.248'
++        option device 'eth0.6'
++
++config interface 'vlan7'
++        option proto 'static'
++        option ipaddr '209.142.67.64'
++        option netmask '255.255.255.248'
++        option device 'eth0.7'
++
++config interface 'vlan8'
++        option proto 'static'
++        option ipaddr '209.142.67.96'
++        option netmask '255.255.255.248'
++        option device 'eth0.8'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '209.142.67.1'
++        option netmask '255.255.255.0'
++        option ip6assign '60'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'static'
++		option ipaddr '192.168.1.100'
++		option netmask '255.255.255.0'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan 'eth0_1'
++        option device 'switch0'
++        option vlan '1'
++        option ports '8t 0'
++
++config switch_vlan 'eth0_2'
++        option device 'switch0'
++        option vlan '2'
++        option ports '8t 1'
++
++config switch_vlan 'eth0_3'
++        option device 'switch0'
++        option vlan '3'
++        option ports '8t 2'
++
++config switch_vlan 'eth0_4'
++        option device 'switch0'
++        option vlan '4'
++        option ports '8t 3'
++
++config switch_vlan 'eth0_5'
++        option device 'switch0'
++        option vlan '5'
++        option ports '8t 4'
++
++config switch_vlan 'eth0_6'
++        option device 'switch0'
++        option vlan '6'
++        option ports '8t 5'
++
++config switch_vlan 'eth0_7'
++        option device 'switch0'
++        option vlan '7'
++        option ports '8t 6'
++
++config switch_vlan 'eth0_8'
++        option device 'switch0'
++        option vlan '8'
++        option ports '8t 7'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan.IPfix openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan.IPfix
+--- openwrt.cbe73ea33d/package/base-files/files/etc/config/network.vlan.IPfix	1970-01-01 09:00:00.000000000 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/config/network.vlan.IPfix	2024-03-30 09:04:55.752401749 +0900
+@@ -0,0 +1,81 @@
++
++config interface 'loopback'
++        option device 'lo'
++        option proto 'static'
++        option ipaddr '127.0.0.1'
++        option netmask '255.0.0.0'
++
++config globals 'globals'
++        option ula_prefix 'fda7:0d90:aaa4::/48'
++
++config device
++        option name 'br-lan'
++        option type 'bridge'
++        list ports 'eth0'
++        list ports 'eth0.1'
++        list ports 'eth0.2'
++        list ports 'eth0.3'
++        list ports 'eth0.4'
++        list ports 'eth0.5'
++        list ports 'eth0.6'
++        list ports 'eth0.7'
++        list ports 'eth0.8'
++
++config interface 'lan'
++        option device 'br-lan'
++        option proto 'static'
++        option ipaddr '209.142.67.1'
++        option netmask '255.255.255.0'
++        option ip6assign '60'
++
++config interface 'wan'
++        option device 'eth1'
++        option proto 'static'
++		option ipaddr '192.168.1.100'
++		option netmask '255.255.255.0'
++
++config switch
++        option name 'switch0'
++        option reset '1'
++        option enable_vlan '1'
++
++config switch_vlan 'eth0_1'
++        option device 'switch0'
++        option vlan '1'
++        option ports '8t 0'
++
++config switch_vlan 'eth0_2'
++        option device 'switch0'
++        option vlan '2'
++        option ports '8t 1'
++
++config switch_vlan 'eth0_3'
++        option device 'switch0'
++        option vlan '3'
++        option ports '8t 2'
++
++config switch_vlan 'eth0_4'
++        option device 'switch0'
++        option vlan '4'
++        option ports '8t 3'
++
++config switch_vlan 'eth0_5'
++        option device 'switch0'
++        option vlan '5'
++        option ports '8t 4'
++
++config switch_vlan 'eth0_6'
++        option device 'switch0'
++        option vlan '6'
++        option ports '8t 5'
++
++config switch_vlan 'eth0_7'
++        option device 'switch0'
++        option vlan '7'
++        option ports '8t 6'
++
++config switch_vlan 'eth0_8'
++        option device 'switch0'
++        option vlan '8'
++        option ports '8t 7'
++
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/init.d/system openwrt.GOOD.20240420/package/base-files/files/etc/init.d/system
+--- openwrt.cbe73ea33d/package/base-files/files/etc/init.d/system	2024-01-06 14:36:23.557078336 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/init.d/system	2024-04-16 09:06:44.550588459 +0900
+@@ -6,11 +6,11 @@
+ 
+ validate_system_section() {
+ 	uci_load_validate system system "$1" "$2" \
+-		'hostname:string:OpenWrt' \
++		'hostname:string:OneIPSystem' \
+ 		'conloglevel:uinteger' \
+ 		'buffersize:uinteger' \
+-		'timezone:string:UTC' \
+-		'zonename:string'
++		'timezone:string:KST-9' \
++		'zonename:string:Asia/Seoul'
+ }
+ 
+ system_config() {
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/passwd openwrt.GOOD.20240420/package/base-files/files/etc/passwd
+--- openwrt.cbe73ea33d/package/base-files/files/etc/passwd	2024-01-06 14:36:23.557078336 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/passwd	2024-03-28 19:32:24.195376172 +0900
+@@ -1,4 +1,4 @@
+-root:x:0:0:root:/root:/bin/ash
++root:x:0:0:root:/root:/bin/bash
+ daemon:*:1:1:daemon:/var:/bin/false
+ ftp:*:55:55:ftp:/home/ftp:/bin/false
+ network:*:101:101:network:/var:/bin/false
+diff -urN openwrt.cbe73ea33d/package/base-files/files/etc/profile openwrt.GOOD.20240420/package/base-files/files/etc/profile
+--- openwrt.cbe73ea33d/package/base-files/files/etc/profile	2024-01-13 20:31:04.354410391 +0900
++++ openwrt.GOOD.20240420/package/base-files/files/etc/profile	2024-04-17 10:56:01.462636168 +0900
+@@ -1,5 +1,7 @@
+ [ -e /tmp/.failsafe ] && export FAILSAFE=1
+ 
++resize 1> /dev/null
++
+ [ -f /etc/banner ] && cat /etc/banner
+ [ -n "$FAILSAFE" ] && cat /etc/banner.failsafe
+ 
+diff -urN openwrt.cbe73ea33d/package/kernel/linux/modules/netfilter.mk openwrt.GOOD.20240420/package/kernel/linux/modules/netfilter.mk
+--- openwrt.cbe73ea33d/package/kernel/linux/modules/netfilter.mk	2024-01-13 20:31:04.382410641 +0900
++++ openwrt.GOOD.20240420/package/kernel/linux/modules/netfilter.mk	2024-03-28 14:29:54.546144404 +0900
+@@ -162,6 +162,19 @@
+ $(eval $(call KernelPackage,nf-flow))
+ 
+ 
++define KernelPackage/nf-flow-netlink
++  SUBMENU:=$(NF_MENU)
++  TITLE:=Netfilter flowtable netlink support
++  KCONFIG:= \
++   CONFIG_NF_FLOW_TABLE_NETLINK
++  DEPENDS:=+kmod-nf-flow +kmod-nfnetlink
++  FILES:= \
++   $(LINUX_DIR)/net/netfilter/nf_flow_table_netlink.ko
++  AUTOLOAD:=$(call AutoProbe,nf_flow_table_netlink)
++endef
++
++$(eval $(call KernelPackage,nf-flow-netlink))
++
+ define AddDepends/ipt
+   SUBMENU:=$(NF_MENU)
+   DEPENDS+= +kmod-ipt-core $(1)
+diff -urN openwrt.cbe73ea33d/package/network/config/firewall/files/firewall.hotplug openwrt.GOOD.20240420/package/network/config/firewall/files/firewall.hotplug
+--- openwrt.cbe73ea33d/package/network/config/firewall/files/firewall.hotplug	2024-01-06 14:36:23.617078510 +0900
++++ openwrt.GOOD.20240420/package/network/config/firewall/files/firewall.hotplug	2024-03-16 18:02:26.145406348 +0900
+@@ -3,9 +3,9 @@
+ [ "$ACTION" = ifup -o "$ACTION" = ifupdate ] || exit 0
+ [ "$ACTION" = ifupdate -a -z "$IFUPDATE_ADDRESSES" -a -z "$IFUPDATE_DATA" ] && exit 0
+ 
+-/etc/init.d/firewall enabled || exit 0
++#/etc/init.d/firewall enabled || exit 0
+ 
+-fw3 -q network "$INTERFACE" >/dev/null || exit 0
++#fw3 -q network "$INTERFACE" >/dev/null || exit 0
+ 
+-logger -t firewall "Reloading firewall due to $ACTION of $INTERFACE ($DEVICE)"
+-fw3 -q reload
++#logger -t firewall "Reloading firewall due to $ACTION of $INTERFACE ($DEVICE)"
++#fw3 -q reload
+diff -urN openwrt.cbe73ea33d/package/network/config/swconfig/src/cli.c openwrt.GOOD.20240420/package/network/config/swconfig/src/cli.c
+--- openwrt.cbe73ea33d/package/network/config/swconfig/src/cli.c	2024-01-13 20:31:04.402410820 +0900
++++ openwrt.GOOD.20240420/package/network/config/swconfig/src/cli.c	2024-03-10 23:34:26.888825672 +0900
+@@ -94,6 +94,8 @@
+ 		return "100baseT";
+ 	case 1000:
+ 		return "1000baseT";
++	case 2500:
++		return "2500HSGMII";
+ 	default:
+ 		break;
+ 	}
+diff -urN openwrt.cbe73ea33d/package/network/services/dnsmasq/files/dhcp.conf openwrt.GOOD.20240420/package/network/services/dnsmasq/files/dhcp.conf
+--- openwrt.cbe73ea33d/package/network/services/dnsmasq/files/dhcp.conf	2024-01-13 20:31:04.406410856 +0900
++++ openwrt.GOOD.20240420/package/network/services/dnsmasq/files/dhcp.conf	2024-04-12 17:46:22.345944800 +0900
+@@ -24,10 +24,65 @@
+ 
+ config dhcp lan
+ 	option interface	lan
+-	option start 	100
+-	option limit	150
+-	option leasetime	12h
++	option ignore	1
+ 
+ config dhcp wan
+ 	option interface	wan
+ 	option ignore	1
++
++config dhcp 'vlan1'
++	option interface 'vlan1'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan2'
++	option interface 'vlan2'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan3'
++	option interface 'vlan3'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan4'
++	option interface 'vlan4'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan5'
++	option interface 'vlan5'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan6'
++	option interface 'vlan6'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan7'
++	option interface 'vlan7'
++	option leasetime '2m'
++	option start '10'
++	option limit '1'
++	list ra_flags 'none'
++
++config dhcp 'vlan8'
++	option interface 'vlan8'
++	option start '10'
++	option leasetime '2m'
++	option limit '1'
++	list ra_flags 'none'
++
