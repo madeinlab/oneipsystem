@@ -1,0 +1,39 @@
+Source-Makefile: package/mtk/applications/mapd/Makefile
+Build-Depends: libmapd
+
+Package: mapd
+Submenu: Applications
+Version: 1
+Depends: +libc +USE_GLIBC:librt +USE_GLIBC:libpthread +wapp +1905daemon +libmapd
+Conflicts: 
+Menu-Depends: 
+Provides: 
+Section: MTK Properties
+Category: MTK Properties
+Repository: base
+Title: map daemon
+Maintainer: 
+Source: mapd-c6e18855.tar.bz2
+Type: ipkg
+Description:   Multi AP daemon from mediatek.
+  yogender.pathak@mediatek.com
+
+@@
+Config:
+	if PACKAGE_mapd
+		config MAP_R2_SUPPORT
+			bool "MAPR2"
+			default n
+		config MAP_R3_SUPPORT
+			bool "MAPR3"
+			default n
+		config MAP_R4_SUPPORT
+			bool "MAPR4"
+			default n
+		config MAP_R5_SUPPORT
+			bool "MAPR5"
+			default n
+	endif
+@@
+
+

@@ -1,0 +1,24 @@
+Source-Makefile: package/mtk/drivers/mt7915/Makefile
+
+Package: kmod-mt7915
+Menu: 1
+Submenu: Drivers
+Version: <LINUX_VERSION>+TEST-
+Depends: +wifi-profile
+Conflicts: 
+Menu-Depends: 
+Provides: 
+Section: kernel
+Category: MTK Properties
+Title: MTK wifi MT7915 AP driver
+Maintainer: 
+Source: mt7915_20230628-7a2544.tar.xz
+Type: ipkg
+Description: MTK wifi MT7915 AP driver
+
+@@
+Config:
+	source "package/mtk/drivers/mt7915/config.in"
+@@
+
+

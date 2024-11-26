@@ -1,0 +1,23 @@
+Source-Makefile: package/mtk/applications/luci-app-mtk/Makefile
+Build-Depends: lua/host luci-base/host LUCI_CSSTIDY:csstidy/host LUCI_SRCDIET:luasrcdiet/host 
+
+Package: luci-app-mtk
+Submenu: 3. Applications
+Version: x
+Depends: +libc +USE_GLIBC:librt +USE_GLIBC:libpthread +PACKAGE_libmapd:libmapd +datconf-lua
+Conflicts: 
+Menu-Depends: 
+Provides: 
+Section: luci
+Category: LuCI
+Repository: base
+Title: MediaTek Proprietary Configuration.
+Maintainer: OpenWrt LuCI community
+Source: 
+Type: ipkg
+Description: MediaTek Proprietary Configuration.
+https://github.com/openwrt/luci
+OpenWrt LuCI community
+@@
+
+
