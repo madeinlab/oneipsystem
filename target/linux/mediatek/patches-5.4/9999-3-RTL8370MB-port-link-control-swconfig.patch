@@ -1,0 +1,68 @@
+diff -urN linux-5.4.238.org/drivers/net/phy/realtek_switch/rtl8370mb_switch.c linux-5.4.238/drivers/net/phy/realtek_switch/rtl8370mb_switch.c
+--- linux-5.4.238.org/drivers/net/phy/realtek_switch/rtl8370mb_switch.c	2024-07-26 14:54:35.598684581 +0900
++++ linux-5.4.238/drivers/net/phy/realtek_switch/rtl8370mb_switch.c	2024-07-26 11:41:53.289207833 +0900
+@@ -263,6 +263,18 @@
+ 	return 0;
+ }
+ 
++static int rtl8367c_set_port_link(int port, int link)
++{
++	if (port >= RTL8370MB_NUM_PORTS)
++		return -EINVAL;
++
++	if(rtk_port_adminEnable_set(rtl8370mb_sw_to_phy_port(port), link))
++		return -EINVAL;
++
++	return 0;
++}
++
++
+ /*common rtl8367 swconfig entry API*/
+ 
+ static int
+@@ -507,6 +519,18 @@
+ 	return 0;
+ }
+ 
++static int rtl8370mb_sw_set_port_link(struct switch_dev *dev, int port,
++			     struct switch_port_link *link)
++{	
++	if (port > RTL8370MB_SW_CPU_PORT) {
++		return -EINVAL;
++	}
++
++	if(rtl8367c_set_port_link(port, link->link))
++		return -EINVAL;		
++
++	return 0;
++}
+ 
+ static struct switch_attr rtl8370mb_globals[] = {
+ 	{
+@@ -571,6 +595,7 @@
+ 	.set_port_pvid = rtl8370mb_sw_set_port_pvid,
+ 	.reset_switch = rtl8370mb_sw_reset_switch,
+ 	.get_port_link = rtl8370mb_sw_get_port_link,
++	.set_port_link = rtl8370mb_sw_set_port_link,
+ };
+ 
+ int rtl8370mb_swconfig_init(void (*reset_func)(void))
+diff -urN linux-5.4.238.org/drivers/net/phy/swconfig.c linux-5.4.238/drivers/net/phy/swconfig.c
+--- linux-5.4.238.org/drivers/net/phy/swconfig.c	2024-06-24 16:52:07.903012039 +0900
++++ linux-5.4.238/drivers/net/phy/swconfig.c	2024-07-26 11:41:18.016996944 +0900
+@@ -288,6 +288,7 @@
+ };
+ 
+ static struct nla_policy link_policy[SWITCH_LINK_ATTR_MAX] = {
++	[SWITCH_LINK_FLAG_LINK] = { .type = NLA_FLAG },
+ 	[SWITCH_LINK_FLAG_DUPLEX] = { .type = NLA_FLAG },
+ 	[SWITCH_LINK_FLAG_ANEG] = { .type = NLA_FLAG },
+ 	[SWITCH_LINK_SPEED] = { .type = NLA_U32 },
+@@ -616,6 +617,7 @@
+ 	if (nla_parse_nested_deprecated(tb, SWITCH_LINK_ATTR_MAX, nla, link_policy, NULL))
+ 		return -EINVAL;
+ 
++	link->link = !!tb[SWITCH_LINK_FLAG_LINK];
+ 	link->duplex = !!tb[SWITCH_LINK_FLAG_DUPLEX];
+ 	link->aneg = !!tb[SWITCH_LINK_FLAG_ANEG];
+ 	link->speed = nla_get_u32(tb[SWITCH_LINK_SPEED]);
