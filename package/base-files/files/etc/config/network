@@ -1,4 +1,3 @@
-
 config interface 'loopback'
         option device 'lo'
         option proto 'static'
@@ -13,59 +12,11 @@ config device
         option type 'bridge'
         list ports 'eth0'
 
-config interface 'vlan1'
-        option proto 'static'
-        option ipaddr '209.142.1.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.1'
-
-config interface 'vlan2'
-        option proto 'static'
-        option ipaddr '209.142.2.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.2'
-
-config interface 'vlan3'
-        option proto 'static'
-        option ipaddr '209.142.3.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.3'
-
-config interface 'vlan4'
-        option proto 'static'
-        option ipaddr '209.142.4.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.4'
-
-config interface 'vlan5'
-        option proto 'static'
-        option ipaddr '209.142.5.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.5'
-
-config interface 'vlan6'
-        option proto 'static'
-        option ipaddr '209.142.6.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.6'
-
-config interface 'vlan7'
-        option proto 'static'
-        option ipaddr '209.142.7.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.7'
-
-config interface 'vlan8'
-        option proto 'static'
-        option ipaddr '209.142.8.1'
-        option netmask '255.255.255.0'
-        option device 'eth0.8'
-
 config interface 'lan'
         option device 'br-lan'
         option proto 'static'
-        option ipaddr '209.142.0.1'
-        option netmask '255.255.240.0'
+        option ipaddr '209.142.67.1'
+        option netmask '255.255.255.0'
 
 config interface 'wan'
         option device 'eth1'
@@ -81,40 +32,9 @@ config switch
 config switch_vlan 'eth0_1'
         option device 'switch0'
         option vlan '1'
-        option ports '8t 0'
+        option ports '8 0 1 2 3 4 5 6 7'
 
-config switch_vlan 'eth0_2'
-        option device 'switch0'
-        option vlan '2'
-        option ports '8t 1'
-
-config switch_vlan 'eth0_3'
-        option device 'switch0'
-        option vlan '3'
-        option ports '8t 2'
-
-config switch_vlan 'eth0_4'
-        option device 'switch0'
-        option vlan '4'
-        option ports '8t 3'
-
-config switch_vlan 'eth0_5'
-        option device 'switch0'
-        option vlan '5'
-        option ports '8t 4'
-
-config switch_vlan 'eth0_6'
-        option device 'switch0'
-        option vlan '6'
-        option ports '8t 5'
-
-config switch_vlan 'eth0_7'
-        option device 'switch0'
-        option vlan '7'
-        option ports '8t 6'
-
-config switch_vlan 'eth0_8'
-        option device 'switch0'
-        option vlan '8'
-        option ports '8t 7'
-
+config route
+        option interface 'lan'
+        option target '239.255.255.250'
+        option netmask '255.255.255.255'
