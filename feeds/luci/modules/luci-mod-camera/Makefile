@@ -6,9 +6,10 @@
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=LuCI Administration - full-featured for full control
-LUCI_DEPENDS:=+luci-base +luci-mod-system +luci-mod-network +luci-mod-camera
+LUCI_TITLE:=LuCI Camera Pages
+LUCI_DEPENDS:=+luci-base +libiwinfo
 
+PKG_BUILD_DEPENDS:=iwinfo
 PKG_LICENSE:=Apache-2.0
 
 include ../../luci.mk

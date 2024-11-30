@@ -1139,7 +1139,7 @@ msgstr ""
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:2831
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3831
 msgid "Browse…"
-msgstr ""
+msgstr "찾아보기…"
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/20_memory.js:40
 msgid "Buffered"
@@ -1279,7 +1279,7 @@ msgstr ""
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:193
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:195
 msgid "Checking image…"
-msgstr ""
+msgstr "적합한 이미지인지 확인합니다..."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:427
 msgid "Choose mtdblock"
@@ -1454,7 +1454,7 @@ msgstr ""
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:1288
 msgid "Configure…"
-msgstr ""
+msgstr "구성…"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:176
 msgid "Confirm disconnect"
@@ -1508,7 +1508,7 @@ msgstr ""
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:132
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:269
 msgid "Continue"
-msgstr ""
+msgstr "계속"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:4196
 msgid ""
@@ -1536,7 +1536,7 @@ msgstr "Firewall-zone 생성 / 할당"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:1164
 msgid "Create interface"
-msgstr ""
+msgstr "인터페이스 생성"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js:191
 msgid "Critical"
@@ -5374,7 +5374,7 @@ msgstr "사용자이름과 암호를 입력해 주세요."
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3800
 msgid "Please select the file to upload."
-msgstr ""
+msgstr "업로딩할 파일을 선택해주세요."
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/iptables.js:54
 msgid "Policy"
@@ -7600,7 +7600,7 @@ msgstr ""
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3892
 msgid "Upload"
-msgstr ""
+msgstr "업로드"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:441
 msgid ""
@@ -7617,7 +7617,7 @@ msgstr "아카이브 업로드..."
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:2837
 msgid "Upload file"
-msgstr ""
+msgstr "파일 업로드"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:2812
 msgid "Upload file…"
@@ -7631,7 +7631,7 @@ msgstr ""
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3799
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3853
 msgid "Uploading file…"
-msgstr ""
+msgstr "업로딩 파일…"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:795
 msgid ""
@@ -8682,6 +8682,38 @@ msgstr ""
 #: modules/luci-compat/luasrc/view/cbi/delegator.htm:20
 msgid "« Back"
 msgstr "« 이전"
+
+# Add by LSS
+#: modules/luci-mod-camera/root/usr/share/luci/menu.d/luci-mod-camera.json
+msgid "Dashboard"
+msgstr "대시보드"
+
+msgid "Camera"
+msgstr "카메라"
+
+msgid "CAM 1"
+msgstr "카메라 1"
+
+msgid "CAM 2"
+msgstr "카메라 2"
+
+msgid "CAM 3"
+msgstr "카메라 3"
+
+msgid "CAM 4"
+msgstr "카메라 4"
+
+msgid "CAM 5"
+msgstr "카메라 5"
+
+msgid "CAM 6"
+msgstr "카메라 6"
+
+msgid "ETC 1"
+msgstr "기타장비 1"
+
+msgid "ETC 2"
+msgstr "기타장비 2"
 
 #~ msgid "IPv4-Address"
 #~ msgstr "IPv4-주소"

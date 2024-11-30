@@ -19,6 +19,9 @@ else
 	distversion = "Development Snapshot"
 end
 
+distname	= "OneIPSystem"
+distversion	= "V1.0.0"
+
 luciname    = "${3:-LuCI}"
 luciversion = "${2:-Git}"
 EOF

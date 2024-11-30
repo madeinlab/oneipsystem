@@ -77,6 +77,16 @@
 		"auth": {}
 	},
 
+	"admin/camera": {
+		"title": "Camera",
+		"order": 777,
+		"action": {
+			"type": "firstchild",
+			"preferred": "overview",
+			"recurse": true
+		}
+	},
+
 	"admin/logout": {
 		"title": "Logout",
 		"order": 999,
