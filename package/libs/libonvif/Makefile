@@ -53,22 +53,21 @@ $(call Package/libonvif/Default)
 endef
 
 define Package/libonvif/description
-    A client side implementation of the ONVIF specification for Linux, Mac and Windows.
-    Included are two tools for communicating with cameras, a command line program, onvif-util,
-    and a program with a Graphical User Interface, onvi-gui.
+	A client side implementation of the ONVIF specification for Linux, Mac and Windows.
+	Included are two tools for communicating with cameras, a command line program, onvif-util,
+	and a program with a Graphical User Interface, onvi-gui.
 endef
 
 define Package/libonvif/install
-    $(INSTALL_DIR) $(1)/usr/lib
-    $(CP) $(PKG_INSTALL_DIR)/usr/lib/libonvif.so.* $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libonvif.so.* $(1)/usr/lib/
 endef
 
 define Package/onvif-util/install
-    $(INSTALL_DIR) $(1)/usr/bin
-    $(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/onvif-util $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/onvif-util $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,libonvif))
 $(eval $(call BuildPackage,onvif-util))
-
 
