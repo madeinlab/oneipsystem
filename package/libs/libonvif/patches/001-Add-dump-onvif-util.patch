@@ -1,0 +1,73 @@
+--- libonvif-2.0.9/onvif-util/src/onvif-util.cpp    2024-04-02 03:46:36.000000000 +0000
++++ libonvif-2.0.9.mod/onvif-util/src/onvif-util.cpp    2024-07-03 11:29:35.547868143 +0000
+@@ -24,6 +24,7 @@
+ #include <sstream>^M
+ #include <vector>^M
+ #include <string>^M
++#include <cstring>^M
+ #include <sstream>^M
+ #include <stdio.h>^M
+ #include <string.h>^M
+@@ -41,6 +42,7 @@
+              { "user",       required_argument, NULL,      'u'},^M
+              { "password",   required_argument, NULL,      'p'},^M
+              { "all",        no_argument,       NULL,      'a'},^M
++             { "dump",        no_argument,       NULL,      'd'},^M
+             { "safe_off",   no_argument,       NULL,      's'},^M
+              { "help",       required_argument, NULL,      'h'},^M
+             { "version",    no_argument,       NULL,      'v'},^M
+@@ -53,7 +55,7 @@
+ ^M
+ static void usage()^M
+ {^M 
+-   std::cout << "Usage: onvif-util [-ahsv] [-u <user>] [-p <password>] [command]" << std::endl;^M
++   std::cout << "Usage: onvif-util [-adhsv] [-u <user>] [-p <password>] [command]" << std::endl;^M
+ }^M 
+ ^M
+ static void showAll()^M
+@@ -188,9 +190,10 @@
+ {^M 
+    bool safe_mode = true;^M
+    bool time_sync = false;^M
++   bool dump_mode = false;^M
+ ^M
+    int ch;^M
+-   while ((ch = getopt_long(argc, argv, "u:p:ahsvt", longopts, NULL)) != -1) {^M
++   while ((ch = getopt_long(argc, argv, "u:p:adhsvt", longopts, NULL)) != -1) {^M
+        switch (ch) {^M 
+             case 'u':^M
+                username = optarg;^M
+@@ -201,6 +204,9 @@
+            case 'a':^M
+                showAll();^M
+                exit(0);^M
++           case 'd':^M
++               dump_mode = true;^M
++               break;^M
+            case 'h':^M
+                usage();^M
+                showHelp();^M
+@@ -281,7 +287,12 @@
+    char kybd_buf[128] = {0};^M
+    while (strcmp(kybd_buf, "quit")) {^M 
+        memset(kybd_buf, 0, 128);^M
+-       fgets(kybd_buf, 128, stdin);^M
++       if (dump_mode) {^M
++           strncpy(kybd_buf, "dump", 4);^M
++       }^M
++       else {^M
++           fgets(kybd_buf, 128, stdin);^M
++       }^M
+        kybd_buf[strcspn(kybd_buf, "\r\n")] = 0;^M
+ ^M
+        std::string cmd(kybd_buf);^M
+@@ -709,6 +720,9 @@
+            else if (args[0] == "dump") {^M
+                dumpConfigAll (onvif_data);^M
+                std::cout << std::endl;^M
++               if (dump_mode) {^M
++                   exit(0);^M
++               }^M
+            }^M
+            else if (args[0] == "safe") {^M
+                safe_mode = true;^M

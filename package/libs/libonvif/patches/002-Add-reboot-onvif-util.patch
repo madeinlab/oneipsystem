@@ -1,0 +1,70 @@
+diff -urN libonvif-2.0.9/onvif-util/src/onvif-util.cpp libonvif-2.0.9.mod/onvif-util/src/onvif-util.cpp
+--- libonvif-2.0.9/onvif-util/src/onvif-util.cpp    2024-07-30 17:09:30.239963895 +0900
++++ libonvif-2.0.9.mod/onvif-util/src/onvif-util.cpp    2024-07-30 16:49:33.945594610 +0900
+@@ -42,7 +42,8 @@
+              { "user",       required_argument, NULL,      'u'},^M
+              { "password",   required_argument, NULL,      'p'},^M
+              { "all",        no_argument,       NULL,      'a'},^M
+-             { "dump",        no_argument,       NULL,      'd'},^M
++             { "dump",       no_argument,       NULL,      'd'},^M
++             { "reboot",     no_argument,       NULL,      'r'},^M
+             { "safe_off",   no_argument,       NULL,      's'},^M
+              { "help",       required_argument, NULL,      'h'},^M
+             { "version",    no_argument,       NULL,      'v'},^M
+@@ -191,9 +192,10 @@
+    bool safe_mode = true;^M
+    bool time_sync = false;^M
+    bool dump_mode = false;^M
++   bool reboot_mode = false;^M
+ ^M
+    int ch;^M
+-   while ((ch = getopt_long(argc, argv, "u:p:adhsvt", longopts, NULL)) != -1) {^M
++   while ((ch = getopt_long(argc, argv, "u:p:adhrsvt", longopts, NULL)) != -1) {^M
+        switch (ch) {^M
+             case 'u':^M
+                username = optarg;^M
+@@ -207,6 +209,9 @@
+            case 'd':^M
+                dump_mode = true;^M
+                break;^M
++           case 'r':^M
++               reboot_mode = true;^M
++               break;^M
+            case 'h':^M
+                usage();^M
+                showHelp();^M
+@@ -290,6 +295,9 @@
+        if (dump_mode) {^M
+            strncpy(kybd_buf, "dump", 4);^M
+        }^M
++       else if (reboot_mode) {^M
++           strncpy(kybd_buf, "reboot", 6);^M
++       }^M
+        else {^M
+            fgets(kybd_buf, 128, stdin);^M
+        }^M
+@@ -689,7 +697,12 @@
+            else if (args[0] == "reboot") {^M
+                std::cout << "  Are you sure you want to reboot?  Type yes to confirm\n" << std::endl;^M
+                memset(kybd_buf, 0, 128);^M
+-               fgets(kybd_buf, 128, stdin);^M
++               if (reboot_mode) {^M
++                   strncpy(kybd_buf, "yes", 3);^M
++               }^M
++               else {^M
++                   fgets(kybd_buf, 128, stdin);^M
++               }^M
+                kybd_buf[strcspn(kybd_buf, "\r\n")] = 0;^M
+                std::string reply(kybd_buf);^M
+                if (reply == "yes") {^M
+@@ -700,6 +713,9 @@
+                else {^M
+                    std::cout << "  Confirmation not received, reboot cancelled\n" << std::endl;^M
+                }^M
++               if (reboot_mode) {^M
++                   exit(0);^M
++               }^M
+            }^M
+            else if (args[0] == "sync_time") {^M
+                if (args.size() > 1) {^M
+
