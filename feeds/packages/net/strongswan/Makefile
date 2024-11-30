@@ -505,6 +505,8 @@ define Package/strongswan-ipsec/install
 	$(INSTALL_CONF) ./files/ipsec.user $(1)/etc/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/ipsec.init $(1)/etc/init.d/ipsec
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_DATA) ./files/ipsec.conf $(1)/etc/config/ipsec
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ipsec $(1)/usr/sbin/
 endef
 
