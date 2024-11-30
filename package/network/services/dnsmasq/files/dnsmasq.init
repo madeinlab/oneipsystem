@@ -1223,6 +1223,9 @@ start_service() {
 		DEFAULT_INSTANCE="$first_instance" # No unnamed config section was found.
 	fi
 
+	# Start Check link status
+	#nohup /usr/lib/dnsmasq/check_link.sh < /dev/null > /tmp/check_link.log 2>&1 &
+
 	if [ -n "$instance" ]; then
 		[ "$instance_found" -gt 0 ] || return
 		dnsmasq_start "$instance"
