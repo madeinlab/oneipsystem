@@ -20,8 +20,9 @@ function cam1_redirect()
 	local wanIP = get_ip_address("eth1")
 	local intfIP = get_ip_address("eth0.1")
 	local ip8 = util.split(intfIP,".")
-	rv = sys.exec("ps aux | grep socat | grep :" .. port)
-	if(rv == nil) then
+	res = sys.exec("/sbin/check_socat.sh " .. port)
+	rv = util.split(res, "\n")
+	if(rv[1] ~= "0") then
 		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
 	end
 	http.redirect("https://" .. wanIP .. ":" .. port)
@@ -33,8 +34,9 @@ function cam2_redirect()
 	local wanIP = get_ip_address("eth1")
 	local intfIP = get_ip_address("eth0.2")
 	local ip8 = util.split(intfIP,".")
-	rv = sys.exec("ps aux | grep socat | grep :" .. port)
-	if(rv == nil) then
+	res = sys.exec("/sbin/check_socat.sh " .. port)
+	rv = util.split(res, "\n")
+	if(rv[1] ~= "0") then
 		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
 	end
 	http.redirect("https://" .. wanIP .. ":" .. port)
@@ -46,8 +48,9 @@ function cam3_redirect()
 	local wanIP = get_ip_address("eth1")
 	local intfIP = get_ip_address("eth0.3")
 	local ip8 = util.split(intfIP,".")
-	rv = sys.exec("ps aux | grep socat | grep :" .. port)
-	if(rv == nil) then
+	res = sys.exec("/sbin/check_socat.sh " .. port)
+	rv = util.split(res, "\n")
+	if(rv[1] ~= "0") then
 		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
 	end
 	http.redirect("https://" .. wanIP .. ":" .. port)
@@ -59,8 +62,9 @@ function cam4_redirect()
 	local wanIP = get_ip_address("eth1")
 	local intfIP = get_ip_address("eth0.4")
 	local ip8 = util.split(intfIP,".")
-	rv = sys.exec("ps aux | grep socat | grep :" .. port)
-	if(rv == nil) then
+	res = sys.exec("/sbin/check_socat.sh " .. port)
+	rv = util.split(res, "\n")
+	if(rv[1] ~= "0") then
 		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
 	end
 	http.redirect("https://" .. wanIP .. ":" .. port)
@@ -72,8 +76,9 @@ function cam5_redirect()
 	local wanIP = get_ip_address("eth1")
 	local intfIP = get_ip_address("eth0.5")
 	local ip8 = util.split(intfIP,".")
-	rv = sys.exec("ps aux | grep socat | grep :" .. port)
-	if(rv == nil) then
+	res = sys.exec("/sbin/check_socat.sh " .. port)
+	rv = util.split(res, "\n")
+	if(rv[1] ~= "0") then
 		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
 	end
 	http.redirect("https://" .. wanIP .. ":" .. port)
@@ -85,8 +90,9 @@ function cam6_redirect()
 	local wanIP = get_ip_address("eth1")
 	local intfIP = get_ip_address("eth0.6")
 	local ip8 = util.split(intfIP,".")
-	rv = sys.exec("ps aux | grep socat | grep :" .. port)
-	if(rv == nil) then
+	res = sys.exec("/sbin/check_socat.sh " .. port)
+	rv = util.split(res, "\n")
+	if(rv[1] ~= "0") then
 		sys.exec("socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip8[1] .. "." .. ip8[2] .. "." .. ip8[3] .. "." .. "10:443 & > /dev/null")
 	end
 	http.redirect("https://" .. wanIP .. ":" .. port)
