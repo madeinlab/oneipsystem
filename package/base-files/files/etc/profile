@@ -1,5 +1,7 @@
 [ -e /tmp/.failsafe ] && export FAILSAFE=1
 
+resize 1> /dev/null
+
 [ -f /etc/banner ] && cat /etc/banner
 [ -n "$FAILSAFE" ] && cat /etc/banner.failsafe
 

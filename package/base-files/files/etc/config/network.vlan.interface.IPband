@@ -1,0 +1,121 @@
+
+config interface 'loopback'
+        option device 'lo'
+        option proto 'static'
+        option ipaddr '127.0.0.1'
+        option netmask '255.0.0.0'
+
+config globals 'globals'
+        option ula_prefix 'fda7:0d90:aaa4::/48'
+
+config device
+        option name 'br-lan'
+        option type 'bridge'
+        list ports 'eth0'
+
+config interface 'vlan1'
+        option proto 'static'
+        option ipaddr '209.142.67.8'
+        option netmask '255.255.255.248'
+        option device 'eth0.1'
+
+config interface 'vlan2'
+        option proto 'static'
+        option ipaddr '209.142.67.16'
+        option netmask '255.255.255.248'
+        option device 'eth0.2'
+
+config interface 'vlan3'
+        option proto 'static'
+        option ipaddr '209.142.67.24'
+        option netmask '255.255.255.248'
+        option device 'eth0.3'
+
+config interface 'vlan4'
+        option proto 'static'
+        option ipaddr '209.142.67.32'
+        option netmask '255.255.255.240'
+        option device 'eth0.4'
+
+config interface 'vlan5'
+        option proto 'static'
+        option ipaddr '209.142.67.48'
+        option netmask '255.255.255.248'
+        option device 'eth0.5'
+
+config interface 'vlan6'
+        option proto 'static'
+        option ipaddr '209.142.67.56'
+        option netmask '255.255.255.248'
+        option device 'eth0.6'
+
+config interface 'vlan7'
+        option proto 'static'
+        option ipaddr '209.142.67.64'
+        option netmask '255.255.255.248'
+        option device 'eth0.7'
+
+config interface 'vlan8'
+        option proto 'static'
+        option ipaddr '209.142.67.96'
+        option netmask '255.255.255.248'
+        option device 'eth0.8'
+
+config interface 'lan'
+        option device 'br-lan'
+        option proto 'static'
+        option ipaddr '209.142.67.1'
+        option netmask '255.255.255.0'
+        option ip6assign '60'
+
+config interface 'wan'
+        option device 'eth1'
+        option proto 'static'
+		option ipaddr '192.168.1.100'
+		option netmask '255.255.255.0'
+
+config switch
+        option name 'switch0'
+        option reset '1'
+        option enable_vlan '1'
+
+config switch_vlan 'eth0_1'
+        option device 'switch0'
+        option vlan '1'
+        option ports '8t 0'
+
+config switch_vlan 'eth0_2'
+        option device 'switch0'
+        option vlan '2'
+        option ports '8t 1'
+
+config switch_vlan 'eth0_3'
+        option device 'switch0'
+        option vlan '3'
+        option ports '8t 2'
+
+config switch_vlan 'eth0_4'
+        option device 'switch0'
+        option vlan '4'
+        option ports '8t 3'
+
+config switch_vlan 'eth0_5'
+        option device 'switch0'
+        option vlan '5'
+        option ports '8t 4'
+
+config switch_vlan 'eth0_6'
+        option device 'switch0'
+        option vlan '6'
+        option ports '8t 5'
+
+config switch_vlan 'eth0_7'
+        option device 'switch0'
+        option vlan '7'
+        option ports '8t 6'
+
+config switch_vlan 'eth0_8'
+        option device 'switch0'
+        option vlan '8'
+        option ports '8t 7'
+
