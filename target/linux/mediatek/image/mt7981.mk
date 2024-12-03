@@ -48,7 +48,7 @@ define Device/mt7981-spim-nand-gsw
   DEVICE_MODEL := mt7981-spim-nand-gsw
   DEVICE_DTS := mt7981-spim-nand-gsw
   DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
-  SUPPORTED_DEVICES := mediatek,mt7981-rfb,ubi
+  SUPPORTED_DEVICES := mediatek,mt7981-spim-snand-gsw-rfb
   UBINIZE_OPTS := -E 5
   BLOCKSIZE := 128k
   PAGESIZE := 2048
