@@ -1,0 +1,237 @@
+diff -urN a/package/base-files/files/etc/group b/package/base-files/files/etc/group
+--- a/package/base-files/files/etc/group	2024-06-24 16:52:01.534972495 +0900
++++ b/package/base-files/files/etc/group	2024-08-23 09:59:57.969420041 +0900
+@@ -1,4 +1,4 @@
+-root:x:0:
++doowon:x:0:
+ daemon:x:1:
+ adm:x:4:
+ mail:x:8:
+diff -urN a/package/base-files/files/etc/passwd b/package/base-files/files/etc/passwd
+--- a/package/base-files/files/etc/passwd	2024-06-24 18:36:39.829927446 +0900
++++ b/package/base-files/files/etc/passwd	2024-08-23 10:06:05.458808966 +0900
+@@ -1,4 +1,4 @@
+-root:x:0:0:root:/root:/bin/bash
++doowon:x:0:0:doowon:/doowon:/bin/bash
+ daemon:*:1:1:daemon:/var:/bin/false
+ ftp:*:55:55:ftp:/home/ftp:/bin/false
+ network:*:101:101:network:/var:/bin/false
+diff -urN a/package/base-files/files/etc/profile b/package/base-files/files/etc/profile
+--- a/package/base-files/files/etc/profile	2024-06-24 18:36:39.829927446 +0900
++++ b/package/base-files/files/etc/profile	2024-08-23 08:23:15.451268079 +0900
+@@ -11,8 +11,8 @@
+ }
+ 
+ export PATH="%PATH%"
+-export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)
+-export HOME=${HOME:-/root}
++export HOME=$(grep -e "^${USER:-doowon}:" /etc/passwd | cut -d ":" -f 6)
++export HOME=${HOME:-/doowon}
+ export PS1='\u@\h:\w\$ '
+ export ENV=/etc/shinit
+ 
+@@ -29,12 +29,12 @@
+ 	unset FILE
+ }
+ 
+-if ( grep -qs '^root::' /etc/shadow && \
++if ( grep -qs '^doowon::' /etc/shadow && \
+      [ -z "$FAILSAFE" ] )
+ then
+ cat << EOF
+ === WARNING! =====================================
+-There is no root password defined on this device!
++There is no doowon password defined on this device!
+ Use the "passwd" command to set up a new password
+ in order to prevent unauthorized SSH logins.
+ --------------------------------------------------
+diff -urN a/package/base-files/files/etc/shadow b/package/base-files/files/etc/shadow
+--- a/package/base-files/files/etc/shadow	2024-06-24 16:52:01.522972421 +0900
++++ b/package/base-files/files/etc/shadow	2024-08-23 10:06:42.026947271 +0900
+@@ -1,4 +1,4 @@
+-root::0:0:99999:7:::
++doowon::0:0:99999:7:::
+ daemon:*:0:0:99999:7:::
+ ftp:*:0:0:99999:7:::
+ network:*:0:0:99999:7:::
+diff -urN a/package/base-files/files/etc/uci-defaults/10_migrate-shadow b/package/base-files/files/etc/uci-defaults/10_migrate-shadow
+--- a/package/base-files/files/etc/uci-defaults/10_migrate-shadow	2024-06-24 16:52:01.526972445 +0900
++++ b/package/base-files/files/etc/uci-defaults/10_migrate-shadow	2024-09-10 18:14:48.994919224 +0900
+@@ -1,10 +1,10 @@
+-ppwd="$(sed -ne '/^root:/s/^root:\([^:]*\):.*$/\1/p' /etc/passwd)"
+-spwd="$(sed -ne '/^root:/s/^root:\([^:]*\):.*$/\1/p' /etc/shadow)"
++ppwd="$(sed -ne '/^doowon:/s/^doowon:\([^:]*\):.*$/\1/p' /etc/passwd)"
++spwd="$(sed -ne '/^doowon:/s/^doowon:\([^:]*\):.*$/\1/p' /etc/shadow)"
+ 
+ if [ -n "${ppwd#[\!x]}" ] && [ -z "${spwd#[\!x]}" ]; then
+-	logger -t migrate-shadow "Moving root password hash into shadow database"
+-	sed -i -e "s:^root\:[^\:]*\::root\:x\::"     /etc/passwd
+-	sed -i -e "s:^root\:[^\:]*\::root\:$ppwd\::" /etc/shadow
++	logger -t migrate-shadow "Moving doowon password hash into shadow database"
++	sed -i -e "s:^doowon\:[^\:]*\::doowon\:x\::"     /etc/passwd
++	sed -i -e "s:^doowon\:[^\:]*\::doowon\:$ppwd\::" /etc/shadow
+ fi
+ 
+ exit 0
+diff -urN a/package/base-files/files/sbin/hotplug-call b/package/base-files/files/sbin/hotplug-call
+--- a/package/base-files/files/sbin/hotplug-call	2024-06-24 16:52:01.502972297 +0900
++++ b/package/base-files/files/sbin/hotplug-call	2024-08-23 08:22:46.459161113 +0900
+@@ -6,8 +6,8 @@
+ . /lib/functions.sh
+ 
+ PATH="%PATH%"
+-LOGNAME=root
+-USER=root
++LOGNAME=doowon
++USER=doowon
+ export PATH LOGNAME USER
+ export DEVICENAME="${DEVPATH##*/}"
+ 
+diff -urN a/package/base-files/Makefile b/package/base-files/Makefile
+--- a/package/base-files/Makefile	2024-06-24 16:52:01.542972545 +0900
++++ b/package/base-files/Makefile	2024-09-10 18:53:08.467062552 +0900
+@@ -171,7 +171,7 @@
+ 	mkdir -p $(1)/usr/bin
+ 	mkdir -p $(1)/sys
+ 	mkdir -p $(1)/www
+-	mkdir -p $(1)/root
++	mkdir -p $(1)/doowon
+ 	$(LN) /proc/mounts $(1)/etc/mtab
+ 	rm -f $(1)/var
+ 	$(LN) tmp $(1)/var
+diff -urN a/package/system/rpcd/files/rpcd.config b/package/system/rpcd/files/rpcd.config
+--- a/package/system/rpcd/files/rpcd.config	2024-06-24 16:52:01.454971998 +0900
++++ b/package/system/rpcd/files/rpcd.config	2024-08-23 08:18:41.570259568 +0900
+@@ -3,8 +3,8 @@
+ 	option timeout 30
+ 
+ config login
+-	option username 'root'
+-	option password '$p$root'
++	option username 'doowon'
++	option password '$p$doowon'
+ 	list read '*'
+ 	list write '*'
+ 
+diff -urN a/package/network/services/dropbear/files/dropbear.init b/package/network/services/dropbear/files/dropbear.init
+--- a/package/network/services/dropbear/files/dropbear.init	2024-06-24 16:52:02.910981040 +0900
++++ b/package/network/services/dropbear/files/dropbear.init	2024-08-23 08:22:22.911074261 +0900
+@@ -90,7 +90,7 @@
+ 	done
+ 
+ 	if [ ${kcount} -ne 0 ]; then
+-		mkdir -p "${kdir}"; chmod 0700 "${kdir}"; chown root "${kdir}"
++		mkdir -p "${kdir}"; chmod 0700 "${kdir}"; chown doowon "${kdir}"
+ 		mv -f "${tdir}/"* "${kdir}/"
+ 	fi
+ 
+diff -urN a/package/network/services/dropbear/patches/600-allow-blank-root-password.patch b/package/network/services/dropbear/patches/600-allow-blank-root-password.patch
+--- a/package/network/services/dropbear/patches/600-allow-blank-root-password.patch	2024-06-24 16:52:02.914981065 +0900
++++ b/package/network/services/dropbear/patches/600-allow-blank-root-password.patch	2024-09-10 18:39:25.430533005 +0900
+@@ -5,7 +5,7 @@
+  		TRACE(("recv_msg_userauth_request: 'none' request"))
+  		if (valid_user
+ -				&& svr_opts.allowblankpass
+-+				&& (svr_opts.allowblankpass || !strcmp(ses.authstate.pw_name, "root"))
+++				&& (svr_opts.allowblankpass || !strcmp(ses.authstate.pw_name, "doowon"))
+  				&& !svr_opts.noauthpass
+  				&& !(svr_opts.norootpass && ses.authstate.pw_uid == 0) 
+  				&& ses.authstate.pw_passwd[0] == '\0') 
+
+diff -urN a/package/utils/busybox/Makefile b/package/utils/busybox/Makefile
+--- a/package/utils/busybox/Makefile	2024-06-24 16:52:01.678973389 +0900
++++ b/package/utils/busybox/Makefile	2024-09-10 18:31:13.153440673 +0900
+@@ -29,7 +29,7 @@
+ BUSYBOX_IF_ENABLED=$(if $(CONFIG_BUSYBOX_$(BUSYBOX_SYM)_$(1)),$(2))
+ 
+ ifneq ($(CONFIG_BUSYBOX_$(BUSYBOX_SYM)_FEATURE_SUID),)
+-  PKG_FILE_MODES:=/bin/busybox:root:root:4755
++  PKG_FILE_MODES:=/bin/busybox:doowon:doowon:4755
+ endif
+ 
+ include $(INCLUDE_DIR)/package.mk
+diff -urN a/feeds/luci/modules/luci-base/luasrc/dispatcher.lua b/feeds/luci/modules/luci-base/luasrc/dispatcher.lua
+--- a/feeds/luci/modules/luci-base/luasrc/dispatcher.lua	2024-06-24 16:56:54.548789254 +0900
++++ b/feeds/luci/modules/luci-base/luasrc/dispatcher.lua	2024-08-23 08:20:10.722587304 +0900
+@@ -883,7 +883,7 @@
+ 				http.status(403, "Forbidden")
+ 				http.header("X-LuCI-Login-Required", "yes")
+ 
+-				local scope = { duser = "root", fuser = user }
++				local scope = { duser = "doowon", fuser = user }
+ 				local ok, res = util.copcall(tpl.render_string, [[<% include("themes/" .. theme .. "/sysauth") %>]], scope)
+ 				if ok then
+ 					return res
+diff -urN a/feeds/luci/modules/luci-base/luasrc/view/sysauth.htm b/feeds/luci/modules/luci-base/luasrc/view/sysauth.htm
+--- a/feeds/luci/modules/luci-base/luasrc/view/sysauth.htm	2024-06-24 16:56:54.552789278 +0900
++++ b/feeds/luci/modules/luci-base/luasrc/view/sysauth.htm	2024-09-10 20:09:18.242501765 +0900
+@@ -22,7 +22,7 @@
+ 			<div class="cbi-value">
+ 				<label class="cbi-value-title" for="luci_username"><%:Username%></label>
+ 				<div class="cbi-value-field">
+-					<input class="cbi-input-text" type="text" name="luci_username" id="luci_username" autocomplete="username" value="<%=duser%>" />
++					<input class="cbi-input-text" type="text" name="luci_username" id="luci_username" autocomplete="username"/>
+ 				</div>
+ 			</div>
+ 			<div class="cbi-value cbi-value-last">
+@@ -40,7 +40,7 @@
+ 	</div>
+ </form>
+ <script type="text/javascript">//<![CDATA[
+-	var input = document.getElementsByName('luci_password')[0];
++	var input = document.getElementsByName('luci_username')[0];
+ 	if (input)
+ 		input.focus();
+ //]]></script>
+diff -urN a/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js b/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js
+--- a/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js	2024-06-24 20:03:06.390177519 +0900
++++ b/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js	2024-09-10 18:35:01.835813261 +0900
+@@ -80,7 +80,7 @@
+ 				return;
+ 			}
+ 
+-			return callSetPassword('root', formData.password.pw1).then(function(success) {
++			return callSetPassword('doowon', formData.password.pw1).then(function(success) {
+ 				if (success)
+ 					ui.addNotification(null, E('p', _('The system password has been successfully changed.')), 'info');
+ 				else
+diff -urN a/feeds/luci/protocols/luci-proto-pppossh/htdocs/luci-static/resources/protocol/pppossh.js b/feeds/luci/protocols/luci-proto-pppossh/htdocs/luci-static/resources/protocol/pppossh.js
+--- a/feeds/luci/protocols/luci-proto-pppossh/htdocs/luci-static/resources/protocol/pppossh.js	2024-06-24 16:56:54.040786108 +0900
++++ b/feeds/luci/protocols/luci-proto-pppossh/htdocs/luci-static/resources/protocol/pppossh.js	2024-08-23 08:23:48.243389145 +0900
+@@ -62,7 +62,7 @@
+ 			if (id_opt && value.length) {
+ 				var input = this.map.findElement('id', id_opt.cbid(section_id)).querySelector('input[type="text"]');
+ 				if (input)
+-					input.placeholder = (value == 'root' ? '/root' : '/home/' + value) + '/.ssh/id_rsa';
++					input.placeholder = (value == 'doowon' ? '/doowon' : '/home/' + value) + '/.ssh/id_rsa';
+ 			}
+ 			return true;
+ 		};
+diff -urN a/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/header.htm b/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/header.htm
+--- a/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/header.htm	2024-06-24 16:56:54.644789848 +0900
++++ b/feeds/luci/themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/header.htm	2024-08-23 08:21:34.394895406 +0900
+@@ -54,10 +54,10 @@
+ 	<div id="mainmenu"></div>
+ 
+ 	<div id="maincontent">
+-		<%- if luci.sys.process.info("uid") == 0 and luci.sys.user.getuser("root") and not luci.sys.user.getpasswd("root") and category ~= "failsafe" and path ~= "admin-system-admin-password" then -%>
++		<%- if luci.sys.process.info("uid") == 0 and luci.sys.user.getuser("doowon") and not luci.sys.user.getpasswd("doowon") and category ~= "failsafe" and path ~= "admin-system-admin-password" then -%>
+ 		<div class="alert-message warning">
+ 			<h4><%:No password set!%></h4>
+-			<p><%:There is no password set on this router. Please configure a root password to protect the web interface.%></p>
++			<p><%:There is no password set on this router. Please configure a doowon password to protect the web interface.%></p>
+ 			<% if disp.lookup("admin/system/admin") then %>
+ 				<div class="right"><a class="btn" href="<%=url("admin/system/admin")%>"><%:Go to password configuration...%></a></div>
+ 			<% end %>
+diff -urN a/feeds/packages/net/nginx-util/files/uci.conf.template b/feeds/packages/net/nginx-util/files/uci.conf.template
+--- a/feeds/packages/net/nginx-util/files/uci.conf.template	2024-06-24 16:55:37.328310950 +0900
++++ b/feeds/packages/net/nginx-util/files/uci.conf.template	2024-08-23 08:35:34.105986246 +0900
+@@ -4,7 +4,7 @@
+ 
+ worker_processes auto;
+ 
+-user root;
++user doowon;
+ 
+ events {}
+ 
