@@ -120,9 +120,9 @@ return view.extend({
 		s.addremove = false;
 
 		s.tab('general', _('General Settings'));
-		//s.tab('logging', _('Logging'));
+		s.tab('logging', _('Logging'));
 		s.tab('timesync', _('Time Synchronization'));
-		//s.tab('language', _('Language and Style'));
+		s.tab('language', _('Language and Style'));
 
 		/*
 		 * System Properties
@@ -160,6 +160,7 @@ return view.extend({
 		 */
 
 /* Remove Block by LSS
+*/
 		o = s.taboption('logging', form.Value, 'log_size', _('System log buffer size'), "kiB")
 		o.optional    = true
 		o.placeholder = 16
@@ -198,7 +199,6 @@ return view.extend({
 		o.value(5, _('Debug'))
 		o.value(8, _('Normal'))
 		o.value(9, _('Warning'))
-*/
 
 		/*
 		 * Zram Properties
@@ -225,6 +225,7 @@ return view.extend({
 		 */
 
 /* Remove Block by LSS
+*/
 		o = s.taboption('language', form.ListValue, '_lang', _('Language'))
 		o.uciconfig = 'luci';
 		o.ucisection = 'main';
@@ -245,7 +246,6 @@ return view.extend({
 		for (var i = 0; i < k.length; i++)
 			if (k[i].charAt(0) != '.')
 				o.value(uci.get('luci', 'themes', k[i]), k[i]);
-*/
 
 		/*
 		 * NTP

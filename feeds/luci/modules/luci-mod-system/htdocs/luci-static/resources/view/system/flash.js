@@ -390,6 +390,7 @@ return view.extend({
 
 // Remove Block by LSS
 /*
+*/
 		o = s.option(form.SectionValue, 'actions', form.NamedSection, 'actions', 'actions', _('Backup'), _('Click "Generate archive" to download a tar archive of the current configuration files.'));
 		ss = o.subsection;
 
@@ -436,7 +437,6 @@ return view.extend({
 			o.inputtitle = _('Save mtdblock');
 			o.onclick = L.bind(this.handleBlock, this, hostname);
 		}
-*/
 
 		o = s.option(form.SectionValue, 'actions', form.NamedSection, 'actions', 'actions', _('Flash new firmware image'),
 			has_sysupgrade
@@ -453,9 +453,10 @@ return view.extend({
 		}
 
 // Remove Block by LSS
-		//s = m.section(form.NamedSection, 'config', 'config', _('Configuration'), _('This is a list of shell glob patterns for matching files and directories to include during sysupgrade. Modified files in /etc/config/ and certain other configurations are automatically preserved.'));
-		//s.render = L.bind(function(view /*, ... */) {
 		/*
+*/
+		s = m.section(form.NamedSection, 'config', 'config', _('Configuration'), _('This is a list of shell glob patterns for matching files and directories to include during sysupgrade. Modified files in /etc/config/ and certain other configurations are automatically preserved.'));
+		s.render = L.bind(function(view /*, ... */) {
 			return form.NamedSection.prototype.render.apply(this, this.varargs(arguments, 1))
 				.then(L.bind(function(node) {
 					node.appendChild(E('div', { 'class': 'cbi-page-actions' }, [
@@ -481,7 +482,6 @@ return view.extend({
 		o.load = function(section_id) {
 			return L.resolveDefault(fs.read('/etc/sysupgrade.conf'), '');
 		};
-*/
 
 		return m.render();
 	},
