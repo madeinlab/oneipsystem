@@ -1,7 +1,7 @@
 /dts-v1/;
 #include "mt7981.dtsi"
 / {
-	model = "MediaTek MT7981 RFB";
+	model = "DooWon OneIPSystem";
 	compatible = "mediatek,mt7981-spim-snand-gsw-rfb";
 	chosen {
 		bootargs = "console=ttyS0,115200n1 loglevel=8  \
