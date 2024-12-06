@@ -1,0 +1,209 @@
+diff -Nur libonvif-2.0.9/onvif-util/src/onvif-util.cpp libonvif-2.0.9.mod/onvif-util/src/onvif-util.cpp
+--- libonvif-2.0.9/onvif-util/src/onvif-util.cpp	2024-10-31 15:59:46.666559660 +0900
++++ libonvif-2.0.9.mod/onvif-util/src/onvif-util.cpp	2024-10-31 16:18:48.000921600 +0900
+@@ -48,11 +48,13 @@
+              { "help",       required_argument, NULL,      'h'},
+ 			 { "version",    no_argument,       NULL,      'v'},
+ 			 { "time_sync",  no_argument,       NULL,      't'},
++			 { "extend",     no_argument,       NULL,      'e'},
+              { NULL,         0,                 NULL,       0 }
+      };
+ 
+ static const char *username = nullptr;
+ static const char *password = nullptr;
++static const char *extendCommand = nullptr;
+ 
+ static void usage()
+ {
+@@ -93,7 +95,8 @@
+ 			  << "      -a  poll all cameras on network and reply with host name\n"
+ 			  << "      -u  username\n"
+ 			  << "      -p  password\n"
+-			  << "      -s  safe mode off, enable applications for viewer and browser to run\n\n"
++			  << "      -s  safe mode off, enable applications for viewer and browser to run\n"
++			  << "      -e  add additional command(s) to be executed\n\n"
+ 			  << "  To view all cameras on the network:\n"
+ 			  << "  onvif-util -a\n\n"
+ 			  << "  To login to a particular camera:\n"
+@@ -135,6 +138,7 @@
+ 			  << "      view (n) - View the camera output using ffplay (this assmumes you have ffplay installed in the path\n"
+ 			  << "      view player (n) - View the camera output with user specified player e.g. view vlc\n"
+ 			  << "      dump - Full set of raw data from camera configuration\n"
++			  << "      allrtsp - Get all rtsp url\n"
+ 			  << "      sync_time 'zone'(optional) - Sync the camera time to the computer.  Optionally adjusts based on camera time zone\n"
+ 			  << "      reboot\n\n"
+ 			  << "    To Exit Camera Session\n\n"
+@@ -187,15 +191,72 @@
+ 	if (getProfile(onvif_data)) throw std::runtime_error(cat("get profile - ", onvif_data->last_error));
+ }
+ 
++void getAllRtsp(OnvifData* onvif_data, std::vector<std::string> args)
++{
++	int index = 0;
++	bool looking = true;
++	while (looking) {
++		memset(onvif_data->profileToken, 0, 128);
++		if (getProfileToken(onvif_data, index)) throw std::runtime_error(cat("get profile token - ", onvif_data->last_error));
++		if (strlen(onvif_data->profileToken) == 0) 
++			looking = false;
++		else							
++			index++;
++	}
++
++	if (args[0] != "allrtsp") {
++		std::cout << "Rtsp.count=" << index << std::endl;
++	}
++
++	if (index > 0) {
++		bool add_pass = false;
++		if (args.size() > 1) {
++			if (args[1] == "pass") {
++				args.erase(args.begin());
++				add_pass = true;
++			}
++		}
++
++		for (int i=0; i<index; i++) {							
++			if (getProfileToken(onvif_data, i)) throw std::runtime_error(cat("get profile token - ", onvif_data->last_error));
++			if (strlen(onvif_data->profileToken) == 0) throw std::runtime_error(cat("invalid profile token - ", (char*)std::to_string(i).c_str()).data());
++			if (getProfile(onvif_data)) throw std::runtime_error(cat("get profile - ", onvif_data->last_error));
++
++			if (getStreamUri(onvif_data)) throw std::runtime_error(cat("get stream uri - ", onvif_data->last_error));
++			std::string uri(onvif_data->stream_uri);
++			if (add_pass) {
++				uri = uri_with_pass(onvif_data);
++			}
++			if (i == index-1) {
++				if (args[0] != "allrtsp") {
++					std::cout << "Rtsp.url[" << i << "]=" << uri << "\n" << std::endl;
++				}
++				else {
++					std::cout << "  " << uri << "\n" << std::endl;	
++				}
++			} 
++			else {
++				if (args[0] != "allrtsp") {
++					std::cout << "Rtsp.url[" << i << "]=" << uri << std::endl;
++				}
++				else {
++					std::cout << "  " << uri << std::endl;
++				}				
++			}
++		}					
++	}
++}
++
+ int main(int argc, char **argv)
+ {
+ 	bool safe_mode = true;
+ 	bool time_sync = false;
+ 	bool dump_mode = false;
+ 	bool reboot_mode = false;
++	bool extend_mode = false;
+ 
+ 	int ch;
+-	while ((ch = getopt_long(argc, argv, "u:p:adhrsvt", longopts, NULL)) != -1) {
++	while ((ch = getopt_long(argc, argv, "u:p:e:adhrsvt", longopts, NULL)) != -1) {
+ 		switch (ch) {
+             case 'u':
+ 				username = optarg;
+@@ -225,6 +286,10 @@
+ 			case 't':
+ 				time_sync = true;
+ 				break;
++			case 'e':
++				extend_mode = true;
++				extendCommand = optarg;
++				break;
+ 			case 0:
+ 				std::cout << optarg << std::endl;
+ 				break;
+@@ -235,7 +300,7 @@
+ 	}
+ 	
+ 	argc -= optind;
+-    argv += optind;
++	argv += optind;
+ 
+ 	if (argc < 1) {
+ 		usage();
+@@ -254,13 +319,17 @@
+ 		extractHost(onvif_data->xaddrs, host);
+ 		getHostname(onvif_data);
+ 		if (!strcmp(host, wanted)) {
+-			std::cout << "  found host: " << host << std::endl;
++			if (!extend_mode) {
++				std::cout << "  found host: " << host << std::endl;
++			}
+ 			if (username) strcpy(onvif_data->username, username);
+ 			if (password) strcpy(onvif_data->password, password);
+ 			if (getDeviceInformation(onvif_data)  == 0) {
+-				std::cout << "  successfully connected to host" << "\n";
+-				std::cout << "    name:   " << onvif_data->camera_name << "\n";
+-				std::cout << "    serial: " << onvif_data->serial_number << "\n" << std::endl;
++				if (!extend_mode) {
++					std::cout << "  successfully connected to host" << "\n";
++					std::cout << "    name:   " << onvif_data->camera_name << "\n";
++					std::cout << "    serial: " << onvif_data->serial_number << "\n" << std::endl;
++				}
+ 	
+ 				// Initializing the session properly with the camera requires calling getCapabilities
+ 				if (getCapabilities(onvif_data)) {
+@@ -269,11 +338,15 @@
+ 				}
+ 
+ 				if (time_sync) {
+-					std::cout << "  Time sync requested" << std::endl;
++					if (!extend_mode) {
++						std::cout << "  Time sync requested" << std::endl;
++					}
+ 					std::vector<std::string> tmp;
+ 					profileCheck(onvif_data, tmp);
+ 					if (setSystemDateAndTime(onvif_data)) throw std::runtime_error(cat("set system date and time - ", onvif_data->last_error));
+-					std::cout << "  Camera date and time has been synchronized without regard to camera timezone\n" << std::endl;
++					if (!extend_mode) {
++						std::cout << "  Camera date and time has been synchronized without regard to camera timezone\n" << std::endl;
++					}
+ 					exit(0);
+ 				}
+ 				break;
+@@ -298,6 +371,9 @@
+ 		else if (reboot_mode) {
+ 			strncpy(kybd_buf, "reboot", 6);
+ 		}
++		else if (extend_mode) {
++			strncpy(kybd_buf, extendCommand, strlen(extendCommand));
++		}
+ 		else {
+ 			fgets(kybd_buf, 128, stdin);
+ 		}
+@@ -333,6 +409,9 @@
+ 					}
+ 					std::cout << "  " << uri << "\n" << std::endl;
+ 				}
++				else if (args[0] == "allrtsp") {
++					getAllRtsp(onvif_data, args);					
++				}
+ 				else if (args[0] == "capabilities") {
+ 					std::cout << "  event_service:   " << onvif_data->event_service << "\n";
+ 					std::cout << "  imaging_service: " << onvif_data->imaging_service << "\n";
+@@ -736,6 +815,8 @@
+ 			else if (args[0] == "dump") {
+ 				dumpConfigAll (onvif_data);
+ 				std::cout << std::endl;
++				std::cout << "[RtspInfo]" << std::endl;
++				getAllRtsp(onvif_data, args);
+ 				if (dump_mode) {
+ 					exit(0);
+ 				}
+@@ -793,6 +874,10 @@
+ 				if (strcmp(kybd_buf, "quit"))
+ 					std::cout << " Unrecognized command, type help to see help\n" << std::endl;
+ 			}
++
++			if (extend_mode) {
++				exit(0);
++			}
+ 		}
+ 		catch (std::exception& e) {
+ 			std::cout << "  ERROR: " << e.what() << "\n" << std::endl;
