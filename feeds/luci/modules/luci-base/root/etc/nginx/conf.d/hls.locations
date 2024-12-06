@@ -1,0 +1,117 @@
+location /hls/ {
+
+    access_by_lua '
+        local request_url = ngx.var.request_uri
+        local port = ngx.var.server_port
+        local channel = math.floor(port / 1000) % 10
+
+        local stream_file_dir = "/www/hls/stream/" .. channel .. "/"
+        local lock_file = "/tmp/lock/ffmpeg_" .. channel .. ".lock"
+        local index_file = "/www/hls/stream/" .. channel .. "/index.m3u8"
+
+        local function checkFileCount(dir)
+            local cmd = "ls -l " .. dir .. " | wc -l"
+            local file_count = tonumber(io.popen(cmd):read("*all"))
+
+            if file_count and file_count >= 3 then
+                --ngx.log(ngx.ERR, "stream_file [true]")
+                return true
+            else
+                ngx.log(ngx.ERR, "stream_file [false]")
+                return false
+            end
+        end
+
+        -- index.m3u8 파일 존재 여부 확인
+        local function is_created_index(index_file)
+            local file = io.open(index_file, "r")
+            if file then
+                file:close()
+                --ngx.log(ngx.ERR, "index_file [true]")
+                return true
+            else
+                ngx.log(ngx.ERR, "index_file [false]")
+                return false
+            end
+        end
+
+        -- 락 파일 존재 여부 확인
+        local function is_ffmpeg_running(lock_file)
+            local file = io.open(lock_file, "r")
+            if file then
+                file:close()
+                --ngx.log(ngx.ERR, "lock_file [true]")
+                return true  -- 락 파일이 존재하면 FFmpeg가 실행 중
+            else
+                ngx.log(ngx.ERR, "lock_file [false]")
+                return false -- 락 파일이 없으면 FFmpeg가 실행 중이지 않음
+            end
+        end
+
+        if request_url:match("index%.m3u8") then
+            if not is_ffmpeg_running(lock_file) or not is_created_index(index_file) or not checkFileCount(stream_file_dir) then
+            --if not is_ffmpeg_running(lock_file) or not is_created_index(index_file) then
+                ngx.log(ngx.ERR, "스트림 서버가 준비되지 않음 - 404 응답 전송")
+
+                -- 404 Not Found 전송
+                ngx.status = ngx.HTTP_NOT_FOUND
+                ngx.say("Error: Server is not ready")
+                ngx.exit(ngx.HTTP_NOT_FOUND) -- 요청 즉시 종료
+            end
+        end
+
+        if not is_ffmpeg_running(lock_file) then
+            -- uci 명령어 실행하여 camera 속성 값 읽어오기
+            local handle = io.popen("uci get camera.@camera[" .. (channel - 1) .. "].selectedrtsp")
+            local rtsp_url = handle:read("*a")
+            handle:close()
+
+            -- 공백 제거 (개행 문자가 포함될 수 있기 때문에)
+            rtsp_url = rtsp_url:gsub("%s+", "")
+
+            -- rtsp_url이 빈 문자열이면 종료
+            if rtsp_url == "" then
+                            ngx.log(ngx.ERR, "RTSP URL is empty. Returning 404.")
+                            ngx.exit(ngx.HTTP_NOT_FOUND)  -- 404 에러 반환
+            end
+
+            -- 사용자 ID와 비밀번호
+            --local id = "admin"
+            --local pw = "admin1357"
+
+            --local stream_url = rtsp_url:gsub("rtsp://", "rtsp://" .. id .. ":" .. pw .. "@")
+            local stream_url = rtsp_url
+            local ffmpeg_check_command = "ps aux | awk -v url=\'" .. stream_url .. "\' \'/ffmpeg/ && $0 ~ url && !/bash/ && !/pgrep/ && !/sh -c/ {print $2}\'"
+            local handle = io.popen(ffmpeg_check_command)
+            local ffmpeg_pid = handle:read("*a")
+            handle:close()
+
+            os.execute("chmod +x /www/hls/start_ffmpeg.sh")
+            os.execute("/www/hls/start_ffmpeg.sh " .. channel .. " " .. stream_url .. " &")
+            ngx.log(ngx.ERR, "FFmpeg started for channel: " .. channel .. " and stream: " .. stream_url)
+        end
+    ';
+
+    types {
+        application/vnd.apple.mpegurl m3u8;
+        video/mp2t ts;
+        text/html html;
+    }
+
+    index hls_stream.html
+
+    # Error 로그와 Access 로그
+    error_log /var/log/nginx/error.log;
+    access_log /var/log/nginx/access.log;
+
+    add_header Cache-Control no-cache;
+    add_header 'Access-Control-Allow-Origin' '*';
+    add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS';
+    add_header 'Access-Control-Allow-Headers' 'Content-Type';
+
+    autoindex on;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+}

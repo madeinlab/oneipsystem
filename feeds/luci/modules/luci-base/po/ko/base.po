@@ -2020,7 +2020,7 @@ msgstr ""
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:94
 msgid "Do you really want to erase all settings?"
-msgstr ""
+msgstr "모든 설정을 지우시겠습니까?"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:2774
 msgid "Do you really want to recursively delete the directory \"%s\" ?"
@@ -3617,7 +3617,7 @@ msgstr ""
 #: modules/luci-base/luasrc/view/sysauth.htm:12
 #: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/sysauth.htm:37
 msgid "Invalid username and/or password! Please try again."
-msgstr ""
+msgstr "잘못된 사용자 이름 또는 비밀번호입니다! 다시 시도해 주세요."
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:1148
 msgid "Isolate Clients"
@@ -8740,3 +8740,56 @@ msgstr "기타장비 2"
 #~ "니다. 선택 사항인 <em>임대 시간</em>은 해당 host 에만 해당되는 시각을 설정"
 #~ "하는데 사용될 수 있습니다. 예를 들어 12h, 3d 혹은 infinite 값들이 가능합니"
 #~ "다."
+
+# Add by yjyoon
+msgid "Connection Status"
+msgstr "연결 상태"
+
+msgid "Status_CONNECT"
+msgstr "연결"
+
+msgid "Status_NONE"
+msgstr "연결 안됨"
+
+msgid "Channel"
+msgstr "채널"
+
+msgid "Site name"
+msgstr "사이트명"
+
+msgid "Transport"
+msgstr "전송/HTTP(S)"
+
+msgid "Authentication ID"
+msgstr "인증 ID"
+
+msgid "Authentication password"
+msgstr "인증 PW"
+
+msgid "User management"
+msgstr "사용자 관리"
+
+msgid "VLAN connection status"
+msgstr "VLAN 연결 상태"
+
+msgid "Search for camera"
+msgstr "카메라 검색"
+
+msgid "Webpage"
+msgstr "웹페이지"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js
+msgid "The system is erasing the configuration partition now and will reboot itself when finished."
+msgstr "시스템이 설정 파티션을 지우고 있으며, 완료되면 자동으로 재부팅됩니다."
+
+msgid "Erasing..."
+msgstr "삭제 중..."
+
+msgid "Model name"
+msgstr "모델명"
+
+msgid "Manufacturer"
+msgstr "제조사"
+
+msgid "linked"
+msgstr "link 됨"

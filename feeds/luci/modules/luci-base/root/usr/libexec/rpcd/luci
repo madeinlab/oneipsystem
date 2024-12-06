@@ -2,6 +2,7 @@
 
 local json = require "luci.jsonc"
 local fs   = require "nixio.fs"
+local nixio = require "nixio"
 
 local function readfile(path)
 	local s = fs.readfile(path)
@@ -613,6 +614,66 @@ local methods = {
 			end
 			return { result = res }
 		end
+	},
+
+	-- Invoke a method from the camera module
+	initCameraConfig = {
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.initCameraConfig();            
+		end
+	},
+
+	cameraRedirect = {
+		args = { ip = "ip", port = "port" },
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.cameraRedirect(args.ip, args.port);
+
+			return { result = true }
+		end
+	},
+
+	rtspRedirect = {
+		args = { url = "url", port = "port" },
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.rtspRedirect(args.url, args.port);
+
+			return { result = true }
+		end
+	},
+
+	addCamera = {
+		args = { ip = "ip" },
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.addCamera(args.ip);
+			nixio.syslog("debug", "addCamera called with IP: " .. args.ip)
+
+			return { result = true }
+		end		
+	},
+
+	removeCamera = {
+		args = { ip = "ip" },
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.removeCamera(args.ip);
+			nixio.syslog("debug", "removeCamera called with IP: " .. args.ip)
+
+			return { result = true }
+		end		
+	},
+
+	getCameraInfo = {
+		args = { section_id = "section_id", type = "type" },
+		call = function(args)
+			local camera = require "luci.camera"
+			local result = camera.getCameraInfo(args.section_id, args.type);
+
+			return result
+		end		
 	}
 }
 

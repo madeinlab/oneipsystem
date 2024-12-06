@@ -1,117 +1,12 @@
 {
-	"admin/camera/overview": {
-		"title": "Overview",
+	"admin/camera": {
 		"order": 100,
 		"action": {
 			"type": "template",
 			"path": "admin_camera/index"
 		},
 		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/cam1": {
-		"title": "CAM 1",
-		"order": 110,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "cam1_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/cam2": {
-		"title": "CAM 2",
-		"order": 120,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "cam2_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/cam3": {
-		"title": "CAM 3",
-		"order": 130,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "cam3_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/cam4": {
-		"title": "CAM 4",
-		"order": 140,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "cam4_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/cam5": {
-		"title": "CAM 5",
-		"order": 150,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "cam5_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/cam6": {
-		"title": "CAM 6",
-		"order": 160,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "cam6_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/etc1": {
-		"title": "ETC 1",
-		"order": 170,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "etc1_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
-		}
-	},
-
-	"admin/camera/etc2": {
-		"title": "ETC 2",
-		"order": 180,
-		"action": {
-			"type": "call",
-			"module": "luci.camera",
-			"function": "etc1_redirect"
-		},
-		"depends": {
-			"acl": [ "luci-mod-camera-index" ]
+			"acl": [ "luci-mod-camera-index", "luci-mod-network-config"]
 		}
 	}
 }

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS Stream</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #loadingMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingMessage">로딩 중...</div>
+    <video id="video" muted playsinline style="display:none;"></video>
+    <script>
+        var host = window.location.host;
+        var protocol = window.location.protocol;
+        var ip = host.split(':')[0];
+        var port = host.split(':')[1];
+        var channel = Math.floor(parseInt(port) / 1000) % 10;
+
+        var videoSrc = protocol + '//' + host + '/hls/stream/' + channel + '/index.m3u8';
+
+        if (videoSrc) {
+            var video = document.getElementById('video');
+            var loadingMessage = document.getElementById('loadingMessage');
+
+            loadingMessage.style.display = 'block';
+            video.style.display = 'none';
+
+            if (Hls.isSupported()) {
+                var hls = new Hls({
+                    debug: false,
+                    enableLowLatency: true,
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60,
+                    maxRetry: 10,
+                    liveSyncDuration: 2,
+                    liveMaxLatencyDuration: 5
+                });
+
+                function startHLS() {
+                    hls.loadSource(videoSrc);
+                    hls.attachMedia(video);
+
+                    hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                        if (data.levels && data.levels.length > 0) {
+                            var firstLevel = data.levels[0];
+                            var targetDuration = firstLevel.details.targetduration;
+                            console.log('TARGETDURATION from first level:', targetDuration);
+
+                            if (targetDuration === 0 || targetDuration > 10000) {
+                                console.warn('비정상적인 TARGETDURATION 값이 감지되었습니다. 다시 로드합니다.');
+                                hls.stopLoad();
+                                setTimeout(checkFileAndStart, 3000);
+                            } else {
+                                loadingMessage.style.display = 'none';
+                                video.style.display = 'block';
+                                video.play();
+                            }
+                        } else {
+                            console.warn('매니페스트에서 levels 정보를 찾을 수 없습니다.');
+                            hls.stopLoad();
+                            setTimeout(checkFileAndStart, 3000);
+                        }
+		            });
+
+                    // TARGET_DURATION 변경 감지
+                    hls.on(Hls.Events.LEVEL_UPDATED, function(event, data) {
+                        const targetDuration = data.details.targetduration;
+                        console.log('Updated TARGET_DURATION:', targetDuration);
+
+                        if (targetDuration === 0 || targetDuration > 10) {
+                            console.warn('비정상적인 TARGETDURATION 값이 감지되었습니다. 스트림 다시 로드 중...');
+                            hls.stopLoad();
+                            setTimeout(() => hls.startLoad(), 3000);
+                        }
+                    });
+
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        console.error('HLS Error:', data);
+
+                        if (data.details === 'manifestParsingError' && data.fatal) {
+                            console.log('Manifest 오류 발생. 파일 준비 중...');
+                            hls.stopLoad();
+                            setTimeout(checkFileAndStart, 3000);
+                        } else if (data.fatal) {
+                            switch (data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    console.log('네트워크 오류, 복구 시도 중...(3초)');
+                                    hls.stopLoad();
+                                    setTimeout(() => hls.startLoad(), 3000);
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    console.log('미디어 오류, 복구 시도 중...');
+                                    hls.recoverMediaError();
+                                    break;
+                                case Hls.ErrorTypes.OTHER_ERROR:
+                                    console.log('기타 오류 발생:', data);
+                                    break;
+                                default:
+                                    console.log('치명적 오류, 스트림 다시 로드 중...');
+                                    hls.destroy();
+                                    retryStream();
+                                    break;
+                            }
+                        }
+                    });
+                }
+
+                function checkFileAndStart() {
+                    fetch(videoSrc, { method: 'HEAD' })
+                        .then(response => {
+                            if (response.ok && response.status !== 404) {
+                                console.log('index.m3u8 파일이 준비되었습니다.');
+                                setTimeout(startHLS, 0);
+                            } else {
+                                console.log('index.m3u8 파일이 아직 준비되지 않았습니다. 다시 확인...(3초)');
+                                setTimeout(checkFileAndStart, 3000);
+                            }
+                        })
+                        .catch(() => {
+                            console.log('파일 준비 오류. 재시도...(1초)');
+                            setTimeout(checkFileAndStart, 1000);
+                        });
+                }
+
+                checkFileAndStart();
+
+                function retryStream() {
+                    console.log('5초 후 스트림 다시 시도 중...');
+                    setTimeout(() => {
+                        hls = new Hls({ enableLowLatency: true });
+                        checkFileAndStart();
+                    }, 5000);
+                }
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = videoSrc;
+                video.addEventListener('loadedmetadata', function() {
+                    loadingMessage.style.display = 'none';
+                    video.style.display = 'block';
+                    video.play();
+                });
+
+                video.onerror = function() {
+                    console.error('MPEG-DASH Error');
+                    alert('스트림 오류가 발생했습니다.');
+                };
+            }
+        }
+    </script>
+
+</body>
+</html>

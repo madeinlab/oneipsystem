@@ -27,6 +27,33 @@ http {
 
 	root /www;
 
+	keepalive_timeout 0;
+
 	#UCI_HTTP_CONFIG
 	include conf.d/*.conf;
+
+    server { #see uci show 'nginx.hls_server'
+            listen 51554 ssl;
+            listen 52554 ssl;
+            listen 53554 ssl;
+            listen 54554 ssl;
+            listen 55554 ssl;
+            listen 56554 ssl;
+            listen 57554 ssl;
+            listen 58554 ssl;
+            listen [::]:51554 ssl;
+            listen [::]:52554 ssl;
+            listen [::]:53554 ssl;
+            listen [::]:54554 ssl;
+            listen [::]:55554 ssl;
+            listen [::]:56554 ssl;
+            listen [::]:57554 ssl;
+            listen [::]:58554 ssl;
+            server_name hls_server;
+            include /etc/nginx/conf.d/hls.locations;
+            ssl_certificate /etc/nginx/conf.d/_lan.crt;
+            ssl_certificate_key /etc/nginx/conf.d/_lan.key;
+            ssl_session_cache shared:SSL:32k;
+            ssl_session_timeout 64m;
+    }
 }

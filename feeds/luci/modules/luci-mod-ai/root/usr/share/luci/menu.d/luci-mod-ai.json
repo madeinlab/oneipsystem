@@ -1,0 +1,12 @@
+{
+	"admin/ai": {
+		"order": 100,
+		"action": {
+			"type": "template",
+			"path": "admin_ai/index"
+		},
+		"depends": {
+			"acl": [ "luci-mod-ai-index" ]
+		}
+	}
+}

@@ -9,9 +9,14 @@ else
 fi
 
 CAMERA_CONF=/etc/config/camera
+CAMERA_CONF_DEFAULT=/etc/config/camera_default
 if [ -e $CAMERA_CONF ]; then
-        rm ${CAMERA_CONF}
+		echo "Initialize 'Camera config'"
+		rm ${CAMERA_CONF}
+		cp ${CAMERA_CONF_DEFAULT} ${CAMERA_CONF}
+		#touch ${CAMERA_CONF}
 		rm -rf /etc/cameras
+		rm -rf /www/hls/stream/*
 fi
 
 # For TEST

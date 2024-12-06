@@ -6,7 +6,7 @@
 
 <%+header%>
 
-<h2 name="content"><%:Camera%></h2>
+<h2 name="content"><%:AI%></h2>
 
 <div id="view">
 	<div class="spinning"><%:Loading view…%></div>
@@ -21,7 +21,7 @@
 	local util = require "luci.util"
 	local fs = require "nixio.fs"
 
-	local incdir = util.libpath() .. "/view/admin_camera/index/"
+	local incdir = util.libpath() .. "/view/admin_ai/index/"
 	if fs.access(incdir) then
 		local _, inc
 		local includes = {}
@@ -31,7 +31,7 @@
 			end
 		end
 		for _, inc in luci.util.vspairs(includes) do
-			include("admin_camera/index/" .. inc)
+			include("admin_ai/index/" .. inc)
 		end
 	end
 -%>
@@ -39,7 +39,7 @@
 
 <script type="text/javascript">
 	L.require('ui').then(function(ui) {
-		ui.instantiateView('camera/index');
+		ui.instantiateView('ai/index');
 	});
 </script>
 

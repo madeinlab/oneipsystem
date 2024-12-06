@@ -81,9 +81,15 @@
 		"title": "Camera",
 		"order": 777,
 		"action": {
-			"type": "firstchild",
-			"preferred": "overview",
-			"recurse": true
+			"type": "view"
+		}
+	},
+
+	"admin/ai": {
+		"title": "AI",
+		"order": 888,
+		"action": {
+			"type": "view"
 		}
 	},
 
