@@ -401,7 +401,10 @@ FFMPEG_CONFIGURE:= \
 	--disable-lzma \
 	--disable-vaapi \
 	--disable-vdpau \
-	--disable-outdevs
+	--disable-outdevs \
+	--enable-libx264 \
+	--enable-gpl \
+	--enable-nonfree
 
 ifeq ($(CONFIG_SOFT_FLOAT),y)
 FFMPEG_CONFIGURE+= \
