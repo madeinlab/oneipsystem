@@ -7217,6 +7217,16 @@ msgstr ""
 "이 공유기에 암호 설정이 되지 않았습니다. 웹 UI 와 SSH 부분을 보호하기 위해서 "
 "꼭 root 암호를 설정해 주세요."
 
+#: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/header.htm:70
+#: themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/header.htm:60
+#: themes/luci-theme-openwrt/luasrc/view/themes/openwrt.org/header.htm:80
+msgid ""
+"There is no password set on this router. Please configure a doowon password to "
+"protect the web interface."
+msgstr ""
+"이 공유기에 암호 설정이 되지 않았습니다. 웹 UI 와 SSH 부분을 보호하기 위해서 "
+"꼭 doowon 암호를 설정해 주세요."
+
 #: protocols/luci-proto-ipv6/htdocs/luci-static/resources/protocol/6rd.js:49
 msgid "This IPv4 address of the relay"
 msgstr ""
@@ -8792,4 +8802,5 @@ msgid "Manufacturer"
 msgstr "제조사"
 
 msgid "linked"
-msgstr "link 됨"
+msgstr "링크 됨"
+
