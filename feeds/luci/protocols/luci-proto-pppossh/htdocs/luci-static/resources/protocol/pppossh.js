@@ -62,7 +62,7 @@ return network.registerProtocol('pppossh', {
 			if (id_opt && value.length) {
 				var input = this.map.findElement('id', id_opt.cbid(section_id)).querySelector('input[type="text"]');
 				if (input)
-					input.placeholder = (value == 'root' ? '/root' : '/home/' + value) + '/.ssh/id_rsa';
+					input.placeholder = (value == 'doowon' ? '/doowon' : '/home/' + value) + '/.ssh/id_rsa';
 			}
 			return true;
 		};

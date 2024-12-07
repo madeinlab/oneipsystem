@@ -883,7 +883,7 @@ function dispatch(request)
 				http.status(403, "Forbidden")
 				http.header("X-LuCI-Login-Required", "yes")
 
-				local scope = { duser = "root", fuser = user }
+				local scope = { duser = "doowon", fuser = user }
 				local ok, res = util.copcall(tpl.render_string, [[<% include("themes/" .. theme .. "/sysauth") %>]], scope)
 				if ok then
 					return res

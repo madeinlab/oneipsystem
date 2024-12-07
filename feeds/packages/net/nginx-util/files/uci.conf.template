@@ -4,7 +4,7 @@
 
 worker_processes auto;
 
-user root;
+user doowon;
 
 events {}
 

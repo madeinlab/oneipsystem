@@ -11,8 +11,8 @@ fgrep -sq '/ overlay ro,' /proc/mounts && {
 }
 
 export PATH="%PATH%"
-export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)
-export HOME=${HOME:-/root}
+export HOME=$(grep -e "^${USER:-doowon}:" /etc/passwd | cut -d ":" -f 6)
+export HOME=${HOME:-/doowon}
 export PS1='\u@\h:\w\$ '
 export ENV=/etc/shinit
 
@@ -29,12 +29,12 @@ esac
 	unset FILE
 }
 
-if ( grep -qs '^root::' /etc/shadow && \
+if ( grep -qs '^doowon::' /etc/shadow && \
      [ -z "$FAILSAFE" ] )
 then
 cat << EOF
 === WARNING! =====================================
-There is no root password defined on this device!
+There is no doowon password defined on this device!
 Use the "passwd" command to set up a new password
 in order to prevent unauthorized SSH logins.
 --------------------------------------------------

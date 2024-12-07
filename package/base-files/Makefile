@@ -171,7 +171,7 @@ define Package/base-files/install
 	mkdir -p $(1)/usr/bin
 	mkdir -p $(1)/sys
 	mkdir -p $(1)/www
-	mkdir -p $(1)/root
+	mkdir -p $(1)/doowon
 	$(LN) /proc/mounts $(1)/etc/mtab
 	rm -f $(1)/var
 	$(LN) tmp $(1)/var

@@ -6,8 +6,8 @@ export HOTPLUG_TYPE="$1"
 . /lib/functions.sh
 
 PATH="%PATH%"
-LOGNAME=root
-USER=root
+LOGNAME=doowon
+USER=doowon
 export PATH LOGNAME USER
 export DEVICENAME="${DEVPATH##*/}"
 

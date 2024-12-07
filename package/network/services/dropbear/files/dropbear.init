@@ -90,7 +90,7 @@ hk_generate_as_needed()
 	done
 
 	if [ ${kcount} -ne 0 ]; then
-		mkdir -p "${kdir}"; chmod 0700 "${kdir}"; chown root "${kdir}"
+		mkdir -p "${kdir}"; chmod 0700 "${kdir}"; chown doowon "${kdir}"
 		mv -f "${tdir}/"* "${kdir}/"
 	fi
 
