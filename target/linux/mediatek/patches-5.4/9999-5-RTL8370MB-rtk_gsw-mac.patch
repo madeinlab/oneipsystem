@@ -1,0 +1,29 @@
+diff -urN a/drivers/net/phy/realtek_switch/rtl8370mb_dbg.c b/drivers/net/phy/realtek_switch/rtl8370mb_dbg.c
+--- a/drivers/net/phy/realtek_switch/rtl8370mb_dbg.c	2024-12-08 14:38:00.955856216 +0000
++++ b/drivers/net/phy/realtek_switch/rtl8370mb_dbg.c	2024-12-10 05:08:56.513507311 +0000
+@@ -171,13 +171,6 @@
+ 
+ 	now = get_jiffies_64();
+ 
+-	/* Keep guard time over 2 seconds */
+-	if (now < privious_link_access_time + SW_ACCESS_INTERVAL) {
+-		return 0;
+-	}
+-
+-	privious_link_access_time = now;
+-
+ 	for(i = 0; i < RTK_SW_UTP_PORT_NUM; i++) {
+ 		memset(&portStatus, 0x00, sizeof(rtk_port_mac_ability_t));
+ 		rtk_port_macStatus_get(i, &portStatus);
+@@ -313,9 +306,10 @@
+ 		}
+ 	}
+ 
+-noelapsed:
+ 	privious_mac_access_time = now;
+ 
++noelapsed:
++
+ 	for(i = 0; i < RTK_SW_UTP_PORT_NUM; i++) {
+ 		if(PRIVIOUS_LINK_STATUS[i]) {
+ 			seq_printf(seq, "%1d  %02x:%02x:%02x:%02x:%02x:%02x\n",
