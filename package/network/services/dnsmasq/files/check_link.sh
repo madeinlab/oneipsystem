@@ -87,6 +87,8 @@ while true; do
                 eval echo Switch port ${port} change state '$'${priLinkStr} to '$'${curLinkStr}
 				if [ ${curLink} -eq "1" ]; then
 					DHCP_ACT=`expr ${DHCP_ACT} + $((curLink))`
+				else
+					ip -s -s neigh flush all
 				fi
             fi
         done
