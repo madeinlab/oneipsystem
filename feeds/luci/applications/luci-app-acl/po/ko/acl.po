@@ -125,12 +125,12 @@ msgstr "만료되지 않음"
 #: applications/luci-app-acl/htdocs/luci-static/resources/view/system/acl.js:304
 msgctxt "All permissions granted"
 msgid "full"
-msgstr "꽉찬"
+msgstr "모든권한"
 
 #: applications/luci-app-acl/htdocs/luci-static/resources/view/system/acl.js:306
 msgctxt "Select individual permissions manually"
 msgid "individual"
-msgstr "각"
+msgstr "개별권한"
 
 #: applications/luci-app-acl/htdocs/luci-static/resources/view/system/acl.js:65
 msgctxt "Some permissions granted"
