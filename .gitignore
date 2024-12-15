@@ -3,4 +3,7 @@
 tmp/
 dl/gcc-*.tar.xz
 dl/linux-*.tar.xz
+scripts/config/mconf
+scripts/config/lexer.lex.o
+scripts/config/lxdialog/*.o
 
