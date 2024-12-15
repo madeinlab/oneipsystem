@@ -377,7 +377,7 @@ end
 function process.list()
 	local data = {}
 	local k
-	local ps = luci.util.execi("/bin/busybox top -bn1")
+	local ps = luci.util.execi("/usr/bin/top -bn1")
 
 	if not ps then
 		return
