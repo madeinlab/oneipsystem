@@ -1,2 +1,2 @@
-cflags="-D_GNU_SOURCE -I/usr/include/ncursesw"
-libs="-lncursesw"
+cflags="-D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 "
+libs="-lncursesw -ltinfo "
