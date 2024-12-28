@@ -113,8 +113,9 @@ kill_remaining() { # [ <signal> [ <loop> ] ]
 
 indicate_upgrade
 
-killall -9 telnetd
-killall -9 dropbear
+#killall -9 telnetd
+#killall -9 dropbear
+killall -9 sshd
 killall -9 ash
 
 kill_remaining TERM
