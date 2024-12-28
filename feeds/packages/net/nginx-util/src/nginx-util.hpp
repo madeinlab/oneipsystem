@@ -31,7 +31,7 @@ static constexpr auto NGINX_CONF = std::string_view{"/etc/nginx/nginx.conf"};
 
 static constexpr auto CONF_DIR = std::string_view{"/etc/nginx/conf.d/"};
 
-static constexpr auto LAN_NAME = std::string_view{"_lan"};
+static constexpr auto LAN_NAME = std::string_view{"OneIPSystem"};
 
 static auto constexpr MANAGE_SSL = std::string_view{"uci_manage_ssl"};
 

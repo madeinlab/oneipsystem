@@ -356,13 +356,13 @@ test 'setpoint_add_ssl "\t" tab' 0 # fixes wrong indentation.
 
 
 echo -n "prefix" >"/etc/crontabs/root"
-test '"${NGINX_UTIL}" add_ssl _lan' 0
+test '"${NGINX_UTIL}" add_ssl OneIPSystem' 0
 echo "postfix" >>"/etc/crontabs/root"
 test_setpoint "/etc/crontabs/root" "prefix
 3 3 12 12 * ${NGINX_UTIL} 'check_ssl'
 postfix"
 
-test '"${NGINX_UTIL}" del_ssl _lan' 0
+test '"${NGINX_UTIL}" del_ssl OneIPSystem' 0
 test_setpoint "/etc/crontabs/root" "prefix
 3 3 12 12 * ${NGINX_UTIL} 'check_ssl'
 postfix"
@@ -371,7 +371,7 @@ test '"${NGINX_UTIL}" check_ssl' 0
 test_setpoint "/etc/crontabs/root" "prefix
 postfix"
 
-test '"${NGINX_UTIL}" add_ssl _lan' 0
+test '"${NGINX_UTIL}" add_ssl OneIPSystem' 0
 test_setpoint "/etc/crontabs/root" "prefix
 postfix
 3 3 12 12 * ${NGINX_UTIL} 'check_ssl'"
@@ -452,7 +452,7 @@ test '[ "${ADD_SSL_FCT}" = "add_ssl" ] ' 0
 
 rm -f "${LAN_NAME}.conf" "_redirect2ssl.conf" "${UCI_ADDED}.conf"
 rm -f "$(readlink "${UCI_CONF}")"
-test 'uci set nginx._lan.uci_manage_ssl="self-signed"' 0
+test 'uci set nginx.OneIPSystem.uci_manage_ssl="self-signed"' 0
 "${NGINX_UTIL}" del_ssl "${LAN_NAME}" 2>/dev/null
 test_setpoint "/etc/crontabs/root" ""
 test_existence "${LAN_NAME}.crt" 1
