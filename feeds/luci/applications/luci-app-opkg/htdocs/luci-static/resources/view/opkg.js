@@ -98,110 +98,122 @@ var packages = {
 	installed: { providers: {}, pkgs: {} }
 };
 
-var currentDisplayMode = 'available', currentDisplayRows = [];
+var currentDisplayMode = 'installed';
+var currentDisplayRows = [];
 
 function parseList(s, dest)
 {
-	var re = /([^\n]*)\n/g,
-	    pkg = null, key = null, val = null, m;
+	if (!s || typeof s !== 'string') {
+		console.error('Invalid input for parseList:', s);
+		return;
+	}
 
-	while ((m = re.exec(s)) !== null) {
-		if (m[1].match(/^\s(.*)$/)) {
-			if (pkg !== null && key !== null && val !== null)
-				val += '\n' + RegExp.$1.trim();
+	try {
+		var re = /([^\n]*)\n/g,
+			pkg = null, key = null, val = null, m;
 
-			continue;
-		}
+		while ((m = re.exec(s)) !== null) {
+			if (m[1].match(/^\s(.*)$/)) {
+				if (pkg !== null && key !== null && val !== null)
+					val += '\n' + RegExp.$1.trim();
 
-		if (key !== null && val !== null) {
-			switch (key) {
-			case 'package':
-				pkg = { name: val };
-				break;
-
-			case 'depends':
-			case 'provides':
-				var list = val.split(/\s*,\s*/);
-				if (list.length !== 1 || list[0].length > 0)
-					pkg[key] = list;
-				break;
-
-			case 'installed-time':
-				pkg.installtime = new Date(+val * 1000);
-				break;
-
-			case 'installed-size':
-				pkg.installsize = +val;
-				break;
-
-			case 'status':
-				var stat = val.split(/\s+/),
-				    mode = stat[1],
-				    installed = stat[2];
-
-				switch (mode) {
-				case 'user':
-				case 'hold':
-					pkg[mode] = true;
-					break;
-				}
-
-				switch (installed) {
-				case 'installed':
-					pkg.installed = true;
-					break;
-				}
-				break;
-
-			case 'essential':
-				if (val === 'yes')
-					pkg.essential = true;
-				break;
-
-			case 'size':
-				pkg.size = +val;
-				break;
-
-			case 'architecture':
-			case 'auto-installed':
-			case 'filename':
-			case 'sha256sum':
-			case 'section':
-				break;
-
-			default:
-				pkg[key] = val;
-				break;
+				continue;
 			}
 
-			key = val = null;
+			if (key !== null && val !== null) {
+				switch (key) {
+				case 'package':
+					pkg = { name: val };
+					break;
+
+				case 'depends':
+				case 'provides':
+					var list = val.split(/\s*,\s*/);
+					if (list.length !== 1 || list[0].length > 0)
+						pkg[key] = list;
+					break;
+
+				case 'installed-time':
+					pkg.installtime = new Date(+val * 1000);
+					break;
+
+				case 'installed-size':
+					pkg.installsize = +val;
+					break;
+
+				case 'status':
+					var stat = val.split(/\s+/),
+						mode = stat[1],
+						installed = stat[2];
+
+					switch (mode) {
+					case 'user':
+					case 'hold':
+						pkg[mode] = true;
+						break;
+					}
+
+					switch (installed) {
+					case 'installed':
+						pkg.installed = true;
+						break;
+					}
+					break;
+
+				case 'essential':
+					if (val === 'yes')
+						pkg.essential = true;
+					break;
+
+				case 'size':
+					pkg.size = +val;
+					break;
+
+				case 'architecture':
+				case 'auto-installed':
+				case 'filename':
+				case 'sha256sum':
+				case 'section':
+					break;
+
+				default:
+					pkg[key] = val;
+					break;
+				}
+
+				key = val = null;
+			}
+
+			if (m[1].trim().match(/^([\w-]+)\s*:(.+)$/)) {
+				key = RegExp.$1.toLowerCase();
+				val = RegExp.$2.trim();
+			}
+			else if (pkg) {
+				dest.pkgs[pkg.name] = pkg;
+
+				var provides = dest.providers[pkg.name] ? [] : [ pkg.name ];
+
+				if (pkg.provides)
+					provides.push.apply(provides, pkg.provides);
+
+				provides.forEach(function(p) {
+					dest.providers[p] = dest.providers[p] || [];
+					dest.providers[p].push(pkg);
+				});
+			}
 		}
-
-		if (m[1].trim().match(/^([\w-]+)\s*:(.+)$/)) {
-			key = RegExp.$1.toLowerCase();
-			val = RegExp.$2.trim();
-		}
-		else if (pkg) {
-			dest.pkgs[pkg.name] = pkg;
-
-			var provides = dest.providers[pkg.name] ? [] : [ pkg.name ];
-
-			if (pkg.provides)
-				provides.push.apply(provides, pkg.provides);
-
-			provides.forEach(function(p) {
-				dest.providers[p] = dest.providers[p] || [];
-				dest.providers[p].push(pkg);
-			});
-		}
+	} catch (e) {
+		console.error('Error parsing package list:', e);
+		ui.addNotification(null, E('p', {}, _('Failed to parse package information')));
 	}
 }
 
 function display(pattern)
 {
-	var src = packages[currentDisplayMode === 'updates' ? 'installed' : currentDisplayMode],
-	    table = document.querySelector('#packages'),
-	    pager = document.querySelector('#pager');
+	var src = packages.installed;
+	var table = document.querySelector('#packages');
+	var pager = document.querySelector('#pager');
+	var ver;
 
 	currentDisplayRows.length = 0;
 
@@ -209,79 +221,27 @@ function display(pattern)
 		pattern = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
 
 	for (var name in src.pkgs) {
-		var pkg = src.pkgs[name],
-		    desc = pkg.description || '',
-		    altsize = null;
+		var pkg = src.pkgs[name];
+		var desc = pkg.description || '';
+		var btn;
 
-		if (!pkg.size && packages.available.pkgs[name])
-			altsize = packages.available.pkgs[name].size;
-
-		if (!desc && packages.available.pkgs[name])
-			desc = packages.available.pkgs[name].description || '';
+		if (!pkg.installed)
+			continue;
 
 		desc = desc.split(/\n/);
 		desc = desc[0].trim() + (desc.length > 1 ? '…' : '');
 
 		if ((pattern instanceof RegExp) &&
-		    !name.match(pattern) && !desc.match(pattern))
+			!name.match(pattern) && !desc.match(pattern))
 			continue;
 
-		var btn, ver;
-
-		if (currentDisplayMode === 'updates') {
-			var avail = packages.available.pkgs[name],
-			    inst  = packages.installed.pkgs[name];
-
-			if (!inst || !inst.installed)
-				continue;
-
-			if (!avail || compareVersion(avail.version, pkg.version) <= 0)
-				continue;
-
-			ver = '%s » %s'.format(
-				truncateVersion(pkg.version || '-'),
-				truncateVersion(avail.version || '-'));
-
-			btn = E('div', {
-				'class': 'btn cbi-button-positive',
-				'data-package': name,
-				'click': handleInstall
-			}, _('Upgrade…'));
-		}
-		else if (currentDisplayMode === 'installed') {
-			if (!pkg.installed)
-				continue;
-
-			ver = truncateVersion(pkg.version || '-');
-			btn = E('div', {
-				'class': 'btn cbi-button-negative',
-				'data-package': name,
-				'click': handleRemove
-			}, _('Remove…'));
-		}
-		else {
-			var inst = packages.installed.pkgs[name];
-
-			ver = truncateVersion(pkg.version || '-');
-
-			if (!inst || !inst.installed)
-				btn = E('div', {
-					'class': 'btn cbi-button-action',
-					'data-package': name,
-					'click': handleInstall
-				}, _('Install…'));
-			else if (inst.installed && inst.version != pkg.version)
-				btn = E('div', {
-					'class': 'btn cbi-button-positive',
-					'data-package': name,
-					'click': handleInstall
-				}, _('Upgrade…'));
-			else
-				btn = E('div', {
-					'class': 'btn cbi-button-neutral',
-					'disabled': 'disabled'
-				}, _('Installed'));
-		}
+		ver = truncateVersion(pkg.version || '-');
+		
+		btn = E('div', {
+			'class': 'btn cbi-button-negative',
+			'data-package': name,
+			'click': handleRemove
+		}, _('Remove…'));
 
 		name = '%h'.format(name);
 		desc = '%h'.format(desc || '-');
@@ -295,7 +255,7 @@ function display(pattern)
 			name,
 			ver,
 			pkg.size ? '%.1024mB'.format(pkg.size)
-			         : (altsize ? '~%.1024mB'.format(altsize) : '-'),
+					: '-',
 			desc,
 			btn
 		]);
@@ -966,9 +926,21 @@ function downloadLists()
 {
 	return Promise.all([
 		callMountPoints(),
-		fs.exec_direct('/usr/libexec/opkg-call', [ 'list-available' ]),
+		fs.exec_direct('/usr/libexec/opkg-call', [ 'list-available' ])
+			.catch(function(err) {
+				console.error('Failed to list available packages:', err);
+				return '';
+			}),
 		fs.exec_direct('/usr/libexec/opkg-call', [ 'list-installed' ])
-	]);
+			.catch(function(err) {
+				console.error('Failed to list installed packages:', err);
+				return '';
+			})
+	]).catch(function(err) {
+		console.error('Error downloading package lists:', err);
+		ui.addNotification(null, E('p', {}, _('Failed to download package lists')));
+		return [{ size: 0, free: 0 }, '', ''];
+	});
 }
 
 function updateLists(data)
@@ -979,19 +951,41 @@ function updateLists(data)
 	packages.available = { providers: {}, pkgs: {} };
 	packages.installed = { providers: {}, pkgs: {} };
 
-	return (data ? Promise.resolve(data) : downloadLists()).then(function(data) {
-		var pg = document.querySelector('.cbi-progressbar'),
-		    mount = L.toArray(data[0].filter(function(m) { return m.mount == '/' || m.mount == '/overlay' }))
-		    	.sort(function(a, b) { return a.mount > b.mount })[0] || { size: 0, free: 0 };
+	return (data ? Promise.resolve(data) : downloadLists())
+		.then(function(data) {
+			try {
+				if (!Array.isArray(data[0])) {
+					throw new Error('Invalid mount point data');
+				}
 
-		pg.firstElementChild.style.width = Math.floor(mount.size ? ((100 / mount.size) * mount.free) : 100) + '%';
-		pg.setAttribute('title', '%s (%.1024mB)'.format(pg.firstElementChild.style.width, mount.free));
+				var pg = document.querySelector('.cbi-progressbar');
+				if (!pg) {
+					throw new Error('Progress bar element not found');
+				}
 
-		parseList(data[1], packages.available);
-		parseList(data[2], packages.installed);
+				var mount = L.toArray(data[0].filter(function(m) { 
+					return m.mount == '/' || m.mount == '/overlay' 
+				})).sort(function(a, b) { 
+					return a.mount > b.mount 
+				})[0] || { size: 0, free: 0 };
 
-		display(document.querySelector('input[name="filter"]').value);
-	});
+				pg.firstElementChild.style.width = Math.floor(mount.size ? ((100 / mount.size) * mount.free) : 100) + '%';
+				pg.setAttribute('title', '%s (%.1024mB)'.format(pg.firstElementChild.style.width, mount.free));
+
+				if (data[1]) parseList(data[1], packages.available);
+				if (data[2]) parseList(data[2], packages.installed);
+
+				display(document.querySelector('input[name="filter"]').value);
+
+			} catch (e) {
+				console.error('Error in updateLists:', e);
+				ui.addNotification(null, E('p', {}, _('Failed to process package information: ' + e.message)));
+			}
+		})
+		.catch(function(err) {
+			console.error('Failed to update lists:', err);
+			ui.addNotification(null, E('p', {}, _('Failed to update package information')));
+		});
 }
 
 var keyTimeout = null;
@@ -1033,27 +1027,11 @@ return view.extend({
 				]),
 
 				E('div', {}, [
-					E('label', {}, _('Download and install package') + ':'),
-					E('span', { 'class': 'control-group' }, [
-						E('input', { 'type': 'text', 'name': 'install', 'placeholder': _('Package name or URL…'), 'keydown': function(ev) { if (ev.keyCode === 13) handleManualInstall(ev) }, 'disabled': isReadonlyView }),
-						E('button', { 'class': 'btn cbi-button cbi-button-action', 'click': handleManualInstall, 'disabled': isReadonlyView }, [ _('OK') ])
-					])
-				]),
-
-				E('div', {}, [
 					E('label', {}, _('Actions') + ':'), ' ',
 					E('span', { 'class': 'control-group' }, [
-						E('button', { 'class': 'btn cbi-button-positive', 'data-command': 'update', 'click': handleOpkg, 'disabled': isReadonlyView }, [ _('Update lists…') ]), ' ',
-						E('button', { 'class': 'btn cbi-button-action', 'click': handleUpload, 'disabled': isReadonlyView }, [ _('Upload Package…') ]), ' ',
 						E('button', { 'class': 'btn cbi-button-neutral', 'click': handleConfig }, [ _('Configure opkg…') ])
 					])
 				])
-			]),
-
-			E('ul', { 'class': 'cbi-tabmenu mode' }, [
-				E('li', { 'data-mode': 'available', 'class': 'available cbi-tab', 'click': handleMode }, E('a', { 'href': '#' }, [ _('Available') ])),
-				E('li', { 'data-mode': 'installed', 'class': 'installed cbi-tab-disabled', 'click': handleMode }, E('a', { 'href': '#' }, [ _('Installed') ])),
-				E('li', { 'data-mode': 'updates', 'class': 'installed cbi-tab-disabled', 'click': handleMode }, E('a', { 'href': '#' }, [ _('Updates') ]))
 			]),
 
 			E('div', { 'class': 'controls', 'style': 'display:none' }, [
