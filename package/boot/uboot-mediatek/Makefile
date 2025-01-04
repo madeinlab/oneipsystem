@@ -1,7 +1,11 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
-PKG_VERSION:=2020.10
+PKG_SOURCE_PROTO:=file
+PKG_NAME:=uboot-mtk
+PKG_VERSION:=20220606
+PKG_SOURCE:=uboot-mtk-20220606.rtl8370mb.tar.gz
+PKG_SOURCE_URL:=
 PKG_HASH:=0d481bbdc05c0ee74908ec2f56a6daa53166cc6a78a0e4fac2ac5d025770a622
 
 include $(INCLUDE_DIR)/u-boot.mk
