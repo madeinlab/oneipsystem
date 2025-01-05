@@ -17,7 +17,7 @@
 usage() {
 	printf "Usage: %s -A arch -C comp -a addr -e entry" "$(basename "$0")"
 	printf " -v version -k kernel [-D name -n address -d dtb] -o its_file"
-	printf " [-s script] [-S key_name_hint] [-r ar_ver] [-R rootfs]"
+	printf " [-s script] [-S key_name_hint] [-r ar_ver] [-R rootfs] [-m rfsk]"
 
 	printf "\n\t-A ==> set architecture to 'arch'"
 	printf "\n\t-C ==> set compression type 'comp'"
@@ -33,13 +33,14 @@ usage() {
 	printf "\n\t-s ==> include u-boot script 'script'"
 	printf "\n\t-S ==> add signature at configurations and assign its key_name_hint by 'key_name_hint'"
 	printf "\n\t-r ==> set anti-rollback version to 'fw_ar_ver' (dec)"
-	printf "\n\t-R ==> specify rootfs file for embedding hash\n"
+	printf "\n\t-R ==> specify rootfs file for embedding hash"
+	printf "\n\t-m ==> include encrypted rootfs key'\n"
 	exit 1
 }
 
 FDTNUM=1
 
-while getopts ":A:a:c:C:D:d:e:k:n:o:v:s:S:r:R:" OPTION
+while getopts ":A:a:c:C:D:d:e:k:n:o:v:s:S:r:R:m:" OPTION
 do
 	case $OPTION in
 		A ) ARCH=$OPTARG;;
@@ -57,6 +58,7 @@ do
 		S ) KEY_NAME_HINT=$OPTARG;;
 		r ) AR_VER=$OPTARG;;
 		R ) ROOTFS_FILE=$OPTARG;;
+		m ) ROOTFS_KEY=$OPTARG;;
 		* ) echo "Invalid option passed to '$0' (options:$*)"
 		usage;;
 	esac
@@ -89,6 +91,19 @@ if [ -n "${DTB}" ]; then
 		};
 "
 	FDT_PROP="fdt = \"fdt-$FDTNUM\";"
+fi
+
+# Conditionally create encrypted rootfs-key information
+if [ -n "${ROOTFS_KEY}" ]; then
+	RFSK_NODE="
+			rfsk = <$(cat ${ROOTFS_KEY} | od -An -t x1 -w256 | sed 's/ //g; s/.\{8\}/0x& /g; s/.$//g')>;";
+
+	FIT_SECRET_NODE="
+	fit-secrets {
+		${CONFIG} {
+		};
+	};
+"
 fi
 
 # Conditionally create rootfs hash information
@@ -200,12 +215,15 @@ ${ROOTFS}
 		${CONFIG} {
 			description = \"OpenWrt\";
 ${FW_AR_VER}
+${RFSK_NODE}
 ${LOADABLES}
 			kernel = \"kernel-1\";
 			${FDT_PROP}
 ${SIGNATURE}
 		};
 	};
+
+${FIT_SECRET_NODE}
 };"
 
 # Write .its file to disk
