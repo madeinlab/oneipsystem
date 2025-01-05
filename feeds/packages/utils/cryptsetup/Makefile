@@ -113,6 +113,7 @@ endef
 
 define Host/Install
 	$(INSTALL_BIN) $(HOST_BUILD_DIR)/veritysetup $(STAGING_DIR_HOST)/bin/veritysetup
+	$(INSTALL_BIN) $(HOST_BUILD_DIR)/cryptsetup $(STAGING_DIR_HOST)/bin/cryptsetup
 	$(CP) $(HOST_BUILD_DIR)/.libs $(STAGING_DIR_HOST)/bin/
 endef
 
