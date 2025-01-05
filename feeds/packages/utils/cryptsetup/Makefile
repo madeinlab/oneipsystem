@@ -12,7 +12,7 @@ PKG_VERSION:=2.3.4
 PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@KERNEL/linux/utils/cryptsetup/v2.5
+PKG_SOURCE_URL:=
 PKG_HASH:=9d16eebb96b53b514778e813019b8dd15fea9fec5aafde9fae5febf59df83773
 
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
