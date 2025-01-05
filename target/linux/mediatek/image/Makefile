@@ -99,6 +99,7 @@ define Build/fit-sign
 		-A $(LINUX_KARCH) \
 		-v $(LINUX_VERSION) \
 		$(if $(FIT_KEY_NAME),-S $(FIT_KEY_NAME)) \
+		$(if $(FIT_KEY_ALG),-b $(FIT_KEY_ALG)) \
 		$(if $(FW_AR_VER),-r $(FW_AR_VER)) \
 		$(if $(CONFIG_TARGET_ROOTFS_SQUASHFS), \
 			$(if $(ROOTFS_ENCRYPT), \
@@ -129,6 +130,7 @@ define Device/Default
 	pad-rootfs | append-metadata
   FIT_KEY_DIR :=
   FIT_KEY_NAME :=
+  FIT_KEY_ALG :=
   ROE_KEY_DIR :=
   ROE_KEY_NAME :=
 endef
