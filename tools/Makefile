@@ -38,6 +38,7 @@ tools-$(CONFIG_TARGET_tegra) += cbootimage cbootimage-configs
 tools-$(CONFIG_USES_MINOR) += kernel2minor
 tools-$(CONFIG_USE_SPARSE) += sparse
 tools-y += openssl
+tools-y += aesgcm
 
 # builddir dependencies
 $(curdir)/autoconf/compile := $(curdir)/m4/compile
@@ -76,6 +77,7 @@ $(curdir)/squashfs/compile := $(curdir)/lzma-old/compile
 $(curdir)/squashfskit4/compile := $(curdir)/xz/compile $(curdir)/zlib/compile
 $(curdir)/zlib/compile := $(curdir)/cmake/compile
 $(curdir)/zstd/compile := $(curdir)/cmake/compile
+$(curdir)/aesgcm/compile := $(curdir)/openssl/compile
 
 ifneq ($(HOST_OS),Linux)
   $(curdir)/squashfskit4/compile += $(curdir)/coreutils/compile
