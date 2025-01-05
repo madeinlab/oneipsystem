@@ -443,7 +443,10 @@ endif
 ROOTFS_ENCRYPT = $(if $(ROE_KEY_DIR),$(wildcard $(ROE_KEY_DIR)/$(ROE_KEY_NAME).key),)
 
 DEVICE_CHECK_FIT_KEY = $(if $(wildcard $(FIT_KEY_DIR)/$(FIT_KEY_NAME).key),install-images,install-disabled)
-DEVICE_CHECK_FIT_DIR = $(if $(FIT_KEY_DIR),$(DEVICE_CHECK_FIT_KEY),install-images)
+DEVICE_CHECK_FIT_DIR = $(if $(FIT_KEY_DIR),$(DEVICE_CHECK_FIT_KEY),install-disabled)
+
+DEVICE_CHECK_OFFLINE_FIT_KEY = $(if $(filter offline%,$(FIT_KEY_NAME)),install-images,$(DEVICE_CHECK_FIT_DIR))
+DEVICE_CHECK_FIT_KEY_NAME = $(if $(FIT_KEY_NAME),$(DEVICE_CHECK_OFFLINE_FIT_KEY),install-images)
 
 DEVICE_EXTRA_PACKAGES = $(call qstrip,$(CONFIG_TARGET_DEVICE_PACKAGES_$(call target_conf,$(BOARD)$(if $(SUBTARGET),_$(SUBTARGET)))_DEVICE_$(1)))
 
@@ -467,7 +470,7 @@ endef
 define Device/Check
   $(Device/Check/Common)
   KDIR_KERNEL_IMAGE := $(KDIR)/$(1)$$(KERNEL_SUFFIX)
-  _TARGET := $$(if $$(_PROFILE_SET),$$(DEVICE_CHECK_FIT_DIR),install-disabled)
+  _TARGET := $$(if $$(_PROFILE_SET),$$(DEVICE_CHECK_FIT_KEY_NAME),install-disabled)
   ifndef IB
     _COMPILE_TARGET := $$(if $(CONFIG_IB)$$(_PROFILE_SET),compile,compile-disabled)
   endif

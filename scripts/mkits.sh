@@ -164,11 +164,17 @@ fi
 
 # Conditionally create signature information
 if [ -n "${KEY_NAME_HINT}" ]; then
+	if [[ "${KEY_NAME_HINT}" == "offline,"* ]]; then
+		KEY_NAME_HINT=$(echo -n "${KEY_NAME_HINT}" | sed "s/^.*[,]//g")
+		SIGN_OFFLINE="
+				sign-offline = <1>;"
+	fi
 	SIGNATURE="\
 			signature {
 				algo = \"sha1,rsa2048\";
 				key-name-hint = \"${KEY_NAME_HINT}\";
 ${SIGN_IMAGES}
+${SIGN_OFFLINE}
 			};\
 "
 fi
