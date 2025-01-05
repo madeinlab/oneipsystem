@@ -440,6 +440,8 @@ else
   DEVICE_CHECK_PROFILE = $(CONFIG_TARGET_$(if $(CONFIG_TARGET_MULTI_PROFILE),DEVICE_)$(call target_conf,$(BOARD)$(if $(SUBTARGET),_$(SUBTARGET)))_$(1))
 endif
 
+ROOTFS_ENCRYPT = $(if $(ROE_KEY_DIR),$(wildcard $(ROE_KEY_DIR)/$(ROE_KEY_NAME).key),)
+
 DEVICE_CHECK_FIT_KEY = $(if $(wildcard $(FIT_KEY_DIR)/$(FIT_KEY_NAME).key),install-images,install-disabled)
 DEVICE_CHECK_FIT_DIR = $(if $(FIT_KEY_DIR),$(DEVICE_CHECK_FIT_KEY),install-images)
 
