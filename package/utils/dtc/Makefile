@@ -5,11 +5,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dtc
-PKG_VERSION:=1.6.0
+PKG_VERSION:=1.7.2
 PKG_RELEASE:=1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=10503b0217e1b07933e29e8d347a00015b2431bea5f59afe0bed3af30340c82d
-PKG_SOURCE_URL:=@KERNEL/software/utils/dtc
+PKG_HASH:=92d8ca769805ae1f176204230438fe52808f4e1c7944053c9eec0e649b237539
+PKG_SOURCE_URL:=
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=GPL
 PKG_INSTALL:=1
@@ -91,9 +91,9 @@ define Build/InstallDev
 endef
 
 define Host/Install
-   $(CP) $(HOST_BUILD_DIR)/libfdt/libfdt*.so* $(STAGING_DIR_HOST)/lib/
-   $(CP) $(HOST_BUILD_DIR)/fdtget $(STAGING_DIR_HOST)/bin/
-   $(CP) $(HOST_BUILD_DIR)/fdtput $(STAGING_DIR_HOST)/bin/
+	$(CP) $(HOST_BUILD_DIR)/libfdt/libfdt*.so* $(STAGING_DIR_HOST)/lib/
+	$(CP) $(HOST_BUILD_DIR)/fdtget $(STAGING_DIR_HOST)/bin/
+	$(CP) $(HOST_BUILD_DIR)/fdtput $(STAGING_DIR_HOST)/bin/
 endef
 
 $(eval $(call BuildPackage,dtc))
