@@ -164,5 +164,17 @@
 			"function": "action_menu"
 		},
 		"auth": {}
+	},
+
+	"admin/changepassword": {
+		"action": {
+			"type": "call",
+			"module": "luci.controller.admin.system",
+			"function": "action_change_password"
+		},
+		"auth": {
+			"methods": [ "cookie:sysauth" ],
+			"login": false
+		}
 	}
 }

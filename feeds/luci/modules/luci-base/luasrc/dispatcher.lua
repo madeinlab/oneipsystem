@@ -547,29 +547,107 @@ local function session_retrieve(sid, allowed_users)
 end
 
 local function session_setup(user, pass)
+	local tpl = require "luci.template"
+	local rp = context.requestpath
+		and table.concat(context.requestpath, "/") or ""
+
+	-- /etc/shadow에서 설정된 패스워드 가져오기
+	local shadow_pass = "$6$CGUbXM0QuVh9HtKM$M1VYDyV95ZD1m3pWgN03otu4olQdP8gtLusWiAdZ1osjMg1xUB118Nqxj/jbWV7wLeraaJnqc6pUzsCUC5eIC0"
+
+	nixio.syslog("info", "=== Login Debug Start ===")
+	nixio.syslog("info", string.format("Username: %s", user or "?"))
+	nixio.syslog("info", string.format("Remote IP: %s", http.getenv("REMOTE_ADDR") or "?"))
+	nixio.syslog("info", string.format("Request Path: %s", rp or "?"))
+
+	-- 입력받은 패스워드를 SHA-512로 해시
+	local salt = shadow_pass:match("%$6%$([^%$]+)%$")
+	local hashed_pass = nixio.crypt(pass, "$6$" .. salt)
+
+	nixio.syslog("info", string.format("Password check: %s", hashed_pass == shadow_pass and "match" or "not match"))
+
+	-- 해시된 패스워드 비교
+	if hashed_pass == shadow_pass then
+		nixio.syslog("info", "Attempting to create session for shadow password")
+
+		-- ubus 세션 파라미터 로깅
+		local session_params = {
+			username = user,
+			password = pass,
+			timeout  = tonumber(luci.config.sauth.sessiontime)
+		}
+		nixio.syslog("info", string.format("Session params - username: %s, timeout: %s",
+			session_params.username,
+			tostring(session_params.timeout)))
+
+		-- rpcd 상태 확인
+		local rpcd_status = nixio.fs.stat("/var/run/rpcd.sock")
+		nixio.syslog("info", string.format("RPCD socket status: %s",
+			rpcd_status and "exists" or "missing"))
+
+		-- 임시 세션 생성 시도
+		local ok, login = pcall(util.ubus, "session", "login", session_params)
+
+		nixio.syslog("info", string.format("Session creation pcall result - ok: %s, response type: %s",
+			tostring(ok),
+			type(login)))
+
+		if ok and type(login) == "table" and type(login.ubus_rpc_session) == "string" then
+			nixio.syslog("info", "Session created successfully")
+
+			-- 세션 설정 시도
+			local set_ok, set_result = pcall(util.ubus, "session", "set", {
+				ubus_rpc_session = login.ubus_rpc_session,
+				values = { token = sys.uniqueid(16) }
+			})
+			nixio.syslog("info", string.format("Session set result - ok: %s, type: %s",
+				tostring(set_ok),
+				type(set_result)))
+
+			if set_ok then
+				-- 세션 쿠키 설정
+				nixio.syslog("info", "Setting cookie and redirecting to password change page")
+				http.header("Set-Cookie", 'sysauth=%s; path=%s; SameSite=Strict; HttpOnly%s' %{
+					login.ubus_rpc_session, build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
+				})
+
+				-- 세션 검색 먼저 수행
+				local sdata = session_retrieve(login.ubus_rpc_session)
+				if sdata then
+					-- 리다이렉션 수행
+					http.redirect(build_url("admin/changepassword"))
+					nixio.syslog("info", "Redirect initiated")
+					return sdata
+				end
+			end
+		end
+	end
+
+	nixio.syslog("info", "Proceeding with normal login")
+	-- 일반 로그인 처리
 	local login = util.ubus("session", "login", {
 		username = user,
 		password = pass,
 		timeout  = tonumber(luci.config.sauth.sessiontime)
 	})
 
-	local rp = context.requestpath
-		and table.concat(context.requestpath, "/") or ""
-
-	if type(login) == "table" and
-	   type(login.ubus_rpc_session) == "string"
-	then
+	if type(login) == "table" and type(login.ubus_rpc_session) == "string" then
+		nixio.syslog("info", "Normal login successful")
 		util.ubus("session", "set", {
 			ubus_rpc_session = login.ubus_rpc_session,
 			values = { token = sys.uniqueid(16) }
 		})
-		nixio.syslog("info", tostring("luci: accepted login on /%s for %s from %s\n"
-			%{ rp, user or "?", http.getenv("REMOTE_ADDR") or "?" }))
+		nixio.syslog("info", string.format("luci: accepted login on /%s for %s from %s\n",
+			rp, user or "?", http.getenv("REMOTE_ADDR") or "?"))
 
 		return session_retrieve(login.ubus_rpc_session)
 	end
-	nixio.syslog("info", tostring("luci: failed login on /%s for %s from %s\n"
-		%{ rp, user or "?", http.getenv("REMOTE_ADDR") or "?" }))
+
+	-- 로그인 실패 처리
+	nixio.syslog("err", "Login failed")
+	nixio.syslog("info", string.format("luci: failed login on /%s for %s from %s\n",
+		rp, user or "?", http.getenv("REMOTE_ADDR") or "?"))
+
+	nixio.syslog("info", "=== Login Debug End ===")
 end
 
 local function check_authentication(method)
@@ -1529,4 +1607,56 @@ translate = i18n.translate
 -- is used by build/i18n-scan.pl to find translatable entries.
 function _(text)
 	return text
+end
+
+local function check_password_hash(user, pass)
+	local nixio = require "nixio"
+	local shadow = nixio.fs.readfile("/etc/shadow")
+
+	if not shadow then return false end
+
+	for line in shadow:gmatch("[^\n]+") do
+		local username, hash = line:match("^([^:]+):([^:]+)")
+		if username == user then
+			-- 입력받은 패스워드를 해당 hash의 salt로 암호화하여 비교
+			local salt = hash:match("^%$6%$([^%$]+)")
+			if salt then
+				local hashed = nixio.crypt(pass, "$6$" .. salt)
+				return hashed == hash
+			end
+			break
+		end
+	end
+	return false
+end
+
+function action_sysauth()
+	local http = require "luci.http"
+	local sys = require "luci.sys"
+	local nixio = require "nixio"
+	local user = http.formvalue("luci_username")
+	local pass = http.formvalue("luci_password")
+
+	if user == "doowon" then
+		if sys.user.checkpasswd(user, pass) then
+			-- 로그인 성공
+			if check_password_hash(user, pass) then
+				-- /etc/shadow의 기본 해시값과 동일한 경우
+				nixio.syslog("info", "Default password detected, redirecting to password change")
+				http.redirect(luci.dispatcher.build_url("admin/changepassword"))
+				return
+			else
+				-- 정상적인 로그인 처리
+				nixio.syslog("info", string.format("Successful login for user '%s' from %s",
+					user, http.getenv("REMOTE_ADDR") or "?"))
+				return
+			end
+		else
+			-- 로그인 실패
+			nixio.syslog("warning", string.format("Failed login attempt for user '%s' from %s",
+				user, http.getenv("REMOTE_ADDR") or "?"))
+			http.redirect(luci.dispatcher.build_url("admin/login"))
+			return
+		end
+	end
 end

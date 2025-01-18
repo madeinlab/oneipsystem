@@ -10,6 +10,12 @@
 	<%- if fuser then %>
 		<div class="alert-message warning">
 			<p><%:Invalid username and/or password! Please try again.%></p>
+			<%
+				local nixio = require "nixio"
+				nixio.syslog("warning", string.format("Login failed for user '%s' from %s",
+					luci.http.formvalue("luci_username") or "?",
+					luci.http.getenv("REMOTE_ADDR") or "?"))
+			%>
 		</div>
 	<% end -%>
 
