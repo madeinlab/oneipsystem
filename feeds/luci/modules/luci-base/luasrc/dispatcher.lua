@@ -18,6 +18,39 @@ _M.fs = fs
 -- Index table
 local index = nil
 
+-- Global variable for super user
+local super_user = nil
+
+-- Function to get super user from /etc/passwd
+function get_super_user()
+	local nixio = require "nixio"
+	local fs = require "nixio.fs"
+
+	nixio.syslog("info", "=== Get Super User Debug Start ===")
+
+	-- /etc/passwd 파일 읽기
+	local passwd = fs.readfile("/etc/passwd")
+	if not passwd then
+		nixio.syslog("err", "Failed to read /etc/passwd file")
+		return nil
+	end
+
+	nixio.syslog("info", "Successfully read /etc/passwd file")
+
+	-- 각 라인 확인
+	for line in passwd:gmatch("[^\n]+") do
+		nixio.syslog("info", "Checking line: " .. line)
+		local user = line:match("^([^:]+):[^:]*:0:")
+		if user then
+			nixio.syslog("info", "Found super user: " .. user)
+			return user
+		end
+	end
+
+	nixio.syslog("err", "No super user found in /etc/passwd")
+	return nil
+end
+
 local function check_fs_depends(spec)
 	local fs = require "nixio.fs"
 
@@ -531,6 +564,9 @@ end
 
 local function session_retrieve(sid, allowed_users)
 	local sdat = util.ubus("session", "get", { ubus_rpc_session = sid })
+	if type(sdat) == "table" and type(sdat.values) == "table" then
+		nixio.syslog("info", "Session username: " .. (sdat.values.username or "nil"))
+	end
 	local sacl = util.ubus("session", "access", { ubus_rpc_session = sid })
 
 	if type(sdat) == "table" and
@@ -961,7 +997,8 @@ function dispatch(request)
 				http.status(403, "Forbidden")
 				http.header("X-LuCI-Login-Required", "yes")
 
-				local scope = { duser = "doowon", fuser = user }
+				local super_user = get_super_user()
+				local scope = { duser = super_user, fuser = user }
 				local ok, res = util.copcall(tpl.render_string, [[<% include("themes/" .. theme .. "/sysauth") %>]], scope)
 				if ok then
 					return res
@@ -1637,7 +1674,7 @@ function action_sysauth()
 	local user = http.formvalue("luci_username")
 	local pass = http.formvalue("luci_password")
 
-	if user == "doowon" then
+	if user == get_super_user() then
 		if sys.user.checkpasswd(user, pass) then
 			-- 로그인 성공
 			if check_password_hash(user, pass) then
