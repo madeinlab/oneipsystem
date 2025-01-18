@@ -18,8 +18,14 @@ function action_change_password()
         if current and new and confirm then
             if new == confirm then
                 if sys.user.checkpasswd("doowon", current) then
+                    -- 패스워드 변경
                     sys.user.setpasswd("doowon", new)
-                    http.redirect(dispatcher.build_url("admin"))
+
+                    -- 변경 성공 템플릿 렌더링
+                    template.render("admin/changepassword", {
+                        success = true,
+                        message = "Password changed successfully"
+                    })
                     return
                 end
             end
@@ -31,10 +37,9 @@ function action_change_password()
             message = "Password change failed. Please check your inputs."
         })
     else
-        -- GET 요청 시 패스워드 변경 폼 표시
         template.render("admin/changepassword", {
             error = false,
             message = ""
         })
     end
-end 
+end
