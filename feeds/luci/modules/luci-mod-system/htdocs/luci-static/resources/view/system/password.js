@@ -104,27 +104,19 @@ return view.extend({
 		// Add input event listener to password field
 		o.renderWidget = function(/* ... */) {
 			var node = form.Value.prototype.renderWidget.apply(this, arguments);
-			var input = node.querySelector('input');
-			var requirements = document.querySelector('.cbi-value-description');
 			
-			input.addEventListener('input', function(ev) {
-				if (requirements) {
-					requirements.style.display = ev.target.value.length > 0 ? 'block' : 'none';
-				}
-			});
+			// Create requirements div inside the same cbi-value-field
+			var requirements = E('div', { 'class': 'cbi-value-description', 'style': 'display:none; font-size:13px; line-height:1.4; margin-top:5px;' }, [
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Minimum 9 characters']),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include uppercase letters']),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include lowercase letters']),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include numbers']),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include special characters (@#$%^&*)'])
+			]);
 
+			node.appendChild(requirements);
 			return node;
 		};
-
-		// Second: Password requirements display (initially hidden)
-		var requirements = s.option(form.DummyValue, '_requirements', '');
-		requirements.rawhtml = true;
-		requirements.default = '<div class="cbi-value-description" style="display:none">' +
-			'<span style="color:red">✗</span> Minimum 9 characters<br>' +
-			'<span style="color:red">✗</span> Include uppercase letters<br>' +
-			'<span style="color:red">✗</span> Include lowercase letters<br>' +
-			'<span style="color:red">✗</span> Include numbers<br>' +
-			'<span style="color:red">✗</span> Include special characters (@#$%^&*)</div>';
 
 		// Third: Password confirmation field
 		o = s.option(form.Value, 'pw2', _('Confirmation'));
