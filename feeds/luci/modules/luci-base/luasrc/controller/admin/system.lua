@@ -9,7 +9,16 @@ function action_change_password()
     local http = require "luci.http"
     local template = require "luci.template"
     local dispatcher = require "luci.dispatcher"
+    local nixio = require "nixio"
+    local util = require "luci.util"
     
+
+	if dispatcher.context and dispatcher.context.authuser then
+		username = dispatcher.context.authuser
+		nixio.syslog("info", "Found authenticated user [MASKED]")
+	else
+		nixio.syslog("info", "No username found in template context")
+	end
     if http.getenv("REQUEST_METHOD") == "POST" then
         local current = http.formvalue("current_password")
         local new = http.formvalue("new_password")
@@ -17,29 +26,55 @@ function action_change_password()
         
         if current and new and confirm then
             if new == confirm then
-                if sys.user.checkpasswd("doowon", current) then
-                    -- 패스워드 변경
-                    sys.user.setpasswd("doowon", new)
+                nixio.syslog("info", "Password confirmation matches")
 
-                    -- 변경 성공 템플릿 렌더링
-                    template.render("admin/changepassword", {
-                        success = true,
-                        message = "Password changed successfully"
-                    })
-                    return
+                if username then
+                    nixio.syslog("info", "Verifying current password")
+                    if sys.user.checkpasswd(username, current) then
+                        nixio.syslog("info", "Current password verification successful")
+
+                        if sys.user.setpasswd(username, new) then
+                            nixio.syslog("info", "Password changed successfully")
+
+                            template.render("admin/changepassword", {
+                                success = true,
+                                error = false,
+                                message = "Password changed successfully. Please log in with your new password.",
+                                redirect = true,
+                                debug_info = debug_info
+                            })
+                            return
+                        else
+                            nixio.syslog("err", "Failed to set new password")
+                        end
+                    else
+                        nixio.syslog("warning", "Password verification failed")
+                    end
+                else
+                    nixio.syslog("err", "Authentication required")
                 end
+            else
+                nixio.syslog("warning", "Password confirmation mismatch")
             end
+        else
+            nixio.syslog("warning", "Missing required fields")
         end
         
         -- 실패 시 에러 메시지와 함께 폼 다시 표시
         template.render("admin/changepassword", {
+            success = false,
             error = true,
-            message = "Password change failed. Please check your inputs."
+            message = "Password change failed. Please check your inputs.",
+            redirect = false,
+            debug_info = debug_info
         })
     else
         template.render("admin/changepassword", {
+            success = false,
             error = false,
-            message = ""
+            message = "",
+            redirect = false,
+            debug_info = debug_info
         })
     end
 end
