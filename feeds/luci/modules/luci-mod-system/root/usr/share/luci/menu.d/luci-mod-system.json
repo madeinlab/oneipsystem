@@ -82,5 +82,17 @@
 		"depends": {
 			"acl": [ "luci-mod-system-reboot" ]
 		}
+	},
+
+	"admin/system/admin/password_rule": {
+		"title": "Password Rules",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "system/password_rule"
+		},
+		"depends": {
+			"acl": [ "luci-mod-system-config" ]
+		}
 	}
 }
