@@ -16,6 +16,28 @@
 		}
 	},
 
+	"luci-mod-system-manage": {
+		"description": "Grant access to Administrator Manage configuration",
+		"read": {
+			"file": {
+				"/etc/config/admin_manage": [ "read" ]
+			},
+			"ubus": {
+				"file": [ "read" ]
+			},
+			"uci": [ "admin_manage" ]
+		},
+		"write": {
+			"file": {
+				"/etc/config/admin_manage": [ "write" ]
+			},
+			"ubus": {
+				"file": [ "write" ]
+			},
+			"uci": [ "admin_manage" ]
+		}
+	},
+
 	"luci-mod-system-ssh": {
 		"description": "Grant access to SSH configuration",
 		"read": {

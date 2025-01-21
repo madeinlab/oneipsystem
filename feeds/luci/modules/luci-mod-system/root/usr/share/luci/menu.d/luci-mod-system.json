@@ -92,7 +92,7 @@
 			"path": "system/password_rule"
 		},
 		"depends": {
-			"acl": [ "luci-mod-system-config" ]
+			"acl": [ "luci-mod-system-manage" ]
 		}
 	}
 }
