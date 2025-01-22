@@ -17,8 +17,9 @@
 			},
 			"ubus": {
 				"file": [ "list" ],
-				"uci": [ "changes", "get" ]
-			}
+				"uci": [ "changes", "get", "state" ]
+			},
+			"uci": [ "admin_manage" ]
 		},
 		"write": {
 			"cgi-io": [ "upload" ],
@@ -27,9 +28,10 @@
 			},
 			"ubus": {
 				"file": [ "remove" ],
-				"uci": [ "add", "apply", "confirm", "delete", "order", "rename", "set" ],
+				"uci": [ "add", "apply", "confirm", "commit", "delete", "order", "rename", "set", "changes" ],
 				"luci": [ "addCamera", "removeCamera" ]
-			}
+			},
+			"uci": [ "admin_manage" ]
 		}
 	},
 
