@@ -138,7 +138,7 @@ return view.extend({
 	handleSave: function() {
 		var map = document.querySelector('.cbi-map');
 		var requirements = document.querySelector('.cbi-value-description');
-		var currentUser = getCurrentUser();  // Get current logged-in user
+		var currentUser = getCurrentUser();
 
 		return dom.callClassMethod(map, 'save').then(function() {
 			if (formData.password.pw1 == null || formData.password.pw1.length == 0)
@@ -156,6 +156,30 @@ return view.extend({
 						requirements.innerHTML = '';
 					}
 					ui.addNotification(null, E('p', _('The system password has been successfully changed.')), 'info');
+
+					// 1초 후에 리다이렉션 메시지 표시
+					setTimeout(function() {
+						// 리다이렉션 메시지를 warning으로 표시
+						ui.addNotification(null, E('p', [
+							E('i', { 'class': 'loading' }),
+							' ',
+							_('Logging out and redirecting to login page...')
+						]), 'warning');
+
+						// 추가로 2초 후에 로그아웃 및 리다이렉션 처리
+						setTimeout(function() {
+							// 로그아웃 요청
+							return fetch('/cgi-bin/luci/admin/logout', {
+								method: 'POST',
+								credentials: 'include'
+							})
+							.finally(function() {
+								// 로그인 페이지로 리다이렉션
+								window.location.href = '/cgi-bin/luci/admin/login';
+							});
+						}, 2000);  // 총 3초 딜레이 (1초 + 2초)
+					}, 1000);
+
 				} else {
 					ui.addNotification(null, E('p', _('Failed to change the system password.')), 'danger');
 				}
