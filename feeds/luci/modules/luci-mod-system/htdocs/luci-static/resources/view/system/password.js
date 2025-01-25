@@ -25,11 +25,22 @@ var callSetPassword = rpc.declare({
 });
 
 return view.extend({
+	load: function() {
+		return Promise.all([
+			uci.load('admin_manage')
+		]);
+	},
+
 	checkPassword: function(section_id, value) {
 		var strength = document.querySelector('.cbi-value-description');
 		
+		// Get settings from password_rule section
+		let sections = uci.sections('admin_manage', 'password_rule');
+		let minLength = sections[0]?.min_length || '9';
+		let maxLength = sections[0]?.max_length || '32';
+
 		// Regular expressions for password validation
-		var lengthCheck = /.{9,}/;                    // At least 9 characters
+		var lengthCheck = new RegExp(`.{${minLength},${maxLength}}`);
 		var upperCheck = /[A-Z]/;                     // Uppercase letters
 		var lowerCheck = /[a-z]/;                     // Lowercase letters
 		var numberCheck = /[0-9]/;                    // Numbers
@@ -44,9 +55,9 @@ return view.extend({
 				
 				// Check each condition and create messages
 				if (lengthCheck.test(value)) {
-					requirements.push('<span style="color:green">✓</span> Minimum 9 characters');
+					requirements.push(`<span style="color:green">✓</span> Length between ${minLength} and ${maxLength} characters`);
 				} else {
-					requirements.push('<span style="color:red">✗</span> Minimum 9 characters');
+					requirements.push(`<span style="color:red">✗</span> Length between ${minLength} and ${maxLength} characters`);
 				}
 				
 				if (!upperCheck.test(value)) {
@@ -90,6 +101,9 @@ return view.extend({
 
 	render: function() {
 		var m, s, o;
+		let sections = uci.sections('admin_manage', 'password_rule');
+		let minLength = sections[0]?.min_length || '9';
+		let maxLength = sections[0]?.max_length || '32';
 
 		m = new form.JSONMap(formData, _('Router Password'), _('Changes the administrator password for accessing the device'));
 		m.readonly = !L.hasViewPermission();
@@ -107,7 +121,7 @@ return view.extend({
 			
 			// Create requirements div inside the same cbi-value-field
 			var requirements = E('div', { 'class': 'cbi-value-description', 'style': 'display:none; font-size:13px; line-height:1.4; margin-top:5px;' }, [
-				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Minimum 9 characters']),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ` Length between ${minLength} and ${maxLength} characters`]),
 				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include uppercase letters']),
 				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include lowercase letters']),
 				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include numbers']),
