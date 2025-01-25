@@ -13,7 +13,7 @@ return view.extend({
             if (!sections || sections.length === 0) {
                 let sid = uci.add('admin_manage', 'password_rule');
                 uci.set('admin_manage', sid, 'min_length', '9');
-                uci.set('admin_manage', sid, 'max_length', '128');
+                uci.set('admin_manage', sid, 'max_length', '32');
                 return uci.save();
             }
         });
@@ -38,7 +38,7 @@ return view.extend({
 
         o = s.option(form.Value, 'max_length', _('Maximum Length'));
         o.datatype = 'uinteger';
-        o.default = '128';
+        o.default = '32';
         o.rmempty = false;
         o.write = function(section_id, formvalue) {
             return uci.set('admin_manage', section_id, 'max_length', formvalue);
@@ -46,4 +46,4 @@ return view.extend({
 
         return m.render();
     }
-}); 
+});
