@@ -1,6 +1,6 @@
 config password_rule
     option min_length_default '9'
-    option max_length_default '128'
+    option max_length_default '32'
     option min_length '9'
-    option max_length '128'
+    option max_length '32'
 
