@@ -36,7 +36,7 @@ return view.extend({
             return uci.set('admin_manage', section_id, 'retry_count', formvalue);
         };
 
-        o = s.option(form.Value, 'retry_interval', _('Interval retries'));
+        o = s.option(form.Value, 'retry_interval', _('Interval retries(minutes)'));
         o.datatype = 'uinteger';
         o.default = '5';
         o.rmempty = false;
@@ -46,4 +46,4 @@ return view.extend({
 
         return m.render();
     }
-}); 
+});
