@@ -30,7 +30,7 @@
 			"path": "system/password"
 		},
 		"depends": {
-			"acl": [ "luci-mod-system-config" ]
+			"acl": [ "luci-mod-system-config", "luci-mod-system-manage" ]
 		}
 	},
 
@@ -90,6 +90,18 @@
 		"action": {
 			"type": "view",
 			"path": "system/password_rule"
+		},
+		"depends": {
+			"acl": [ "luci-mod-system-manage" ]
+		}
+	},
+
+	"admin/system/admin/login_rule": {
+		"title": "Login Configuration",
+		"order": 3,
+		"action": {
+			"type": "view",
+			"path": "system/login_rule"
 		},
 		"depends": {
 			"acl": [ "luci-mod-system-manage" ]
