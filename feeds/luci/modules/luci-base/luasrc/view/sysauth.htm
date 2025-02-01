@@ -9,13 +9,20 @@
 <form method="post" action="<%=pcdata(FULL_REQUEST_URI)%>" autocomplete="off">
 	<%- if fuser then %>
 		<div class="alert-message warning">
-			<p><%:Invalid username and/or password! Please try again.%></p>
-			<%
-				local nixio = require "nixio"
-				nixio.syslog("warning", string.format("Login failed for user '%s' from %s",
-					luci.http.formvalue("luci_username") or "?",
-					luci.http.getenv("REMOTE_ADDR") or "?"))
-			%>
+			<p><%:Invalid username and/or password! Please try again.%>
+			<%- if fail_count and fail_count > 0 then %>
+				(<%:Failed attempts%>: <%= fail_count %>)
+			<%- end %>
+			</p>
+			<%- if message then %>
+				<p><%= message %></p>
+			<%- end %>
+		</div>
+	<% end -%>
+
+	<%- if debug_msg then %>
+		<div class="debug-message">
+			<%= debug_msg %>
 		</div>
 	<% end -%>
 

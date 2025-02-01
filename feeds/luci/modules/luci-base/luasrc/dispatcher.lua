@@ -1671,29 +1671,89 @@ function action_sysauth()
 	local http = require "luci.http"
 	local sys = require "luci.sys"
 	local nixio = require "nixio"
+
+	local ip = http.getenv("REMOTE_ADDR") or "?"
 	local user = http.formvalue("luci_username")
 	local pass = http.formvalue("luci_password")
 
+	-- 사용자 입력 확인
+	if not user or not pass then
+		http.status(400, "Bad Request")
+		return
+	end
+
+	-- 로그인 시도 가능 여부 확인
+	local can_attempt, block_remaining = check_login_attempts(ip, user)
+	if not can_attempt then
+		nixio.syslog("warning", string.format("Blocked login attempt from %s for user '%s' (blocked for %d more seconds)",
+			ip, user, block_remaining))
+		http.status(403, "Forbidden")
+		luci.template.render("sysauth", {
+			fuser = user,
+			fail_count = attempt_count,
+			message = string.format("Too many failed attempts. Please try again in %d minutes.",
+				math.ceil(block_remaining / 60))
+		})
+		return
+	end
+
+	-- 슈퍼유저 확인 및 패스워드 검증
 	if user == get_super_user() then
 		if sys.user.checkpasswd(user, pass) then
-			-- 로그인 성공
+			-- 로그인 성공시 해당 IP와 사용자의 실패 기록 초기화
+			local key = string.format("%s_%s", ip, user)
+			if login_attempts[key] then
+				login_attempts[key].count = 0
+				login_attempts[key].blocked_until = 0
+			end
+
+			-- 기본 패스워드 체크
 			if check_password_hash(user, pass) then
-				-- /etc/shadow의 기본 해시값과 동일한 경우
-				nixio.syslog("info", "Default password detected, redirecting to password change")
-				http.redirect(luci.dispatcher.build_url("admin/changepassword"))
-				return
-			else
-				-- 정상적인 로그인 처리
-				nixio.syslog("info", string.format("Successful login for user '%s' from %s",
-					user, http.getenv("REMOTE_ADDR") or "?"))
+				nixio.syslog("info", string.format("Super user '%s' logged in with default password from %s, redirecting to password change",
+					user, ip))
+				http.redirect(build_url("admin/changepassword"))
 				return
 			end
-		else
-			-- 로그인 실패
-			nixio.syslog("warning", string.format("Failed login attempt for user '%s' from %s",
-				user, http.getenv("REMOTE_ADDR") or "?"))
-			http.redirect(luci.dispatcher.build_url("admin/login"))
+
+			-- 정상적인 로그인 성공
+			nixio.syslog("info", string.format("Super user '%s' successfully logged in from %s",
+				user, ip))
+			return
+		end
+	else
+		-- 일반 사용자 로그인 처리
+		if sys.user.checkpasswd(user, pass) then
+			-- 로그인 성공시 해당 IP와 사용자의 실패 기록 초기화
+			local key = string.format("%s_%s", ip, user)
+			if login_attempts[key] then
+				login_attempts[key].count = 0
+				login_attempts[key].blocked_until = 0
+			end
+
+			nixio.syslog("info", string.format("User '%s' successfully logged in from %s",
+				user, ip))
 			return
 		end
 	end
+
+	-- 로그인 실패 처리
+	local is_blocked = record_failed_attempt(ip, user)
+	nixio.syslog("warning", string.format("Failed login attempt for user '%s' from %s",
+		user, ip))
+
+	if is_blocked then
+		-- 차단된 경우 메시지 표시
+		http.status(403, "Forbidden")
+		local uci = require "luci.model.uci".cursor()
+		luci.template.render("sysauth", {
+			fuser = user,
+			fail_count = attempt_count,
+			message = string.format("Account is locked due to too many failed attempts. Please try again in %d minutes.",
+				tonumber(uci:get("admin_manage", "login_rule", "retry_interval") or 5))
+		})
+	else
+		-- 일반 실패의 경우 로그인 페이지로 리다이렉트
+		http.redirect(build_url("admin/login"))
+	end
+	return
 end
