@@ -8,14 +8,28 @@
 
 <form method="post" action="<%=pcdata(FULL_REQUEST_URI)%>" autocomplete="off">
 	<%- if fuser then %>
+		<%
+			nixio.syslog("info", "=== Template Debug Start ===")
+			nixio.syslog("info", string.format("fuser: %s", fuser or "nil"))
+			nixio.syslog("info", string.format("fail_count: %s", fail_count or "nil"))
+			if message then
+				nixio.syslog("info", string.format("message: %s", message))
+			end
+			nixio.syslog("info", "=== Template Debug End ===")
+		%>
 		<div class="alert-message warning">
-			<p><%:Invalid username and/or password! Please try again.%>
+			<p><%:Invalid username and/or password! Please try again.%></p>
 			<%- if fail_count and fail_count > 0 then %>
-				(<%:Failed attempts%>: <%= fail_count %>)
+				<p class="failed-attempts">
+					<%:Failed login attempts%>: <strong><%= fail_count %></strong>
+					<%- if fail_count >= 5 then %>
+						<br/>
+						<span class="lockout-warning"><%:Account is temporarily locked%></span>
+					<%- end %>
+				</p>
 			<%- end %>
-			</p>
 			<%- if message then %>
-				<p><%= message %></p>
+				<p class="error-message"><%= message %></p>
 			<%- end %>
 		</div>
 	<% end -%>
