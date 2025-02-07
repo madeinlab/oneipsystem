@@ -1,0 +1,77 @@
+<%#
+ Copyright 2024 Doowon
+ Licensed to the public under the Apache License 2.0.
+-%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>503 Service Temporarily Unavailable</title>
+    <style>
+        :root {
+            --main-bright-color: #00A3E1;
+            --main-dark-color: #002B49;
+            --secondary-bright-color: #FFFFFF;
+            --secondary-dark-color: #212322;
+            --warning-color: #e74c3c;
+        }
+        body {
+            font-family: "GalanoGrotesqueW00-Regular", sans-serif;
+            background: var(--secondary-bright-color);
+            color: var(--secondary-dark-color);
+            margin: 0;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: var(--main-dark-color);
+            margin-bottom: 1em;
+        }
+        p {
+            margin: 0.5em 0;
+        }
+        .warning-text {
+            color: var(--warning-color);
+            font-weight: bold;
+        }
+        #countdown {
+            font-weight: bold;
+            color: var(--main-bright-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>503 <%:Service Temporarily Unavailable%></h2>
+        <p><%:Sorry, your account has been temporarily locked due to multiple failed login attempts.%></p>
+        <p><span class="warning-text"><%=message%></span></p>
+        <p><%:The service will be available again in%> <span id="countdown"></span></p>
+    </div>
+
+    <script type="text/javascript">//<![CDATA[
+        var timeLeft = 3 * 60; // 3분을 초 단위로 변환
+        var countdownElement = document.getElementById('countdown');
+        
+        function updateCountdown() {
+            var minutes = Math.floor(timeLeft / 60);
+            var seconds = timeLeft % 60;
+            
+            countdownElement.textContent = minutes + ' minutes ' + seconds + ' seconds';
+            
+            if (timeLeft <= 0) {
+                window.location.href = '/';
+            } else {
+                timeLeft--;
+                setTimeout(updateCountdown, 1000);
+            }
+        }
+        
+        updateCountdown();
+    //]]></script>
+</body>
+</html> 

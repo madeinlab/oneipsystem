@@ -489,6 +489,26 @@ function error500(message)
 	return false
 end
 
+function error503(message)
+	-- 기존 세션 정리
+	local sid = context.authsession
+	if sid then
+		util.ubus("session", "destroy", { ubus_rpc_session = sid })
+		http.header("Set-Cookie", "sysauth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=" .. build_url())
+	end
+
+	-- 헤더 설정
+	http.status(503, "Service Temporarily Unavailable")
+	http.prepare_content("text/html; charset=utf-8")
+
+	-- 템플릿 렌더링
+	require("luci.template").render("error503", {message=message})
+
+	-- 요청 처리 중단
+	luci.http.close()
+	os.exit(0)
+end
+
 local function determine_request_language()
 	local conf = require "luci.config"
 	assert(conf.main, "/etc/config/luci seems to be corrupt, unable to find section 'main'")
@@ -711,45 +731,6 @@ local function session_setup(user, pass)
 	login_attempts[key].count = login_attempts[key].count + 1
 	save_attempts()
 
-	-- 5회 실패시 처리 (count가 5가 되었을 때)
-	if login_attempts[key].count == 5 then
-		-- 1. 503 에러 설정
-		http.status(503, "Service Temporarily Unavailable")
-
-		-- 2. 3초 딜레이
-		nixio.nanosleep(3)
-
-		-- 3. firewall rule 추가
-		local fw = require "luci.model.firewall"
-		local rule_name = "login_block_" .. ip:gsub("%.", "_")
-
-		-- 새 룰 섹션 추가
-		local new_rule = uci:section("firewall", "rule", nil, {
-			name = rule_name,
-			src = "wan",
-			src_ip = ip,
-			target = "DROP",
-			enabled = "1"
-		})
-
-		-- 새로 추가된 룰을 첫 번째 위치로 이동
-		uci:reorder("firewall", new_rule, 0)
-		uci:commit("firewall")
-
-		-- 4. retry_interval 후 차단 해제 및 로그인 시도 초기화
-		local retry_interval = tonumber(uci:get("admin_manage", "login_rule", "retry_interval")) or 5
-
-		os.execute(string.format(
-			"(/bin/sh -c 'sleep %d && uci delete firewall.$(uci show firewall | grep %s | cut -d. -f2) && uci commit firewall && fw3 reload') &",
-			retry_interval * 60,
-			rule_name
-		))
-
-		-- 5. 세션/쿠키 삭제
-		context.authsession = nil
-		http.header("Set-Cookie", "sysauth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0")
-	end
-
 	nixio.syslog("info", "Proceeding with normal login")
 	-- 일반 로그인 처리
 	local login = util.ubus("session", "login", {
@@ -778,7 +759,17 @@ local function session_setup(user, pass)
 	nixio.syslog("info", string.format("luci: failed login on /%s for %s from %s\n",
 		rp, user or "?", ip))
 
-	-- 템플릿 직접 렌더링하지 않고 컨텍스트에 데이터만 저장
+	-- 5회 이상 실패 시 처리
+	if login_attempts[key].count >= 5 then
+		-- 1초 지연
+		nixio.nanosleep(1)
+
+		-- error503 페이지 렌더링 및 요청 종료
+		error503(string.format("Account is temporarily locked after %d failed login attempts.", login_attempts[key].count))
+		return nil  -- 이 return은 실행되지 않음 (위에서 프로세스가 종료됨)
+	end
+
+	-- 일반 실패 메시지 표시
 	context.auth_failed = {
 		fuser = user,
 		fail_count = login_attempts[key].count,
@@ -1360,7 +1351,7 @@ function createtree_json()
 		wildcard = "boolean"
 	}
 
-	local files = {}
+	local files ={}
 	local cachefile
 
 	for file in (fs.glob("/usr/share/luci/menu.d/*.json") or function() end) do
