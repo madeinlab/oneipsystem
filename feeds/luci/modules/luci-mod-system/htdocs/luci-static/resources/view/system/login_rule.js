@@ -12,8 +12,8 @@ return view.extend({
             let sections = uci.sections('admin_manage', 'login_rule');
             if (!sections || sections.length === 0) {
                 let sid = uci.add('admin_manage', 'login_rule');
-                uci.set('admin_manage', sid, 'retry_count', '5');
-                uci.set('admin_manage', sid, 'retry_interval', '5');
+                uci.set('admin_manage', sid, 'retry_count', uci.get('admin_manage', 'login_rule', 'retry_count_default') || '5');
+                uci.set('admin_manage', sid, 'retry_interval', uci.get('admin_manage', 'login_rule', 'retry_interval_default') || '5');
                 return uci.save();
             }
         });
@@ -30,7 +30,7 @@ return view.extend({
         var o;
         o = s.option(form.Value, 'retry_count', _('Number of retries'));
         o.datatype = 'uinteger';
-        o.default = '5';
+        o.default = uci.get('admin_manage', 'login_rule', 'retry_count_default') || '5';
         o.rmempty = false;
         o.write = function(section_id, formvalue) {
             return uci.set('admin_manage', section_id, 'retry_count', formvalue);
@@ -38,7 +38,7 @@ return view.extend({
 
         o = s.option(form.Value, 'retry_interval', _('Interval retries(minutes)'));
         o.datatype = 'uinteger';
-        o.default = '5';
+        o.default = uci.get('admin_manage', 'login_rule', 'retry_interval_default') || '5';
         o.rmempty = false;
         o.write = function(section_id, formvalue) {
             return uci.set('admin_manage', section_id, 'retry_interval', formvalue);

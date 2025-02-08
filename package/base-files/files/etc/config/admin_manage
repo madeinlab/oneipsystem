@@ -5,5 +5,7 @@ config password_rule
     option max_length '32'
 
 config login_rule
+    option retry_count_default '5'
+    option retry_interval_default '5'
     option retry_count '5'
     option retry_interval '5'

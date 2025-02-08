@@ -22,7 +22,7 @@
 			<%- if fail_count and fail_count > 0 then %>
 				<p class="failed-attempts">
 					<%:Failed login attempts%>: <strong><%= fail_count %></strong>
-					<%- if fail_count >= 5 then %>
+					<%- if fail_count >= retry_count then %>
 						<br/>
 						<span class="lockout-warning"><%:Account is temporarily locked%></span>
 					<%- end %>

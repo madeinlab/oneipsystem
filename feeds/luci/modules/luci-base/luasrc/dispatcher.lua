@@ -489,24 +489,14 @@ function error500(message)
 	return false
 end
 
-function error503(message)
-	-- 기존 세션 정리
-	local sid = context.authsession
-	if sid then
-		util.ubus("session", "destroy", { ubus_rpc_session = sid })
-		http.header("Set-Cookie", "sysauth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=" .. build_url())
-	end
-
-	-- 헤더 설정
+function error503(message, retry_interval)
 	http.status(503, "Service Temporarily Unavailable")
-	http.prepare_content("text/html; charset=utf-8")
+	http.prepare_content("text/html")
 
-	-- 템플릿 렌더링
-	require("luci.template").render("error503", {message=message})
-
-	-- 요청 처리 중단
-	luci.http.close()
-	os.exit(0)
+	require("luci.template").render("error503", {
+		message = message,
+		retry_interval = retry_interval
+	})
 end
 
 local function determine_request_language()
@@ -636,6 +626,42 @@ local function session_retrieve(sid, allowed_users)
 	return nil, nil, nil
 end
 
+local function get_retry_settings()
+	-- login_rule 섹션 확인
+	local sections = uci:get_all('admin_manage')
+	if sections then
+		nixio.syslog("info", "=== UCI Sections ===")
+		for name, section in pairs(sections) do
+			if section['.type'] == 'login_rule' then
+				local retry_count = section['retry_count']
+				local retry_interval = section['retry_interval']
+
+				-- 값이 없으면 기본값 사용
+				if not retry_count then
+					retry_count = section['retry_count_default'] or "5"
+				end
+				if not retry_interval then
+					retry_interval = section['retry_interval_default'] or "5"
+				end
+
+				nixio.syslog("info", string.format("=== Using values === count: %s, interval: %s",
+					retry_count, retry_interval))
+
+				return tonumber(retry_count), tonumber(retry_interval)
+			end
+		end
+	end
+
+	-- 섹션이 없으면 기본값 추가
+	local sid = uci:add('admin_manage', 'login_rule')
+	uci:set('admin_manage', sid, 'retry_count', '5')
+	uci:set('admin_manage', sid, 'retry_interval', '5')
+	uci:save()
+
+	return tonumber(uci:get('admin_manage', sid, 'retry_count_default')),
+		   tonumber(uci:get('admin_manage', sid, 'retry_interval_default'))
+end
+
 local function session_setup(user, pass)
 	local tpl = require "luci.template"
 	local rp = context.requestpath
@@ -759,14 +785,21 @@ local function session_setup(user, pass)
 	nixio.syslog("info", string.format("luci: failed login on /%s for %s from %s\n",
 		rp, user or "?", ip))
 
-	-- 5회 이상 실패 시 처리
-	if login_attempts[key].count >= 5 then
-		-- 1초 지연
-		nixio.nanosleep(1)
+	-- 로그인 실패 처리
+	local retry_count, retry_interval = get_retry_settings()
 
-		-- error503 페이지 렌더링 및 요청 종료
-		error503(string.format("Account is temporarily locked after %d failed login attempts.", login_attempts[key].count))
-		return nil  -- 이 return은 실행되지 않음 (위에서 프로세스가 종료됨)
+	if login_attempts[key].count >= retry_count then
+		nixio.syslog("info", string.format("=== Before error503() === count: %d, interval: %d", retry_count, retry_interval))
+
+		error503(string.format("Account is temporarily locked after %d failed login attempts.",
+			retry_count), retry_interval)
+
+		luci.http.close()
+
+		login_attempts[key].count = 0
+		save_attempts()
+
+		os.exit(0)
 	end
 
 	-- 일반 실패 메시지 표시
@@ -774,7 +807,8 @@ local function session_setup(user, pass)
 		fuser = user,
 		fail_count = login_attempts[key].count,
 		message = string.format("Invalid username and/or password! Please try again. (Failed attempts: %d)",
-			login_attempts[key].count)
+			login_attempts[key].count),
+		retry_count = retry_count
 	}
 
 	return nil
@@ -1091,10 +1125,12 @@ function dispatch(request)
 				http.status(403, "Forbidden")
 				http.header("X-LuCI-Login-Required", "yes")
 
+				local retry_count, _ = get_retry_settings()
 				-- 실패 정보가 있으면 사용
 				local scope = context.auth_failed or {
 					duser = get_super_user(),
-					fuser = user
+					fuser = user,
+					retry_count = retry_count
 				}
 
 				local ok, res = util.copcall(tpl.render_string, [[<% include("themes/" .. theme .. "/sysauth") %>]], scope)
@@ -1585,104 +1621,104 @@ function _cbi(self, ...)
 
 			io.stderr:write("please change %s to use the form() action instead.\n"
 				% table.concat(context.request, "/"))
-		end
-
-		res.flow = config
-		local cstate = res:parse()
-		if cstate and (not state or cstate < state) then
-			state = cstate
-		end
 	end
 
-	local function _resolve_path(path)
-		return type(path) == "table" and build_url(unpack(path)) or path
+	res.flow = config
+	local cstate = res:parse()
+	if cstate and (not state or cstate < state) then
+		state = cstate
 	end
+end
 
-	if config.on_valid_to and state and state > 0 and state < 2 then
-		http.redirect(_resolve_path(config.on_valid_to))
+local function _resolve_path(path)
+	return type(path) == "table" and build_url(unpack(path)) or path
+end
+
+if config.on_valid_to and state and state > 0 and state < 2 then
+	http.redirect(_resolve_path(config.on_valid_to))
+	return
+end
+
+if config.on_changed_to and state and state > 1 then
+	http.redirect(_resolve_path(config.on_changed_to))
+	return
+end
+
+if config.on_success_to and state and state > 0 then
+	http.redirect(_resolve_path(config.on_success_to))
+	return
+end
+
+if config.state_handler then
+	if not config.state_handler(state, maps) then
 		return
 	end
+end
 
-	if config.on_changed_to and state and state > 1 then
-		http.redirect(_resolve_path(config.on_changed_to))
-		return
-	end
+http.header("X-CBI-State", state or 0)
 
-	if config.on_success_to and state and state > 0 then
-		http.redirect(_resolve_path(config.on_success_to))
-		return
-	end
+if not config.noheader then
+	tpl.render("cbi/header", {state = state})
+end
 
-	if config.state_handler then
-		if not config.state_handler(state, maps) then
-			return
+local redirect
+local messages
+local applymap   = false
+local pageaction = true
+local parsechain = { }
+local writable   = false
+
+for i, res in ipairs(maps) do
+	if res.apply_needed and res.parsechain then
+		local c
+		for _, c in ipairs(res.parsechain) do
+			parsechain[#parsechain+1] = c
 		end
+		applymap = true
 	end
 
-	http.header("X-CBI-State", state or 0)
-
-	if not config.noheader then
-		tpl.render("cbi/header", {state = state})
+	if res.redirect then
+		redirect = redirect or res.redirect
 	end
 
-	local redirect
-	local messages
-	local applymap   = false
-	local pageaction = true
-	local parsechain = { }
-	local writable   = false
-
-	for i, res in ipairs(maps) do
-		if res.apply_needed and res.parsechain then
-			local c
-			for _, c in ipairs(res.parsechain) do
-				parsechain[#parsechain+1] = c
-			end
-			applymap = true
-		end
-
-		if res.redirect then
-			redirect = redirect or res.redirect
-		end
-
-		if res.pageaction == false then
-			pageaction = false
-		end
-
-		if res.message then
-			messages = messages or { }
-			messages[#messages+1] = res.message
-		end
+	if res.pageaction == false then
+		pageaction = false
 	end
 
-	for i, res in ipairs(maps) do
-		local is_readable_map = has_uci_access(res.config, "read")
-		local is_writable_map = has_uci_access(res.config, "write")
-
-		writable = writable or is_writable_map
-
-		res:render({
-			firstmap   = (i == 1),
-			redirect   = redirect,
-			messages   = messages,
-			pageaction = pageaction,
-			parsechain = parsechain,
-			readable   = is_readable_map,
-			writable   = is_writable_map
-		})
+	if res.message then
+		messages = messages or { }
+		messages[#messages+1] = res.message
 	end
+end
 
-	if not config.nofooter then
-		tpl.render("cbi/footer", {
-			flow          = config,
-			pageaction    = pageaction,
-			redirect      = redirect,
-			state         = state,
-			autoapply     = config.autoapply,
-			trigger_apply = applymap,
-			writable      = writable
-		})
-	end
+for i, res in ipairs(maps) do
+	local is_readable_map = has_uci_access(res.config, "read")
+	local is_writable_map = has_uci_access(res.config, "write")
+
+	writable = writable or is_writable_map
+
+	res:render({
+		firstmap   = (i == 1),
+		redirect   = redirect,
+		messages   = messages,
+		pageaction = pageaction,
+		parsechain = parsechain,
+		readable   = is_readable_map,
+		writable   = is_writable_map
+	})
+end
+
+if not config.nofooter then
+	tpl.render("cbi/footer", {
+		flow          = config,
+		pageaction    = pageaction,
+		redirect      = redirect,
+		state         = state,
+		autoapply     = config.autoapply,
+		trigger_apply = applymap,
+		writable      = writable
+	})
+end
 end
 
 function cbi(model, config)

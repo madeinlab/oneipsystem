@@ -27,6 +27,7 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
+            padding: 20px;
         }
         h2 {
             color: var(--main-dark-color);
@@ -54,7 +55,7 @@
     </div>
 
     <script type="text/javascript">//<![CDATA[
-        var timeLeft = 3 * 60; // 3분을 초 단위로 변환
+        var timeLeft = <%= retry_interval %> * 60;
         var countdownElement = document.getElementById('countdown');
         
         function updateCountdown() {
