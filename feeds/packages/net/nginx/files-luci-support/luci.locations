@@ -15,3 +15,9 @@ location ~ /cgi-bin/cgi-(backup|download|upload|exec) {
 location /luci-static {
 		error_log stderr crit;
 }
+
+location = /favicon.ico {
+		alias /www/luci-static/material/favicon.ico;
+		access_log off;
+		expires max;
+}

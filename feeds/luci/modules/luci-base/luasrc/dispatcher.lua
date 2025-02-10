@@ -489,14 +489,79 @@ function error500(message)
 	return false
 end
 
-function error503(message, retry_interval)
-	http.status(503, "Service Temporarily Unavailable")
+function error503(message, retry_interval, ip)
+	-- 방화벽 룰 먼저 추가
+	local uci = require "luci.model.uci".cursor()
+	local rule_name = "login_block_" .. ip:gsub("%.", "_")
+	
+	-- 기존 룰이 있는지 확인
+	local exists = false
+	uci:foreach("firewall", "rule", function(s)
+		if s.name == rule_name then
+			exists = true
+			return false
+		end
+	end)
+	
+	if not exists then
+		-- 새 룰 추가
+		local rule = uci:add("firewall", "rule")
+		uci:set("firewall", rule, "name", rule_name)
+		uci:set("firewall", rule, "src", "wan")
+		uci:set("firewall", rule, "src_ip", ip)
+		uci:set("firewall", rule, "target", "DROP")
+		uci:set("firewall", rule, "enabled", "1")
+		uci:set("firewall", rule, "proto", "tcp")
+		uci:commit("firewall")
+		
+		-- 방화벽 리로드
+		os.execute("/etc/init.d/firewall reload &")
+		
+		-- 룰 제거를 위한 cron job 설정
+		os.execute(string.format(
+			"(/bin/sh -c 'sleep %d && uci delete firewall.$(uci show firewall | grep %s | cut -d. -f2) && uci commit firewall && /etc/init.d/firewall reload') &",
+			retry_interval * 60,
+			rule_name
+		))
+	end
+
+	-- HTTP 응답 헤더 설정
+	http.status(403, "Forbidden")
 	http.prepare_content("text/html")
 
-	require("luci.template").render("error503", {
-		message = message,
-		retry_interval = retry_interval
-	})
+	-- 간단한 HTML 응답
+	local html = string.format([[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>403 Forbidden</title>
+	<style>
+		body { font-family: Arial; text-align: center; padding: 40px; }
+		.warning { color: #e74c3c; font-weight: bold; }
+		#countdown { color: #00A3E1; font-weight: bold; }
+	</style>
+</head>
+<body>
+	<h2>403 Forbidden</h2>
+	<p>Account locked due to multiple failed login attempts.</p>
+	<p class="warning">%s</p>
+	<p>Available again in <span id="countdown">%d minutes</span></p>
+	<script>
+		let secs = %d;
+		setInterval(() => {
+			let min = Math.floor(secs/60);
+			let sec = secs%%60;
+			document.getElementById('countdown').textContent = 
+				min + ' minutes ' + sec + ' seconds';
+			if(secs-- <= 0) location.href = '/';
+		}, 1000);
+	</script>
+</body>
+</html>
+]], message, retry_interval, retry_interval * 60)
+
+	http.write(html)
 end
 
 local function determine_request_language()
@@ -635,7 +700,7 @@ local function get_retry_settings()
 			if section['.type'] == 'login_rule' then
 				local retry_count = section['retry_count']
 				local retry_interval = section['retry_interval']
-
+				
 				-- 값이 없으면 기본값 사용
 				if not retry_count then
 					retry_count = section['retry_count_default'] or "5"
@@ -643,10 +708,10 @@ local function get_retry_settings()
 				if not retry_interval then
 					retry_interval = section['retry_interval_default'] or "5"
 				end
-
-				nixio.syslog("info", string.format("=== Using values === count: %s, interval: %s",
+				
+				nixio.syslog("info", string.format("=== Using values === count: %s, interval: %s", 
 					retry_count, retry_interval))
-
+				
 				return tonumber(retry_count), tonumber(retry_interval)
 			end
 		end
@@ -658,8 +723,60 @@ local function get_retry_settings()
 	uci:set('admin_manage', sid, 'retry_interval', '5')
 	uci:save()
 
-	return tonumber(uci:get('admin_manage', sid, 'retry_count_default')),
+	return tonumber(uci:get('admin_manage', sid, 'retry_count_default')), 
 		   tonumber(uci:get('admin_manage', sid, 'retry_interval_default'))
+end
+
+-- 방화벽 룰 추가
+local function add_firewall_rule(ip, retry_interval)
+	local fw = require "luci.model.firewall"
+	local rule_name = "login_block_" .. ip:gsub("%.", "_")
+
+	-- UCI 설정
+	local uci = require "luci.model.uci".cursor()
+	
+	-- 새 룰 섹션 추가
+	local new_rule = uci:section("firewall", "rule", nil, {
+		name = rule_name,
+		src = "wan",
+		src_ip = ip,
+		target = "DROP",
+		enabled = "1"
+	})
+
+	-- 새로 추가된 룰을 첫 번째 위치로 이동
+	uci:reorder("firewall", new_rule, 0)
+	uci:commit("firewall")
+	
+	-- 방화벽 리로드
+	os.execute("/etc/init.d/firewall reload")
+	
+	return rule_name
+end
+
+-- 방화벽 룰 자동 삭제 설정
+local function schedule_rule_deletion(rule_name, retry_interval)
+	nixio.syslog("info", string.format("Scheduling deletion of firewall rule %s in %d minutes", rule_name, retry_interval))
+	
+	local cmd = string.format([[
+		nohup /bin/sh -c '
+		sleep %d
+		if uci delete firewall.$(uci show firewall | grep %s | cut -d. -f2); then
+			uci commit firewall
+			/etc/init.d/firewall reload
+			logger "Successfully deleted firewall rule: %s"
+		else
+			logger "Failed to delete firewall rule: %s"
+		fi
+		' > /dev/null 2>&1 &
+	]], retry_interval * 60, rule_name, rule_name, rule_name, rule_name)
+	
+	local success = os.execute(cmd)
+	if success then
+		nixio.syslog("info", "Successfully scheduled rule deletion")
+	else
+		nixio.syslog("error", "Failed to schedule rule deletion")
+	end
 end
 
 local function session_setup(user, pass)
@@ -676,6 +793,12 @@ local function session_setup(user, pass)
 	if not login_attempts[key] then
 		login_attempts[key] = { count = 0 }
 	end
+
+	-- 디버그 로깅 추가
+	nixio.syslog("info", "=== Template Debug Start ===")
+	nixio.syslog("info", string.format("fuser: %s", user or "?"))
+	nixio.syslog("info", string.format("fail_count: %d", login_attempts[key].count))
+	nixio.syslog("info", "=== Template Debug End ===")
 
 	nixio.syslog("info", "=== Login Debug Start ===")
 	nixio.syslog("info", string.format("Username: %s", user or "?"))
@@ -778,7 +901,7 @@ local function session_setup(user, pass)
 		nixio.syslog("info", string.format("luci: accepted login on /%s for %s from %s\n",
 			rp, user or "?", http.getenv("REMOTE_ADDR") or "?"))
 
-		return session_retrieve(login.ubus_rpc_session)
+	return session_retrieve(login.ubus_rpc_session)
 	end
 
 	nixio.syslog("err", string.format("Login failed (attempt: %d)", login_attempts[key].count))
@@ -789,17 +912,8 @@ local function session_setup(user, pass)
 	local retry_count, retry_interval = get_retry_settings()
 
 	if login_attempts[key].count >= retry_count then
-		nixio.syslog("info", string.format("=== Before error503() === count: %d, interval: %d", retry_count, retry_interval))
-
-		error503(string.format("Account is temporarily locked after %d failed login attempts.",
-			retry_count), retry_interval)
-
-		luci.http.close()
-
-		login_attempts[key].count = 0
-		save_attempts()
-
-		os.exit(0)
+		handle_login_failed(user, ip, retry_count, retry_interval)
+		return false
 	end
 
 	-- 일반 실패 메시지 표시
@@ -1799,4 +1913,29 @@ local function check_password_hash(user, pass)
 		end
 	end
 	return false
+end
+
+function handle_login_failed(user, ip, retry_count, retry_interval)
+    -- 먼저 503 응답 전송
+    http.status(503, "Service Temporarily Unavailable")
+    http.header("Content-Type", "text/html; charset=utf-8")
+    http.header("Connection", "close")
+    
+    -- error503.htm 템플릿 렌더링
+    require("luci.template").render("error503", {
+        message = "Too many login attempts",
+        retry_interval = retry_interval,
+        unlock_time = retry_interval * 60,  -- 초 단위로 변환
+        redirect_url = "/cgi-bin/luci/admin/login"
+    })
+    
+    -- 응답 완료
+    http.write("")
+    http.close()
+    
+    -- 방화벽 룰 추가
+    local rule_name = add_firewall_rule(ip, retry_interval)
+    
+    -- 자동 삭제 스케줄링
+    schedule_rule_deletion(rule_name, retry_interval)
 end

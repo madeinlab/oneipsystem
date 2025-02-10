@@ -4,11 +4,14 @@
 -%>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%=luci.i18n.context.lang%>">
 <head>
     <meta charset="utf-8">
-    <title>503 Service Temporarily Unavailable</title>
+    <title>503 <%:Service Temporarily Unavailable%></title>
+    <link rel="icon" href="/luci-static/material/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/luci-static/material/favicon.ico" type="image/x-icon">
     <style>
+        /* 디자인 변수 정의 */
         :root {
             --main-bright-color: #00A3E1;
             --main-dark-color: #002B49;
@@ -16,6 +19,7 @@
             --secondary-dark-color: #212322;
             --warning-color: #e74c3c;
         }
+        /* 기본 스타일 */
         body {
             font-family: "GalanoGrotesqueW00-Regular", sans-serif;
             background: var(--secondary-bright-color);
@@ -24,11 +28,13 @@
             padding: 40px 20px;
             text-align: center;
         }
+        /* 레이아웃 */
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
+        /* 타이포그래피 */
         h2 {
             color: var(--main-dark-color);
             margin-bottom: 1em;
@@ -51,28 +57,34 @@
         <h2>503 <%:Service Temporarily Unavailable%></h2>
         <p><%:Sorry, your account has been temporarily locked due to multiple failed login attempts.%></p>
         <p><span class="warning-text"><%=message%></span></p>
-        <p><%:The service will be available again in%> <span id="countdown"></span></p>
+        <p><%:Time remaining:%> <span id="countdown"></span></p>
     </div>
-
-    <script type="text/javascript">//<![CDATA[
-        var timeLeft = <%= retry_interval %> * 60;
-        var countdownElement = document.getElementById('countdown');
+    <script>
+        // 서버에서 전달받은 잠금 시간 (초 단위)
+        var timeLeft = <%=unlock_time%>;
         
+        function formatTime(seconds) {
+            var minutes = Math.floor(seconds / 60);
+            var remainingSeconds = seconds % 60;
+            return minutes + "분 " + remainingSeconds + "초";
+        }
+
         function updateCountdown() {
-            var minutes = Math.floor(timeLeft / 60);
-            var seconds = timeLeft % 60;
-            
-            countdownElement.textContent = minutes + ' minutes ' + seconds + ' seconds';
+            var countdownElement = document.getElementById('countdown');
             
             if (timeLeft <= 0) {
-                window.location.href = '/';
-            } else {
-                timeLeft--;
-                setTimeout(updateCountdown, 1000);
+                countdownElement.textContent = "잠금 해제 중...";
+                window.location.href = '<%=redirect_url%>';
+                return;
             }
+            
+            countdownElement.textContent = formatTime(timeLeft);
+            timeLeft--;
+            setTimeout(updateCountdown, 1000);
         }
-        
-        updateCountdown();
-    //]]></script>
+
+        // 페이지 로드 시 타이머 시작
+        document.addEventListener('DOMContentLoaded', updateCountdown);
+    </script>
 </body>
 </html> 
