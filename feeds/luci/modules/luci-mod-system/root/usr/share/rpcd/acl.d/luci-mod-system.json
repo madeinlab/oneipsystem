@@ -196,5 +196,33 @@
 				"system": [ "reboot" ]
 			}
 		}
+	},
+
+	"luci-mod-system-openssh": {
+		"description": "Grant access to OpenSSH configuration",
+		"read": {
+			"file": {
+				"/etc/ssh/sshd_config": [ "read" ],
+				"/etc/init.d/sshd": [ "list" ]
+			},
+			"ubus": {
+				"file": [ "read" ],
+				"service": [ "list" ],
+				"luci": [ "getInitList" ]
+			},
+			"uci": [ "openssh" ]
+		},
+		"write": {
+			"file": {
+				"/etc/ssh/sshd_config": [ "write" ],
+				"/etc/init.d/sshd": [ "exec" ]
+			},
+			"ubus": {
+				"file": [ "write" ],
+				"service": [ "start", "stop", "enable", "disable" ],
+				"luci": [ "setInitAction", "setLocaltime" ]
+			},
+			"uci": [ "openssh" ]
+		}
 	}
 }

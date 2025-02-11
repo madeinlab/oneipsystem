@@ -673,9 +673,6 @@ end
 
 local function session_retrieve(sid, allowed_users)
 	local sdat = util.ubus("session", "get", { ubus_rpc_session = sid })
-	if type(sdat) == "table" and type(sdat.values) == "table" then
-		nixio.syslog("info", "Session username: " .. (sdat.values.username or "nil"))
-	end
 	local sacl = util.ubus("session", "access", { ubus_rpc_session = sid })
 
 	if type(sdat) == "table" and
@@ -912,7 +909,7 @@ local function session_setup(user, pass)
 	local retry_count, retry_interval = get_retry_settings()
 
 	if login_attempts[key].count >= retry_count then
-		handle_login_failed(user, ip, retry_count, retry_interval)
+		handle_login_failed(key, user, ip, retry_count, retry_interval)
 		return false
 	end
 
@@ -1915,7 +1912,8 @@ local function check_password_hash(user, pass)
 	return false
 end
 
-function handle_login_failed(user, ip, retry_count, retry_interval)
+function handle_login_failed(key, user, ip, retry_count, retry_interval)
+    
     -- 먼저 503 응답 전송
     http.status(503, "Service Temporarily Unavailable")
     http.header("Content-Type", "text/html; charset=utf-8")
@@ -1935,6 +1933,9 @@ function handle_login_failed(user, ip, retry_count, retry_interval)
     
     -- 방화벽 룰 추가
     local rule_name = add_firewall_rule(ip, retry_interval)
+
+	login_attempts[key].count = 0
+	save_attempts()
     
     -- 자동 삭제 스케줄링
     schedule_rule_deletion(rule_name, retry_interval)

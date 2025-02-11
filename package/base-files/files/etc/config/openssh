@@ -1,0 +1,11 @@
+config openssh 'sshd'
+	option enabled '0'
+	option Port '2222'
+	option PermitRootLogin 'no'
+	option PasswordAuthentication 'yes'
+	option ListenAddress '0.0.0.0'
+	option PubkeyAuthentication 'yes'
+	option AuthorizedKeysFile '.ssh/authorized_keys'
+	option UsePAM 'yes'
+	option MaxAuthTries '3'
+

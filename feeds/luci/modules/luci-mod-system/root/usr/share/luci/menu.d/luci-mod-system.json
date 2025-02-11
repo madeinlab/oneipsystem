@@ -106,5 +106,42 @@
 		"depends": {
 			"acl": [ "luci-mod-system-manage" ]
 		}
+	},
+
+	"admin/system/admin/admin_ip": {
+		"title": "Admin IP",
+		"order": 4,
+		"action": {
+			"type": "view",
+			"path": "system/admin_ip"
+		},
+		"depends": {
+			"acl": [ "luci-mod-system-manage" ]
+		}
+	},
+
+	"admin/system/admin/openssh": {
+		"title": "OpenSSH Server",
+		"order": 5,
+		"action": {
+			"type": "view",
+			"path": "system/openssh"
+		},
+		"depends": {
+			"acl": [ "luci-mod-system-openssh" ],
+			"fs": { "/usr/sbin/sshd": "executable" }
+		}
+	},
+
+	"admin/system/admin/session": {
+		"title": "Session Settings",
+		"order": 6,
+		"action": {
+			"type": "view",
+			"path": "system/session"
+		},
+		"depends": {
+			"acl": [ "luci-mod-system-config" ]
+		}
 	}
 }
