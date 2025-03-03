@@ -8804,3 +8804,23 @@ msgstr "제조사"
 msgid "linked"
 msgstr "링크 됨"
 
+msgid "Please enter your username."
+msgstr "사용자이름을 입력해 주세요."
+
+msgid "Please enter your password."
+msgstr "암호를 입력해 주세요."
+
+msgid "Streaming"
+msgstr "스트리밍"
+
+msgid "SSH Configuration"
+msgstr "SSH 설정"
+
+msgid "Configure SSH settings."
+msgstr "SSH 설정을 변경합니다."
+
+msgid "SSH Port"
+msgstr "SSH 포트"
+
+msgid "IP Filtering"
+msgstr "IP 필터링"

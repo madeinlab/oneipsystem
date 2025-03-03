@@ -121,7 +121,7 @@
 	},
 
 	"admin/system/admin/openssh": {
-		"title": "OpenSSH Server",
+		"title": "SSH",
 		"order": 5,
 		"action": {
 			"type": "view",
