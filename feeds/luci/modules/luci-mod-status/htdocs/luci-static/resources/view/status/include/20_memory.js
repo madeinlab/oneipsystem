@@ -36,15 +36,6 @@ return baseclass.extend({
 			_('Used'),            (mem.total && mem.free) ? (mem.total - mem.free) : null, mem.total,
 		];
 
-		if (mem.buffered)
-			fields.push(_('Buffered'), mem.buffered, mem.total);
-
-		if (mem.cached)
-			fields.push(_('Cached'), mem.cached, mem.total);
-
-		if (swap.total > 0)
-			fields.push(_('Swap free'), swap.free, swap.total);
-
 		var table = E('table', { 'class': 'table' });
 
 		for (var i = 0; i < fields.length; i += 3) {

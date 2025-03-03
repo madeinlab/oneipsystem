@@ -180,9 +180,7 @@ return baseclass.extend({
 
 		return E([
 			E('h3', _('Active DHCP Leases')),
-			table,
-			E('h3', _('Active DHCPv6 Leases')),
-			table6
+			table
 		]);
 	},
 

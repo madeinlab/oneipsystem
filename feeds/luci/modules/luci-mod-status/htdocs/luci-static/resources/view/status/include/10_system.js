@@ -27,13 +27,12 @@ return baseclass.extend({
 	render: function(data) {
 		var boardinfo   = data[0],
 		    systeminfo  = data[1],
-		    luciversion = data[2];
+		    version_info = data[2];
 
-		luciversion = luciversion.filter(function(l) {
-			return l.match(/^\s*(luciname|luciversion)\s*=/);
-		}).map(function(l) {
-			return l.replace(/^\s*\w+\s*=\s*['"]([^'"]+)['"].*$/, '$1');
-		}).join(' ');
+		var distversion = version_info.reverse().find(function(l) {
+			return l.match(/^\s*distversion\s*=/);
+		});
+		distversion = distversion ? distversion.replace(/^\s*\w+\s*=\s*['"]([^'"]+)['"].*$/, '$1') : '';
 
 		var datestr = null;
 
@@ -51,11 +50,9 @@ return baseclass.extend({
 		}
 
 		var fields = [
-			_('Hostname'),         boardinfo.hostname,
 			_('Model'),            boardinfo.model,
-			_('Architecture'),     boardinfo.system,
-			_('Target Platform'),  (L.isObject(boardinfo.release) ? boardinfo.release.target : ''),
-			_('Firmware Version'), (L.isObject(boardinfo.release) ? boardinfo.release.description + ' / ' : '') + (luciversion || ''),
+			_('CPU'),              boardinfo.system,
+			_('Firmware Version'), distversion,
 			_('Kernel Version'),   boardinfo.kernel,
 			_('Local Time'),       datestr,
 			_('Uptime'),           systeminfo.uptime ? '%t'.format(systeminfo.uptime) : null,

@@ -97,9 +97,6 @@ return baseclass.extend({
 		for (var i = 0; i < wan_nets.length; i++)
 			netstatus.appendChild(renderbox(wan_nets[i], false));
 
-		for (var i = 0; i < wan6_nets.length; i++)
-			netstatus.appendChild(renderbox(wan6_nets[i], true));
-
 		return E([
 			netstatus,
 			ctstatus
