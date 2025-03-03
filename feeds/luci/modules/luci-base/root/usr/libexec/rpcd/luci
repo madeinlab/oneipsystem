@@ -674,6 +674,35 @@ local methods = {
 
 			return result
 		end		
+	},
+
+	rebootCamera = {
+		args = { section_id = "section_id" },
+		call = function(args)
+			local camera = require "luci.camera"
+			local result = camera.rebootCamera(args.section_id);
+
+			return result
+		end
+	},
+
+	getLinkState = {
+		call = function()
+			local camera = require "luci.camera"
+			local result = camera.getLinkState();
+
+			return result
+		end
+	},
+
+	setCameraConfig = {
+		args = { section = "section", option = "option", value = "value" },
+		call = function(args)
+			local camera = require "luci.camera"
+			local result = camera.setCameraConfig(args.section, args.option, args.value);
+
+			return result
+		end
 	}
 }
 

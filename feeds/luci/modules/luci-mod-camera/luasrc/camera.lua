@@ -213,7 +213,7 @@ function getCameraInfo(section_id, type)
 	local port = uci:get('camera', section_id, portKey)
 	
 	port = tonumber(port)
-	if port and type == 'hls' then
+	if port and type == 'streaming' then
 		port = port + HLS_PORT_OFFSET
 	end
 	
@@ -657,4 +657,37 @@ function findFile(path, filename)
 	
 	print("File not found: " .. filename)
 	return false
+end
+
+function rebootCamera(section_id)
+	nixio.syslog("debug", string.format("rebootCamera section_id[%s]", section_id))
+	local cameraip = uci:get('camera', section_id, 'ip')
+	if cameraip then
+		--nixio.syslog("debug", string.format("rebootCamera section_id[%s]  001", section_id))
+		sys.exec("/usr/lib/dnsmasq/reboot-camera.sh " .. cameraip)
+		sys.exec("rm /etc/cameras/" .. section_id)
+		uci:delete('camera', section_id, 'ip')
+		uci:save('camera')
+        uci:commit('camera')
+		--nixio.syslog("debug", string.format("rebootCamera section_id[%s]  002", section_id))
+	end
+	--nixio.syslog("debug", string.format("rebootCamera section_id[%s]  003", section_id))
+end
+
+-- Get the port link state from /proc/rtk_gsw/link.
+function getLinkState()
+    local state = sys.exec("cat /proc/rtk_gsw/link")
+    state = tostring(state):gsub("%s+", "")  -- 문자열 양옆 공백 제거
+    --nixio.syslog("debug", string.format("getLinkState (type: %s): %s", type(state), state))
+    return { result = state } 
+end
+
+function setCameraConfig(section, option, value)
+	local cmd_set = string.format("uci set camera.%s.%s=%s", section, option, value)
+	local cmd_commit = "uci commit camera"
+	
+	--nixio.syslog("debug", string.format("setCameraConfig %s", cmd_set))
+
+	sys.exec(cmd_set)
+	sys.exec(cmd_commit)
 end

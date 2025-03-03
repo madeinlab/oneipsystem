@@ -177,7 +177,8 @@ return network.registerProtocol('static', {
 
 		s.taboption('general', this.CBIIPValue, 'ipaddr', _('IPv4 address'));
 		s.taboption('general', this.CBINetmaskValue, 'netmask', _('IPv4 netmask'));
-		s.taboption('general', this.CBIGatewayValue, 'gateway', _('IPv4 gateway'));
+		var gw = s.taboption('general', this.CBIGatewayValue, 'gateway', _('IPv4 gateway'));
+		gw.rmempty = false;
 		s.taboption('general', this.CBIBroadcastValue, 'broadcast', _('IPv4 broadcast'));
 
 		o = s.taboption('general', form.DynamicList, 'ip6addr', _('IPv6 address'));

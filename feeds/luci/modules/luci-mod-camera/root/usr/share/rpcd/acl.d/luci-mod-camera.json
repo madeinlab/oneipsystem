@@ -7,7 +7,7 @@
 			},
 			"uci": [ "camera" ],
 			"ubus": {
-				"luci": [ "initCameraConfig", "getTimezones", "getUSBDevices", "getCameraInfo" ],
+				"luci": [ "initCameraConfig", "getTimezones", "getUSBDevices", "getCameraInfo", "getLinkState" ],
 				"file": [ "list", "read" ],
 				"system": [ "board", "info" ],
 				"camera": [ "searchCamera" ]
@@ -16,7 +16,7 @@
 		"write": {
 			"uci": [ "camera" ],
 			"ubus": { 
-				"luci": [ "cameraRedirect", "rtspRedirect", "addCamera", "removeCamera" ]
+				"luci": [ "cameraRedirect", "rtspRedirect", "addCamera", "removeCamera", "rebootCamera", "setCameraConfig" ]
 			}
 		}
 	}, 

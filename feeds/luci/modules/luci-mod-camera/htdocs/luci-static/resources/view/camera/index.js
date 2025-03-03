@@ -19,57 +19,211 @@ function consoleLog(msg, ...args) {
     }
 }
 
-function render_port_status(node, portstate) {
+const _useRtkGswForLinkState = true;
+var _pollRegistered = false
+var _wanip = ''
+
+function render_port_status(type, node, portstate) {
 	if (!node) {
 		console.log("render_port_status node is null")
 		return null;
 	}
 
-	if (!portstate || !portstate.link)
-		dom.content(node, [
-			E('img', { src: L.resource('icons/circle_red.png') })
-		]);
-	else
-		dom.content(node, [
-			E('img', { src: L.resource('icons/circle_green.png') })
-		]);
+	let imgSrc
+	if (type == "rtk_gsw") {
+		imgSrc = !portstate ? L.resource('icons/circle_red.png') : L.resource('icons/circle_green.png');
+	} else {
+		imgSrc = (!portstate || !portstate.link) ? L.resource('icons/circle_red.png') : L.resource('icons/circle_green.png');
+	}
+
+    dom.content(node, [E('img', { src: imgSrc })]);
 
 	return node;
 }
 
-function update_port_status(topologies) {
+async function updateStatusAndCamera(topologies) {
 	var today = new Date();
-	consoleLog('[debug] update_port_status %s', today)
+	consoleLog('[debug] updateStatusAndCamera %s', today)
 
-	var tasks = [];
+	try {
+		let tasks = [];
+		let states = [];
+		
+		for (var switch_name in topologies)
+			tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(switch_name, portstate) {
+				consoleLog('[debug] portstate ', portstate)
+				for (var i = 0; i < (portstate.length - 1); i++) {
+					var cameraNodes = document.querySelectorAll('[data-camera-port="%d"]'.format(portstate[i].port + 1));
+					consoleLog('[debug] cameraNodes.length ', cameraNodes.length)
+					for (var j = 0; j < cameraNodes.length; j++) {
+						render_port_status("topology", cameraNodes[j], portstate[i]);
+						states.push({state: portstate[i].link}); 
+					}
+				}
+				updateCameraInfo(states)
+			}, topologies[switch_name], switch_name)));
 
-	for (var switch_name in topologies)
-		tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(switch_name, portstate) {
-			consoleLog('[debug] portstate ', portstate)
-			for (var i = 0; i < (portstate.length - 1); i++) {
-				var cameraNodes = document.querySelectorAll('[data-camera-port="%d"]'.format(portstate[i].port + 1));
-				for (var j = 0; j < cameraNodes.length; j++) {
-					render_port_status(cameraNodes[j], portstate[i]);
+        // Update camera's info
+        //tasks.push(Promise.resolve().then(() => updateCameraInfo(state)));
+        
+        await Promise.all(tasks);
+	} catch (error) {
+        console.log("Error in updateStatusAndCamera: ", error);
+    }
+
+    consoleLog('[debug] updateStatusAndCamera END');
+}
+
+// Update camera info
+async function updateCameraInfo(portstate) {
+	var today = new Date();
+	consoleLog('[debug] updateCameraInfo %s %s', today, portstate)
+
+	try {
+		// if (typeof uci.unload === 'function') {
+		// 	await uci.unload('camera');
+		// 	consoleLog('[debug] uci.unload(\'camera\') success');
+		// }
+
+		if (typeof uci.load === 'function') {
+			await uci.load('camera');
+			consoleLog('[debug] uci.load(\'camera\') success');
+		}
+
+		var cameraSections = uci.sections('camera');
+		cameraSections.forEach(function(section) {
+			var section_id = section['.name'];
+			var switchport = parseInt(uci.get('camera', section_id, 'switchPort'), 10)
+			if (isNaN(switchport)) switchport = 0
+			var state = switchport === 0 ? false : portstate[switchport - 1].state
+            var ip = state ? (uci.get('camera', section_id, 'ip') || '') : ''
+            var model = state ? (uci.get('camera', section_id, 'model') || '-') : '-'
+            var manufacturer = state ? (uci.get('camera', section_id, 'manufacturer') || '-') : '-'
+			var description = state ? (uci.get('camera', section_id, 'description') || '') : ''
+            var rtsp = state ? (uci.get('camera', section_id, 'rtsp') || '') : ''
+            var selectedRtsp = uci.get('camera', section_id, 'selectedrtsp')
+            var port = uci.get('camera', section_id, 'rtspForwardingPort');
+
+			// DOM
+            var modelElement = document.querySelector(`div[data-camera-id="${section_id}"].model`);
+            var manufacturerElement = document.querySelector(`div[data-camera-id="${section_id}"].manufacturer`);
+			var descriptionElement = document.querySelector(`#cbi-camera-${section_id}-desc input`);
+			var rtspElement = document.querySelector(`#cbi-camera-${section_id}-rtsplist`);
+			var hiddenrtspElement = document.querySelector(`#cbi-camera-${section_id}-rtsplist input[type="hidden"]`);
+            var rowElement = document.querySelector(`tr[data-sid="${section_id}"]`);
+
+			var strRtsp;
+			if (Array.isArray(rtsp)) {
+				strRtsp = rtsp.join(',');
+			} else if (typeof rtsp === 'string') {
+				strRtsp = rtsp;
+			} else {
+				console.error('Unexpected rtsp type:', typeof rtsp);
+				strRtsp = String(rtsp);
+			}
+
+            if (modelElement && modelElement.textContent !== model) {
+                modelElement.textContent = model;
+
+				// To preserve the changed value, initialize only when the port state changes.
+				// The value of the model, which is of readonly type, changes when the state changes.
+				descriptionElement.value = description;
+            }
+            if (manufacturerElement && manufacturerElement.textContent !== manufacturer) {
+                manufacturerElement.textContent = manufacturer;
+            }
+			// Move descriptionElement handling to modelElement.
+            // if (descriptionElement && descriptionElement.value !== description) {
+            //     descriptionElement.value = description;
+            // }
+			if (hiddenrtspElement && hiddenrtspElement.value !== strRtsp) {
+                hiddenrtspElement.value = rtsp;
+
+				// RTSP list
+				if (rtspElement) {
+					var selectElement = rtspElement ? rtspElement.querySelector('select') : null;
+					if (!selectElement) {
+						selectElement = document.createElement('select');
+						selectElement.id = `widget.cbid.camera.${section_id}.rtsplist`;
+						selectElement.className = 'cbi-input-select';
+						rtspElement.appendChild(selectElement);
+					}
+					
+					selectElement.innerHTML = '';
+
+					if (!Array.isArray(rtsp)) rtsp = [rtsp];
+					rtsp.forEach(function(item) {						
+						var option = document.createElement('option');
+						option.value = item;
+						option.textContent = port && item
+							? String.format("rtsp://%s:%d/%s", _wanip, port, rtsp.match(/rtsp:\/\/[^\/]+\/(.+)/)[1])
+							: item;
+						if (item === selectedRtsp) {
+							option.selected = true;
+						}
+						selectElement.appendChild(option);
+					});
+				
+					selectElement.addEventListener('change', function() {
+						saveSelectedRtspProfile(section_id, 'selectedrtsp', selectElement.value)
+					});
+
+					if (!rtspElement.contains(selectElement)) {
+						rtspElement.appendChild(selectElement);
+					}
+				}
+            }
+
+			if (rowElement) {
+				var actionCell = rowElement.querySelector('.cbi-section-actions');
+				if (actionCell) {
+					actionCell.innerHTML = '';
+					if (ip) {
+                        ['webpage', 'streaming', 'reboot'].forEach(function(action) {
+                            var button = E('button', {
+                                title: _(action.charAt(0).toUpperCase() + action.slice(1)),
+                                class: `cbi-button cbi-button-${action}`,
+                                click: handleButtonClick.bind(this, section_id, action)
+                            }, [_(action.charAt(0).toUpperCase() + action.slice(1))]);
+
+                            dom.append(actionCell, button);
+                        });
+					}
 				}
 			}
-		}, topologies[switch_name], switch_name)));
+		});
+	} catch (error) {
+        console.error('Error in updateCameraInfo:', error);
+    }
 
-	return Promise.all(tasks);
+    consoleLog('[debug] updateCameraInfo END');
+}
+
+async function getRtkGswLinkState() {
+    try {
+        const { result } = await getLinkState();
+        return Array.from(result);
+    } catch (error) {
+        console.error("RPC call failed:", error);
+        return null;
+    }
 }
 
 async function handleButtonClick(section_id, type) {
 	consoleLog("[debug] handleButtonClick section_id[%s] type[%s]", section_id, type)
 
-	let wanip, port
+	if (type === 'reboot') {
+		console.log('reboot ', section_id)
+		rebootCamera(section_id)
+		return
+	}
 
+	let port
 	try {
 		const info = await getCameraInfo(section_id, type)
-		consoleLog("[debug] handleButtonClick > getCameraInfo wanip[%s] port[%s]", info.wanip, info.port)
-
-		wanip = info.wanip
 		port = parseInt(info.port, 10)
 
-		if (!wanip || isNaN(port)) {
+		if (!_wanip || isNaN(port)) {
 			throw new Error("Invalid WAN IP or Port");
 		}
 	} catch (err) {
@@ -78,11 +232,19 @@ async function handleButtonClick(section_id, type) {
 	}
 
 	const url = (type === 'webpage')
-		? `https://${wanip}:${port}`
-		: `https://${wanip}:${port}/hls/`
+		? `https://${_wanip}:${port}`
+		: `https://${_wanip}:${port}/hls/`
 
 	consoleLog("[debug] Opening URL:", url);
 	window.open(url, '_blank');
+}
+
+async function saveSelectedRtspProfile(section_id, option, value) {
+	uci.set('camera', section_id, option, value);
+
+	// Not used
+	// Immediately save selectedrtsp to config.
+	//setCameraConfig(section_id, option, value)
 }
 
 var initCameraConfig = rpc.declare({
@@ -125,29 +287,67 @@ var getCameraInfo = rpc.declare({
     params: [ 'section_id', 'type' ]
 });
 
+var rebootCamera = rpc.declare({
+	object: 'luci',
+	method: 'rebootCamera',
+	params: [ 'section_id' ]	
+});
+
+var getLinkState = rpc.declare({
+	object: 'luci',
+	method: 'getLinkState',
+	params: [ ]
+});
+
+var setCameraConfig = rpc.declare({
+	object: 'luci',
+	method: 'setCameraConfig',
+	params: [ 'section', 'option', 'value']
+});
+
 return view.extend({
-
 	load: function() {
-		var i = 0
-		return network.getSwitchTopologies().then(function(topologies) {
-			
-			var tasks = [];
+		var tasks = [];
 
-			for (var switch_name in topologies) {
-				tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(ports) {
-					this.portstate = ports;
-				}, topologies[switch_name])));
-			}
+		tasks.push(network.getWANNetworks())
 
-			return Promise.all(tasks).then(function() { return topologies });
-		});
+		if (_useRtkGswForLinkState) {
+			tasks.push(getRtkGswLinkState())
+			return Promise.all(tasks)
+			//return getRtkGswLinkState();
+		} else {
+			var i = 0
+			return network.getSwitchTopologies().then(function(topologies) {
+				var tasks = [];
+				for (var switch_name in topologies) {
+					tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(ports) {
+						this.portstate = ports;
+					}, topologies[switch_name])));
+				}
+				return Promise.all(tasks).then(function() { return topologies });
+			});
+		}
 	},
 
 	// switchSections.length: 1
 	// switch_name: switch0
 	// topologies[switch0].legnth: 6 (Port1, Port2, Port3, Port4, Port5, CPU(eth0))	
-	render: function(topologies) {
+	//render: function(topologies) { // org
+	render: function(data) {
+		let wan_nets  = data[0]
+		for (let i = 0; i < wan_nets.length; i++) {
+			if (wan_nets[i].sid === 'wan') {
+				_wanip = wan_nets[i].getIPAddr()
+				break
+			}
+		}
+
 		var m, s, o
+
+		let topologies = _useRtkGswForLinkState ? null : data[1]
+		let linkstate = _useRtkGswForLinkState ? data[1] : null
+				
+		consoleLog('linkstate[%s]\ntopologies[%s] ', linkstate, topologies)
 
 		m = new form.Map('camera')
 
@@ -155,11 +355,9 @@ return view.extend({
 		if (!topologies) {
 			topologies = {};
 		}
-		//var topology = topologies ? topologies[switch_name] : null;
+
 		var topology = topologies[switch_name];
 		if (!topology) {
-			// ui.addNotification(null, _('Switch %q has an unknown topology - the VLAN settings might not be accurate.').replace(/%q/, switch_name)); UI ��ܿ� �����޽��� ���
-
 			topologies[switch_name] = topology = {
 				portstate: [
 					{ link: false, port: 0 },
@@ -179,6 +377,7 @@ return view.extend({
 		s.anonymous = true
 		s.addremove = false
 		s.topology = topology;
+		s.linkstate = linkstate;
 
 		o = s.option(form.DummyValue, 'switchPort', _('Port'))
 		o.datatype = "string"
@@ -188,8 +387,7 @@ return view.extend({
 		o.datatype = "string"
 		o.readonly = true
 		o.cfgvalue = function(section_id) {
-			var model = uci.get('camera', section_id, 'ip') ? uci.get('camera', section_id, 'model') : '-'
-
+			var model = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'model') || '-') : '-'
 			return E('div', { 'data-camera-id': section_id, 'class': 'model' }, model);
 		};
 
@@ -197,34 +395,62 @@ return view.extend({
 		o.datatype = "string"
 		o.readonly = true
 		o.cfgvalue = function(section_id) {
-			var manufacturer = uci.get('camera', section_id, 'ip') ? uci.get('camera', section_id, 'manufacturer') : '-'
-
+			var manufacturer = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'manufacturer') || '-') : '-'
 			return E('div', { 'data-camera-id': section_id, 'class': 'manufacturer' }, manufacturer);
 		};
 
-		// o = s.option(form.DummyValue, "rtsp", _('RTSP Url'))
-		// o.datatype = "string"
-		// o.readonly = true
-		// o.cfgvalue = L.bind(function(section_id) {
-		// 	var port, rtspUrl
-		// 	if (uci.get('camera', section_id, 'ip')) {
-		// 		port = uci.get('camera', section_id, 'rtspForwardingPort')
-		// 		rtspUrl = `rtsp://${wanIP}:${port}`
-		// 	} else {
-		// 		rtspUrl = '-'
-		// 	}
+		o = s.option(form.Value, 'desc', _('Description'))
+		o.datatype = "string"
+		o.maxlength = 8
+		o.renderWidget = function(section_id, option_id, cfgvalue) {
+			var container = E('div', {});
+			
+			var wrapper = document.createElement('div');
+			wrapper.style.display = 'flex';
+			wrapper.style.alignItems = 'center';
+			wrapper.style.gap = '5px';
 
-		// 	return E('div', { 'data-camera-id': section_id, 'class': 'rtsp' }, rtspUrl);
-		// });
+			var descriptionElement = document.createElement('input');
+			descriptionElement.type = 'text';
+			descriptionElement.style.minWidth = '80px';
+			descriptionElement.style.maxWidth = '160px';
+			descriptionElement.style.width = '100%';
+			descriptionElement.maxLength = 8;
+		
+			var description = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'description') || '') : '';
+			descriptionElement.value = description;
+
+			descriptionElement.addEventListener('change', function() {
+				uci.set('camera', section_id, 'description', descriptionElement.value);
+			});
+
+			wrapper.appendChild(descriptionElement);
+
+			container.appendChild(wrapper);
+
+			o.cfgvalue = function() {
+				return descriptionElement.value;
+			};
+
+			return container;
+		}
 
 		//>> Profiles dropdown.
-		o = s.option(form.ListValue, 'rtsp');
+		o = s.option(form.ListValue, 'rtsplist', 'RTSP');
 		o.renderWidget = function(section_id, option_id, cfgvalue) {
-			console.log("Rendering for section_id: " + section_id);
+			consoleLog("[debug]Rendering for section_id: %s", section_id);
 		
+			var container = E('div', {});
+
+			var wrapper = document.createElement('div');
+			wrapper.style.display = 'flex';
+			wrapper.style.alignItems = 'center';
+			wrapper.style.gap = '5px';
+
 			var selectElement = document.createElement('select');
-			selectElement.id = 'widget.cbid.camera.' + section_id + '.rtsp';
+			selectElement.id = 'widget.cbid.camera.' + section_id + '.rtsplist';
 			selectElement.className = 'cbi-input-select';
+			selectElement.style.minWidth = '250px';
 		
 			var rtsp = uci.get('camera', section_id, 'rtsp');
 			var selectedrtsp = uci.get('camera', section_id, 'selectedrtsp');
@@ -238,11 +464,11 @@ return view.extend({
 				selectedrtsp = rtsp[0];
 			}
 
-			rtsp.forEach(function(rtsp, index) {
+			rtsp.forEach(function(rtsp) {
 				var option = document.createElement('option');
 				option.value = rtsp;
 				if (rtsp && port) {
-					option.textContent = "rtsp://192.168.1.100:" + port + "/" + rtsp.match(/rtsp:\/\/[^\/]+\/(.+)/)[1];
+					option.textContent = String.format("rtsp://%s:%d/%s", _wanip, port, rtsp.match(/rtsp:\/\/[^\/]+\/(.+)/)[1])					
 				} else {
 					option.textContent = rtsp;
 				}
@@ -253,36 +479,85 @@ return view.extend({
 		
 				selectElement.appendChild(option);
 			});
-		
+
+			var copyButton = E('button', {
+				'style': 'background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 16px; height: 16px;',				
+				'click': function() {
+					var selectedText = selectElement.options[selectElement.selectedIndex].textContent;
+					navigator.clipboard.writeText(selectedText).then(function() {
+						alert('Copied: ' + selectedText);
+					}).catch(function(err) {
+						console.error('Failed to copy:', err);
+					});
+				}
+			}, [
+				E('img', { 'src': L.resource('icons/copy.png'), 'style': 'width:16px; height:16px;' })
+			]);
+
 			selectElement.addEventListener('change', function() {
-				var newRtspValue = selectElement.value;
-				uci.set('camera', section_id, 'selectedrtsp', newRtspValue);
-				uci.save();
-				uci.apply();
+				saveSelectedRtspProfile(section_id, 'selectedrtsp', selectElement.value)
 			});
 
-			return selectElement;
+			var strRtsp;
+			if (Array.isArray(rtsp)) {
+				strRtsp = rtsp.join(',');
+			} else if (typeof rtsp === 'string') {
+				strRtsp = rtsp;
+			} else {
+				console.error('Unexpected rtsp type:', typeof rtsp);
+				strRtsp = String(rtsp);
+			}
+
+			// hidden for rtsp value
+			var hiddenInput = E('input', {
+				type: 'hidden',
+				name: option_id,
+				value: strRtsp
+			});
+
+			wrapper.appendChild(selectElement);
+			wrapper.appendChild(copyButton);
+			wrapper.appendChild(hiddenInput);
+
+			container.appendChild(wrapper);
+
+			return container;
 		};
 
 		o = s.option(form.DummyValue, "status", _('Status'))
 		o.datatype = "string"
 		o.readonly = true
-		o.cfgvalue = L.bind(function(section_id) {
-			var portstate
-			var port_num = parseInt(uci.get('camera', section_id, 'switchPort'), 10)
+		o.renderWidget = function(section_id, option_id, cfvalue) {			
+			let type, port_num, portstate
+
+			type = _useRtkGswForLinkState ? "rtk_gsw" : "topology"
+
+			port_num = parseInt(uci.get('camera', section_id, 'switchPort'), 10)
 			if (isNaN(port_num))
 				portstate = false
 			else {
-				portstate = Array.isArray(topology.portstate) ? topology.portstate[port_num - 1] : null
+				if (_useRtkGswForLinkState) {
+					portstate = Array.isArray(linkstate) ? 
+						(parseInt(linkstate[port_num - 1], 10) == 1 ? true : false)
+						: false
+				} else {
+					portstate = Array.isArray(topology.portstate) ? topology.portstate[port_num - 1] : null
+				}
 			}
 
-			var statusNode = E('small', {
+			var container = E('div', {});	
+
+			let statusNode = E('small', {
 				'data-camera-port': port_num
 			});
-		
-			return render_port_status(statusNode, portstate)
-		})
-		
+
+			render_port_status(type, statusNode, portstate)
+
+			container.appendChild(statusNode);
+
+			return container;
+		}
+
 		s.renderRowActions = function(section_id) {
 			var ip = uci.get('camera', section_id, 'ip');
 
@@ -292,31 +567,49 @@ return view.extend({
 
 			var isIpValid = ip && ip.trim() !== '';
 			if (isIpValid) {
-
 				dom.append(tdEl.lastElementChild,
 					E('button', {
 						'title': _('Webpage'),
 						'class': 'cbi-button cbi-button-webpage',
 						'click': handleButtonClick.bind(this, section_id, 'webpage')
 					}, [ _('Webpage') ])
-				);
+				)
 				
 				dom.append(tdEl.lastElementChild,
 					E('button', {
-						'title': _('Hls'),
-						'class': 'cbi-button cbi-button-rtsp',
-						'click': handleButtonClick.bind(this, section_id, 'hls')
-					}, [ _('Hls') ])
-				);
+						'title': _('Streaming'),
+						'class': 'cbi-button cbi-button-streaming',
+						'click': handleButtonClick.bind(this, section_id, 'streaming')
+					}, [ _('Streaming') ])
+				)
+
+				dom.append(tdEl.lastElementChild,
+					E('button', {
+						'title': _('Reboot'),
+						'class': 'cbi-button cbi-button-reboot',
+						'click': function() {
+							handleButtonClick.bind(this, section_id, 'reboot')
+						}
+					}, [ _('Reboot') ])
+				)
 			}
 
 			return tdEl;
 		};
-		
-		return m.render();
+
+		if (!_pollRegistered) {
+			_pollRegistered = true
+			setTimeout(() => {
+				poll.add(L.bind(updateStatusAndCamera, m, topologies));
+			}, 1000);
+		}	
+
+		var initialUI = m.render();
+
+		return initialUI;
 	},
 
-	handleSaveApply: null,
-	handleSave: null,
+	//handleSaveApply: null,
+	//handleSave: null,
 	handleReset: null
 });
