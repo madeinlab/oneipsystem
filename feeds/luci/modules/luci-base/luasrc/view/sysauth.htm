@@ -49,13 +49,13 @@
 			<div class="cbi-value">
 				<label class="cbi-value-title" for="luci_username"><%:Username%></label>
 				<div class="cbi-value-field">
-					<input class="cbi-input-text" type="text" name="luci_username" id="luci_username" autocomplete="off"/>
+					<input class="cbi-input-text" type="text" name="luci_username" id="luci_username" autocomplete="off" autocomplete="new-password"/>
 				</div>
 			</div>
 			<div class="cbi-value cbi-value-last">
 				<label class="cbi-value-title" for="luci_password"><%:Password%></label>
 				<div class="cbi-value-field">
-					<input class="cbi-input-text" type="password" name="luci_password" id="luci_password" autocomplete="off"/>
+					<input class="cbi-input-text" type="password" name="luci_password" id="luci_password" autocomplete="off" autocomplete="new-password"/>
 				</div>
 			</div>
 		</div></div>
@@ -67,9 +67,84 @@
 	</div>
 </form>
 <script type="text/javascript">//<![CDATA[
-	var input = document.getElementsByName('luci_username')[0];
-	if (input)
-		input.focus();
+	function validateForm() {
+		console.log("## validateForm")
+
+		var username = document.getElementById('luci_username');
+		var password = document.getElementById('luci_password');
+		
+		removeErrorMessage();
+
+		var valid = true;
+		var errorMessage = "";
+
+		if (username.value.trim() === "") {
+			errorMessage = "<%:Please enter your username.%>";
+			username.focus();
+			valid = false;
+		} else if (password.value.trim() === "") {
+			errorMessage = "<%:Please enter your password.%>";
+			password.focus();
+			valid = false;
+		}
+
+		if (!valid) {
+			showError(password, errorMessage);
+		}
+
+		return valid;
+	}
+
+	function showError(referenceElement, message) {
+		var error = document.createElement("p");
+		error.className = "error-text";
+		error.style.color = "red";
+		error.style.fontSize = "15px";
+		error.style.marginTop = "10px";
+		error.innerText = message;
+
+		var parent = referenceElement.parentNode;
+		parent.appendChild(error);
+	}
+
+	function removeErrorMessage() {
+		var errorElement = document.querySelector('.error-text');
+		if (errorElement) {
+			errorElement.remove();
+		}
+	}
+
+	document.addEventListener("DOMContentLoaded", function () {
+		console.log("## DOMContentLoaded")
+
+		if (sessionStorage.getItem("username")) {
+			sessionStorage.removeItem("username");
+		}
+
+		if (sessionStorage.getItem("password")) {
+			sessionStorage.removeItem("password");
+		}
+
+		var username = document.getElementById('luci_username');
+		var password = document.getElementById('luci_password');
+
+		if (username) {
+			username.value = "";
+			username.focus();
+		}
+
+		if (password) {
+			password.value = "";
+		}
+
+		var form = document.querySelector("form");		
+		form.addEventListener("submit", function (event) {
+			console.log("## submit event")
+			if (!validateForm()) {
+				event.preventDefault(); // 폼 제출을 막음
+			}
+		});
+	});
 //]]></script>
 
 <%

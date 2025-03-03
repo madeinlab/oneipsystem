@@ -44,7 +44,7 @@ return view.extend({
 		var upperCheck = /[A-Z]/;                     // Uppercase letters
 		var lowerCheck = /[a-z]/;                     // Lowercase letters
 		var numberCheck = /[0-9]/;                    // Numbers
-		var specialCheck = /[@#$%^&*]/;               // Special characters
+		var specialCheck = /[!@#$%^&*()]/;            // Special characters
 		
 		if (strength) {
 			// Show requirements only when there's input
@@ -55,9 +55,9 @@ return view.extend({
 				
 				// Check each condition and create messages
 				if (lengthCheck.test(value)) {
-					requirements.push(`<span style="color:green">✓</span> Length between ${minLength} and ${maxLength} characters`);
+					requirements.push(`<span style="color:green">✓</span> ${_("Length between %d and %d characters").format(minLength, maxLength)}`);
 				} else {
-					requirements.push(`<span style="color:red">✗</span> Length between ${minLength} and ${maxLength} characters`);
+					requirements.push(`<span style="color:red">✗</span> ${_("Length between %d and %d characters").format(minLength, maxLength)}`);
 				}
 				
 				if (!upperCheck.test(value)) {
@@ -79,9 +79,9 @@ return view.extend({
 				}
 				
 				if (!specialCheck.test(value)) {
-					requirements.push('<span style="color:red">✗</span> Include special characters (@#$%^&*)');
+					requirements.push('<span style="color:red">✗</span> Include special characters (!@#$%^&*())');
 				} else {
-					requirements.push('<span style="color:green">✓</span> Include special characters (@#$%^&*)');
+					requirements.push('<span style="color:green">✓</span> Include special characters (!@#$%^&*())');
 				}
 				
 				// Display all requirements in HTML
