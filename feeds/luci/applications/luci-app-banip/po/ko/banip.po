@@ -790,7 +790,7 @@ msgid ""
 "<br /> <em><b>Please note:</b></em> add only one IPv4 address, IPv6 address "
 "or domain name per line. Comments introduced with '#' are allowed - "
 "wildcards and regex are not."
-msgstr ""
+msgstr "차단할 IP 또는 도메인 이름을 한 줄에 하나씩 입력하세요. '#'을 사용하면 해당 줄을 제외할 수 있습니다."
 
 #: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/maclist.js:23
 msgid ""
@@ -805,7 +805,7 @@ msgid ""
 "<br /> <em><b>Please note:</b></em> add only one IPv4 address, IPv6 address "
 "or domain name per line. Comments introduced with '#' are allowed - "
 "wildcards and regex are not."
-msgstr ""
+msgstr "허용할 IP 또는 도메인 이름을 한 줄에 하나씩 입력하세요. '#'을 사용하면 해당 줄을 제외할 수 있습니다."
 
 #: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/ipsetreport.js:176
 msgid ""
@@ -861,7 +861,7 @@ msgstr ""
 
 #: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:391
 msgid "Whitelist Only"
-msgstr ""
+msgstr "IP 허용 목록만 사용"
 
 #: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:499
 msgid "Whitelist Timeout"
@@ -886,3 +886,12 @@ msgstr ""
 #: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:41
 msgid "banIP action"
 msgstr ""
+
+msgid "Blacklist"
+msgstr "IP 차단 목록"
+
+msgid "Whitelist"
+msgstr "IP 허용 목록"
+
+msgid "IP Filtering"
+msgstr "IP 필터링"
