@@ -1,46 +1,33 @@
-<%#
- Copyright 2008 Steven Barth <steven@midlink.org>
- Copyright 2008-2018 Jo-Philipp Wich <jo@mein.io>
- Licensed to the public under the Apache License 2.0.
--%>
-
 <%+header%>
 
-<h2 name="content"><%:AI%></h2>
-
-<div id="view">
-	<div class="spinning"><%:Loading view…%></div>
-</div>
-
-<script type="text/javascript">//<![CDATA[
-
-//]]></script>
-
-<div class="includes" style="display:none">
 <%-
-	local util = require "luci.util"
-	local fs = require "nixio.fs"
-
-	local incdir = util.libpath() .. "/view/admin_ai/index/"
-	if fs.access(incdir) then
-		local _, inc
-		local includes = {}
-		for inc in fs.dir(incdir) do
-			if inc:match("%.htm$") then
-				includes[#includes + 1] = inc:gsub("%.htm$", "")
-			end
-		end
-		for _, inc in luci.util.vspairs(includes) do
-			include("admin_ai/index/" .. inc)
-		end
-	end
+        local uci = require "luci.model.uci".cursor()
+        local wan_ip = uci:get("network", "wan", "ipaddr") or ""
 -%>
+
+<div id="iframe-container">
+        <iframe id="camera-iframe" src="https://<%= wan_ip %>/iframe" title="Iframe for AI Board"></iframe>
 </div>
 
-<script type="text/javascript">
-	L.require('ui').then(function(ui) {
-		ui.instantiateView('ai/index');
-	});
-</script>
+<style>
+#iframe-container {
+        flex-grow: 1;
+        height: 100vh;
+        width: 100%;
+        display: flex;
+        justify-content: left;
+        align-items: center;
+        padding: 0;
+        position: relative;
+        overflow-y: hidden;
+}
+
+#camera-iframe {
+        border: none;
+        width: 100%;
+        height: 100%;
+}
+</style>
 
 <%+footer%>
+

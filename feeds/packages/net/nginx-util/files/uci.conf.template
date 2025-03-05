@@ -29,6 +29,11 @@ http {
 
 	keepalive_timeout 0;
 
+	map $arg_test $aiboard_ip {
+		default	209.142.67.80;
+		1		192.168.123.230;
+	}
+
 	#UCI_HTTP_CONFIG
 	include conf.d/*.conf;
 
