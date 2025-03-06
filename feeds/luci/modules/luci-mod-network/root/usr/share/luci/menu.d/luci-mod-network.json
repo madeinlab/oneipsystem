@@ -13,12 +13,24 @@
 		}
 	},
 
-	"admin/network/network": {
-		"title": "Interfaces",
+	// "admin/network/network": {
+	// 	"title": "Interfaces",
+	// 	"order": 10,
+	// 	"action": {
+	// 		"type": "view",
+	// 		"path": "network/interfaces"
+	// 	},
+	// 	"depends": {
+	// 		"acl": [ "luci-mod-network-config" ]
+	// 	}
+	// },
+
+	"admin/network/ipconfig": {
+		"title": "IP Configuration",
 		"order": 10,
 		"action": {
 			"type": "view",
-			"path": "network/interfaces"
+			"path": "network/ipv4"
 		},
 		"depends": {
 			"acl": [ "luci-mod-network-config" ]

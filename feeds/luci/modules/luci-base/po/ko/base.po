@@ -2782,7 +2782,7 @@ msgstr ""
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/30_network.js:44
 msgid "Gateway"
-msgstr ""
+msgstr "게이트웨이"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/dropbear.js:36
 msgid "Gateway Ports"
@@ -8824,3 +8824,30 @@ msgstr "SSH 포트"
 
 msgid "IP Filtering"
 msgstr "IP 필터링"
+
+msgid "IP Configuration"
+msgstr "IP 설정"
+
+msgid "Static IP"
+msgstr "수동"
+
+msgid "DHCP IP"
+msgstr "자동(DHCP)"
+
+msgid "IP Address"
+msgstr "IP 주소"
+
+msgid "Configure IP settings.(IPv4)"
+msgstr "IP 설정을 변경합니다.(IPv4)"
+
+msgid "Subnet Mask"
+msgstr "서브넷 마스크"
+
+msgid "Broadcast"
+msgstr "브로드캐스트"
+
+msgid "DNS Servers"
+msgstr "DNS 서버"
+
+msgid "Option \"%s\" must not be empty."
+msgstr "'%s'을(를) 입력하세요."
