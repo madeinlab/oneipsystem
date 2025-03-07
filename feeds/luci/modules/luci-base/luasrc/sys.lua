@@ -335,8 +335,8 @@ function net.conntrack(callback)
 end
 
 function net.devices()
-	local devs = {}
-	local seen = {}
+	local devs ={}
+	local seen ={}
 	for k, v in ipairs(nixio.getifaddrs()) do
 		if v.name and not seen[v.name] then
 			seen[v.name] = true
@@ -376,29 +376,51 @@ end
 
 function process.list()
 	local data = {}
-	local k
 	local ps = luci.util.execi("/usr/bin/top -bn1")
 
 	if not ps then
 		return
 	end
 
+	-- Skip header lines
+	for i = 1, 7 do
+		ps()
+	end
+
 	for line in ps do
-		local pid, ppid, user, stat, vsz, mem, cpu, cmd = line:match(
-			"^ *(%d+) +(%d+) +(%S.-%S) +([RSDZTW][<NW ][<N ]) +(%d+m?) +(%d+%%) +(%d+%%) +(.+)"
+		local pid, user, pr, ni, virt, res, cpu, mem, time, stat, cmd = line:match(
+			"^ *(%d+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S) +(.+)"
 		)
 
-		local idx = tonumber(pid)
-		if idx and not cmd:match("top %-bn1") then
-			data[idx] = {
-				['PID']     = pid,
-				['PPID']    = ppid,
-				['USER']    = user,
-				['STAT']    = stat,
-				['VSZ']     = vsz,
-				['%MEM']    = mem,
-				['%CPU']    = cpu,
-				['COMMAND'] = cmd
+		if pid and cmd then
+			local cmdline = cmd
+			
+			-- Handle kernel threads
+			if cmd:match("^%[.+%]$") then
+				cmdline = cmd
+			-- Handle normal processes
+			else
+				-- Remove tree structure indicators and get command
+				cmdline = cmd:gsub("^[`|]-", ""):gsub("^%s+", "")
+				cmdline = cmdline:match("^([^%s]+)") or cmdline
+			end
+
+			-- Parse memory and CPU values
+			local virt_mb = tonumber((virt or ""):match("^(%d+%.?%d*)")) or 0
+			local res_mb = tonumber((res or ""):match("^(%d+%.?%d*)")) or 0
+			local cpu_percent = tonumber((cpu or ""):match("^(%d+%.?%d*)")) or 0
+			local mem_percent = tonumber((mem or ""):match("^(%d+%.?%d*)")) or 0
+
+			data[#data+1] = {
+				PID     = pid,
+				USER    = user,
+				COMMAND = cmdline,
+				CMDLINE = cmd,
+				STAT    = stat,
+				['%CPU'] = cpu_percent,
+				['%MEM'] = mem_percent,
+				VIRT    = virt_mb * 1024,
+				RES     = res_mb * 1024
 			}
 		end
 	end

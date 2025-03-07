@@ -201,13 +201,7 @@ return view.extend({
 			neigh4tbl,
 
 			E('h3', {}, _('Active <abbr title="Internet Protocol Version 4">IPv4</abbr>-Routes')),
-			route4tbl,
-
-			E('h3', {}, [ _('IPv6 Neighbours') ]),
-			neigh6tbl,
-
-			E('h3', {}, _('Active <abbr title="Internet Protocol Version 6">IPv6</abbr>-Routes')),
-			route6tbl
+			route4tbl
 		]);
 	},
 

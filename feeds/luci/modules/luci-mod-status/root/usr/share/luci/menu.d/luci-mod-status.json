@@ -11,18 +11,6 @@
 		}
 	},
 
-	"admin/status/iptables": {
-		"title": "Firewall",
-		"order": 2,
-		"action": {
-			"type": "view",
-			"path": "status/iptables"
-		},
-		"depends": {
-			"acl": [ "luci-mod-status-firewall" ]
-		}
-	},
-
 	"admin/status/routes": {
 		"title": "Routes",
 		"order": 3,
@@ -41,18 +29,6 @@
 		"action": {
 			"type": "view",
 			"path": "status/syslog"
-		},
-		"depends": {
-			"acl": [ "luci-mod-status-logs" ]
-		}
-	},
-
-	"admin/status/dmesg": {
-		"title": "Kernel Log",
-		"order": 5,
-		"action": {
-			"type": "view",
-			"path": "status/dmesg"
 		},
 		"depends": {
 			"acl": [ "luci-mod-status-logs" ]
@@ -81,18 +57,6 @@
 		"depends": {
 			"acl": [ "luci-mod-status-channel_analysis" ],
 			"uci": { "wireless": { "@wifi-device": true } }
-		}
-	},
-
-	"admin/status/realtime": {
-		"title": "Realtime Graphs",
-		"order": 7,
-		"action": {
-			"type": "alias",
-			"path": "admin/status/realtime/load"
-		},
-		"depends": {
-			"acl": [ "luci-mod-status-realtime" ]
 		}
 	},
 

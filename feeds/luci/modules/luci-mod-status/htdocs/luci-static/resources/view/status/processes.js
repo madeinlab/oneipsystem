@@ -38,21 +38,7 @@ return view.extend({
 				proc.USER,
 				proc.COMMAND,
 				proc['%CPU'],
-				proc['%MEM'],
-				E('div', {}, [
-					E('button', {
-						'class': 'btn cbi-button-action',
-						'click': ui.createHandlerFn(this, 'handleSignal', 1, proc.PID)
-					}, _('Hang Up')), ' ',
-					E('button', {
-						'class': 'btn cbi-button-negative',
-						'click': ui.createHandlerFn(this, 'handleSignal', 15, proc.PID)
-					}, _('Terminate')), ' ',
-					E('button', {
-						'class': 'btn cbi-button-negative',
-						'click': ui.createHandlerFn(this, 'handleSignal', 9, proc.PID)
-					}, _('Kill'))
-				])
+				proc['%MEM']
 			]);
 		}
 
@@ -70,8 +56,7 @@ return view.extend({
 					E('th', { 'class': 'th' }, _('Owner')),
 					E('th', { 'class': 'th' }, _('Command')),
 					E('th', { 'class': 'th' }, _('CPU usage (%)')),
-					E('th', { 'class': 'th' }, _('Memory usage (%)')),
-					E('th', { 'class': 'th center nowrap cbi-section-actions' })
+					E('th', { 'class': 'th' }, _('Memory usage (%)'))
 				])
 			])
 		]);
