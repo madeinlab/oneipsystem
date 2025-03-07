@@ -11,7 +11,7 @@
 				"/usr/lib/opkg/info/netifd.control": [ "read" ]
 			},
 			"ubus": {
-				"file": [ "exec" ],
+				"file": [ "exec", "read" ],
 				"iwinfo": [ "assoclist", "countrylist", "freqlist", "txpowerlist" ],
 				"luci": [ "getSwconfigFeatures", "getSwconfigPortState" ]
 			},
@@ -25,7 +25,7 @@
 				"/sbin/wifi": [ "exec" ]
 			},
 			"ubus": {
-				"file": [ "exec" ],
+				"file": [ "exec", "write" ],
 				"hostapd.*": [ "del_client" ],
 				"iwinfo": [ "scan" ]
 			},

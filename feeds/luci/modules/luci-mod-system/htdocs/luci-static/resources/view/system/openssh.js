@@ -16,15 +16,26 @@ return view.extend({
             uci.load('firewall'),
             fs.exec('/etc/init.d/sshd', ['status'])
         ]).then((results) => {
-            let sections = uci.sections('openssh', 'sshd');
-            if (!sections || sections.length === 0) {
-                let sid = uci.add('openssh', 'sshd');
-                uci.set('openssh', sid, 'enabled', '0');  // 기본값 Disable
-                uci.set('openssh', sid, 'Port', '2222');
-                uci.set('openssh', sid, 'PermitRootLogin', 'no');  // 기본값 Disable
-                uci.set('openssh', sid, 'PasswordAuthentication', 'yes');
-                return uci.save();
+            let sections = uci.sections('openssh', 'openssh');
+            let sid = null
+            for (let i = 0; i < sections.length; i++) {
+                if (sections[i]['.name'] == 'sshd') {
+                    sid = sections[i]['.name']
+                    break;
+                }
             }
+
+            if (!sid) {
+                sid = uci.add('openssh', 'openssh', 'sshd');
+                uci.set('openssh', sid, 'enabled', '0');
+                uci.set('openssh', sid, 'Port', '22');
+                uci.set('openssh', sid, 'PermitRootLogin', 'yes');
+                uci.set('openssh', sid, 'PasswordAuthentication', 'yes');
+                uci.save();
+                uci.unload('openssh')
+                return uci.load('openssh').then(() => results[2]);
+            }
+
             return results[2];
         });
     },

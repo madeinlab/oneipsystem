@@ -26,7 +26,8 @@ function renderbox(ifc, ipv6) {
 
 	return E('div', { class: 'ifacebox' }, [
 		E('div', { class: 'ifacebox-head center ' + (active ? 'active' : '') },
-			E('strong', ipv6 ? _('IPv6 Upstream') : _('IPv4 Upstream'))),
+			//E('strong', ipv6 ? _('IPv6 Upstream') : _('IPv4 Upstream')) // not used
+		),
 		E('div', { class: 'ifacebox-body left' }, [
 			L.itemlist(E('span'), [
 				_('Protocol'), ifc.getI18n() || E('em', _('Not connected')),
@@ -99,7 +100,7 @@ return baseclass.extend({
 
 		return E([
 			netstatus,
-			ctstatus
+			//ctstatus // not used
 		]);
 	}
 });
