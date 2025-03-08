@@ -376,51 +376,32 @@ end
 
 function process.list()
 	local data = {}
-	local ps = luci.util.execi("/usr/bin/top -bn1")
+	local ps = luci.util.execi("/bin/ps aux")
 
 	if not ps then
 		return
 	end
 
-	-- Skip header lines
-	for i = 1, 7 do
-		ps()
-	end
+	-- Skip header line
+	ps()
 
 	for line in ps do
-		local pid, user, pr, ni, virt, res, cpu, mem, time, stat, cmd = line:match(
-			"^ *(%d+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S+) +(%S) +(.+)"
+		local pid, user, cpu, mem, vsz, rss, tty, stat, start, time, cmd = line:match(
+			"^%s*(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(.+)"
 		)
 
 		if pid and cmd then
 			local cmdline = cmd
 			
-			-- Handle kernel threads
-			if cmd:match("^%[.+%]$") then
-				cmdline = cmd
-			-- Handle normal processes
-			else
-				-- Remove tree structure indicators and get command
-				cmdline = cmd:gsub("^[`|]-", ""):gsub("^%s+", "")
-				cmdline = cmdline:match("^([^%s]+)") or cmdline
-			end
-
-			-- Parse memory and CPU values
-			local virt_mb = tonumber((virt or ""):match("^(%d+%.?%d*)")) or 0
-			local res_mb = tonumber((res or ""):match("^(%d+%.?%d*)")) or 0
-			local cpu_percent = tonumber((cpu or ""):match("^(%d+%.?%d*)")) or 0
-			local mem_percent = tonumber((mem or ""):match("^(%d+%.?%d*)")) or 0
-
 			data[#data+1] = {
 				PID     = pid,
 				USER    = user,
 				COMMAND = cmdline,
 				CMDLINE = cmd,
 				STAT    = stat,
-				['%CPU'] = cpu_percent,
-				['%MEM'] = mem_percent,
-				VIRT    = virt_mb * 1024,
-				RES     = res_mb * 1024
+				['%CPU'] = tonumber(cpu) or 0,
+				['%MEM'] = tonumber(mem) or 0,
+				TIME    = time
 			}
 		end
 	end

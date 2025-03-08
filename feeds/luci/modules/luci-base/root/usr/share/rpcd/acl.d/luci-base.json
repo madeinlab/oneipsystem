@@ -17,7 +17,8 @@
 			},
 			"ubus": {
 				"file": [ "list" ],
-				"uci": [ "changes", "get", "state" ]
+				"uci": [ "changes", "get", "state" ],
+				"luci": [ "getProcessList" ]
 			},
 			"uci": [ "admin_manage" ]
 		},

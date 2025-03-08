@@ -32,13 +32,19 @@ return view.extend({
 
 		for (var i = 0; i < processes.length; i++) {
 			var proc = processes[i];
+			
+			// 커널 스레드 필터링 (대괄호로 감싸진 프로세스 제외)
+			if (proc.COMMAND.match(/^\[.*\]$/))
+				continue;
 
 			rows.push([
 				proc.PID,
 				proc.USER,
-				proc.COMMAND,
 				proc['%CPU'],
-				proc['%MEM']
+				proc['%MEM'],
+				proc.STAT,
+				proc.TIME || '0:00',
+				proc.CMDLINE || proc.COMMAND
 			]);
 		}
 
@@ -53,10 +59,12 @@ return view.extend({
 			E('table', { 'class': 'table' }, [
 				E('tr', { 'class': 'tr table-titles' }, [
 					E('th', { 'class': 'th' }, _('PID')),
-					E('th', { 'class': 'th' }, _('Owner')),
-					E('th', { 'class': 'th' }, _('Command')),
-					E('th', { 'class': 'th' }, _('CPU usage (%)')),
-					E('th', { 'class': 'th' }, _('Memory usage (%)'))
+					E('th', { 'class': 'th' }, _('USER')),
+					E('th', { 'class': 'th' }, _('%CPU')),
+					E('th', { 'class': 'th' }, _('%MEM')),
+					E('th', { 'class': 'th' }, _('STAT')),
+					E('th', { 'class': 'th' }, _('TIME')),
+					E('th', { 'class': 'th' }, _('COMMAND'))
 				])
 			])
 		]);
