@@ -193,20 +193,11 @@ return view.extend({
 		o.placeholder = '/tmp/system.log'
 
 		o = s.taboption('logging', form.ListValue, 'conloglevel', _('Log output level'))
-		o.value(8, _('Debug'))
-		o.value(7, _('Info'))
-		o.value(6, _('Notice'))
-		o.value(5, _('Warning'))
+		o.default = 4
 		o.value(4, _('Error'))
 		o.value(3, _('Critical'))
 		o.value(2, _('Alert'))
 		o.value(1, _('Emergency'))
-
-		o = s.taboption('logging', form.ListValue, 'cronloglevel', _('Cron Log Level'))
-		o.default = 8
-		o.value(5, _('Debug'))
-		o.value(8, _('Normal'))
-		o.value(9, _('Warning'))
 
 		/*
 		 * Zram Properties

@@ -5,8 +5,8 @@
 			"cgi-io": [ "list", "read" ],
 			"file": {
 				"/etc/passwd": [ "read" ],
-				"/usr/sbin/uhttpd": [ "list" ],
-				"/usr/sbin/uhttpd -m *": [ "exec" ],
+				"/usr/bin/openssl": [ "list" ],
+				"/usr/bin/openssl passwd -6 -stdin *": [ "exec" ],
 				"/usr/share/rpcd/acl.d": [ "list" ],
 				"/usr/share/rpcd/acl.d/*.json": [ "read" ]
 			},

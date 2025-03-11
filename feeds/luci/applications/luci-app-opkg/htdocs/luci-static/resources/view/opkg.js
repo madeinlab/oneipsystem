@@ -212,67 +212,37 @@ function display(pattern)
 {
 	var src = packages.installed;
 	var table = document.querySelector('#packages');
-	var pager = document.querySelector('#pager');
 	var ver;
 
 	currentDisplayRows.length = 0;
 
-	if (typeof(pattern) === 'string' && pattern.length > 0)
-		pattern = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
-
 	for (var name in src.pkgs) {
 		var pkg = src.pkgs[name];
 		var desc = pkg.description || '';
-		var btn;
 
 		if (!pkg.installed)
+			continue;
+
+		// nginx, ssh, ssl related packages only
+		if (!name.match(/(nginx|ssh|ssl)/i))
 			continue;
 
 		desc = desc.split(/\n/);
 		desc = desc[0].trim() + (desc.length > 1 ? '…' : '');
 
-		if ((pattern instanceof RegExp) &&
-			!name.match(pattern) && !desc.match(pattern))
-			continue;
-
 		ver = truncateVersion(pkg.version || '-');
-		
-		btn = E('div', {
-			'class': 'btn cbi-button-negative',
-			'data-package': name,
-			'click': handleRemove
-		}, _('Remove…'));
 
-		name = '%h'.format(name);
-		desc = '%h'.format(desc || '-');
-
-		if (pattern) {
-			name = name.replace(pattern, '<ins>$&</ins>');
-			desc = desc.replace(pattern, '<ins>$&</ins>');
-		}
-
-		currentDisplayRows.push([
-			name,
-			ver,
-			pkg.size ? '%.1024mB'.format(pkg.size)
-					: '-',
-			desc,
-			btn
+		var row = E('tr', { 'class': 'tr' }, [
+			E('td', { 'class': 'td' }, [ name ]),
+			E('td', { 'class': 'td version' }, [ ver ]),
+			E('td', { 'class': 'td size' }, [ pkg.size ? '%.1024mB'.format(pkg.size) : '-' ]),
+			E('td', { 'class': 'td' }, [ desc ])
 		]);
+
+		currentDisplayRows.push(row);
 	}
 
-	currentDisplayRows.sort(function(a, b) {
-		if (a[0] < b[0])
-			return -1;
-		else if (a[0] > b[0])
-			return 1;
-		else
-			return 0;
-	});
-
-	pager.parentNode.style.display = '';
-	pager.setAttribute('data-offset', 100);
-	handlePage({ target: pager.querySelector('.prev') });
+	cbi_update_table(table, currentDisplayRows);
 }
 
 function handlePage(ev)
@@ -1001,61 +971,186 @@ function handleKeyUp(ev) {
 
 return view.extend({
 	load: function() {
-		return downloadLists();
+		return Promise.all([
+			// ACL permission-based opkg-call usage
+			L.resolveDefault(fs.exec_direct('/usr/libexec/opkg-call', ['list-installed']), ''),
+			// Get disk capacity information
+			L.resolveDefault(callMountPoints(), [])
+		]);
 	},
 
-	render: function(listData) {
-		var query = decodeURIComponent(L.toArray(location.search.match(/\bquery=([^=]+)\b/))[1] || '');
+	render: function(data) {
+		var installed = data[0] || '',
+		    mountPoints = data[1] || [],
+		    rootInfo = null;
+		
+		// Find root partition information
+		for (var i = 0; i < mountPoints.length; i++) {
+			if (mountPoints[i].mount === '/' || mountPoints[i].mount === '/overlay') {
+				rootInfo = mountPoints[i];
+				break;
+			}
+		}
+		
+		var size = rootInfo ? rootInfo.size : 0,
+		    free = rootInfo ? rootInfo.free : 0,
+		    used = size - free;
+		
+		// Convert capacity information to MB units
+		var freeMB = (free / 1048576).toFixed(1),
+		    sizeMB = (size / 1048576).toFixed(1);
+		
+		// Create capacity graph
+		var freePercent = size ? Math.floor((free / size) * 100) : 0;
+		var space = freePercent + '% (' + freeMB + ' MB free / ' + sizeMB + ' MB total)';
 
+		var capacityBar = E('div', { 
+			'class': 'cbi-progressbar', 
+			'title': space,
+			'style': 'height: 20px; position: relative; border-radius: 3px; margin-bottom: 5px; background-color: #f5f5f5; border: 1px solid #ddd;'
+		}, [
+			E('div', { 
+				'style': 'position: absolute; left: 0; right: 0; height: 100%; background-color: #3bb4d8; border-radius: 3px;'
+			}),
+			E('div', {
+				'style': 'position: absolute; left: 0; right: 0; top: 0; bottom: 0; text-align: center; line-height: 32px; color: black; font-weight: bold; padding: 0 5px; font-size: calc(32px * 0.9);'
+			}, [ space ])
+		]);
+
+		// Package list processing
+		var rows = [];
+		var lines = installed.split('\n');
+		var allPackages = [];
+		
+		// Add debugging information
+		var debugInfo = 'Package data length: ' + installed.length + ' bytes, Line count: ' + lines.length;
+		
+		// Parse package information
+		var currentPkg = null;
+		
+		for (var i = 0; i < lines.length; i++) {
+			var line = lines[i].trim();
+			if (!line) continue;
+			
+			// Parse Status file format
+			if (line.match(/^Package:\s*(.*)/)) {
+				if (currentPkg) {
+					allPackages.push(currentPkg);
+				}
+				currentPkg = {
+					name: RegExp.$1,
+					version: '',
+					description: ''
+				};
+			}
+			else if (currentPkg && line.match(/^Version:\s*(.*)/)) {
+				currentPkg.version = RegExp.$1;
+			}
+			else if (currentPkg && line.match(/^Description:\s*(.*)/)) {
+				currentPkg.description = RegExp.$1;
+			}
+			else if (currentPkg && line.match(/^Status:\s*(.*)/)) {
+				currentPkg.status = RegExp.$1;
+			}
+		}
+		
+		// Add the last package
+		if (currentPkg) {
+			allPackages.push(currentPkg);
+		}
+		
+		// Filter installed packages only
+		allPackages = allPackages.filter(function(pkg) {
+			return pkg.status && pkg.status.indexOf('installed') >= 0;
+		});
+		
+		// Filter nginx, ssh, ssl related packages
+		var nginxPackages = [];
+		var sslPackages = [];
+		var sshPackages = [];
+		
+		for (var i = 0; i < allPackages.length; i++) {
+			var pkg = allPackages[i];
+			
+			if (pkg.name.match(/nginx/i)) {
+				nginxPackages.push(pkg);
+			}
+			else if (pkg.name.match(/ssl/i)) {
+				sslPackages.push(pkg);
+			}
+			else if (pkg.name.match(/ssh/i)) {
+				sshPackages.push(pkg);
+			}
+		}
+		
+		// Sort each category alphabetically
+		nginxPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
+		sslPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
+		sshPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
+		
+		// Combine all packages in the specified order
+		var sortedPackages = [].concat(nginxPackages, sslPackages, sshPackages);
+		
+		// Create rows for the sorted packages
+		for (var i = 0; i < sortedPackages.length; i++) {
+			var pkg = sortedPackages[i];
+			rows.push(E('tr', { 'class': 'tr' }, [
+				E('td', { 'class': 'td' }, [ pkg.name ]),
+				E('td', { 'class': 'td version' }, [ pkg.version ])
+			]));
+		}
+		
+		// If no filtered packages, show first 10 packages
+		if (sortedPackages.length === 0 && allPackages.length > 0) {
+			debugInfo += ', No filtered packages, showing first 10 packages';
+			
+			for (var i = 0; i < Math.min(10, allPackages.length); i++) {
+				var pkg = allPackages[i];
+				rows.push(E('tr', { 'class': 'tr' }, [
+					E('td', { 'class': 'td' }, [ pkg.name ]),
+					E('td', { 'class': 'td version' }, [ pkg.version ])
+				]));
+			}
+		}
+		
+		// Create basic table structure
+		var packageTable = E('table', { 'id': 'packages', 'class': 'table' }, [
+			E('tr', { 'class': 'tr table-titles' }, [
+				E('th', { 'class': 'th' }, [ _('Package Name') ]),
+				E('th', { 'class': 'th' }, [ _('Version') ])
+			])
+		]);
+		
+		// Add package rows
+		if (rows.length > 0) {
+			for (var i = 0; i < rows.length; i++) {
+				packageTable.appendChild(rows[i]);
+			}
+		} else {
+			packageTable.appendChild(E('tr', { 'class': 'tr' }, [
+				E('td', { 'class': 'td', 'colspan': '2' }, [ 'No matching packages found.' ])
+			]));
+		}
+
+		// Create final view
 		var view = E([], [
 			E('style', { 'type': 'text/css' }, [ css ]),
-
-			E('h2', {}, _('Software')),
-
-			E('div', { 'class': 'controls' }, [
-				E('div', {}, [
-					E('label', {}, _('Free space') + ':'),
-					E('div', { 'class': 'cbi-progressbar', 'title': _('unknown') }, E('div', {}, [ '\u00a0' ]))
-				]),
-
-				E('div', {}, [
-					E('label', {}, _('Filter') + ':'),
-					E('span', { 'class': 'control-group' }, [
-						E('input', { 'type': 'text', 'name': 'filter', 'placeholder': _('Type to filter…'), 'value': query, 'keyup': handleKeyUp }),
-						E('button', { 'class': 'btn cbi-button', 'click': handleReset }, [ _('Clear') ])
-					])
-				]),
-
-				E('div', {}, [
-					E('label', {}, _('Actions') + ':'), ' ',
-					E('span', { 'class': 'control-group' }, [
-						E('button', { 'class': 'btn cbi-button-neutral', 'click': handleConfig }, [ _('Configure opkg…') ])
-					])
-				])
-			]),
-
-			E('div', { 'class': 'controls', 'style': 'display:none' }, [
-				E('div', { 'id': 'pager', 'class': 'center' }, [
-					E('button', { 'class': 'btn cbi-button-neutral prev', 'aria-label': _('Previous page'), 'click': handlePage }, [ '«' ]),
-					E('div', { 'class': 'text' }, [ 'dummy' ]),
-					E('button', { 'class': 'btn cbi-button-neutral next', 'aria-label': _('Next page'), 'click': handlePage }, [ '»' ])
-				])
-			]),
-
-			E('table', { 'id': 'packages', 'class': 'table' }, [
-				E('tr', { 'class': 'tr cbi-section-table-titles' }, [
-					E('th', { 'class': 'th col-2 left' }, [ _('Package name') ]),
-					E('th', { 'class': 'th col-2 left version' }, [ _('Version') ]),
-					E('th', { 'class': 'th col-1 center size'}, [ _('Size (.ipk)') ]),
-					E('th', { 'class': 'th col-10 left' }, [ _('Description') ]),
-					E('th', { 'class': 'th right cbi-section-actions' }, [ '\u00a0' ])
+			E('div', { 'class': 'cbi-map' }, [
+				E('h2', { 'name': 'content' }, [ _('Software') ]),
+				E('div', { 'class': 'cbi-section' }, [
+					E('p', {}, [ _('Free Space:') ]),
+					E('div', { 'style': 'position: relative; height: 32px; margin-bottom: 10px;' }, [
+						E('div', { 
+							'style': 'position: absolute; left: 0; right: 0; height: 100%; background-color: #3bb4d8; border-radius: 3px;'
+						}),
+						E('div', {
+							'style': 'position: absolute; left: 0; right: 0; top: 0; bottom: 0; text-align: center; line-height: 32px; color: black; font-weight: bold; padding: 0 5px; font-size: calc(32px * 0.9);'
+						}, [ space ])
+					]),
+					packageTable
 				])
 			])
 		]);
-
-		requestAnimationFrame(function() {
-			updateLists(listData)
-		});
 
 		return view;
 	},
