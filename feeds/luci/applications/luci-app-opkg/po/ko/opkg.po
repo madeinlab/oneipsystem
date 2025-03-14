@@ -89,7 +89,7 @@ msgid "Filter"
 msgstr "필터"
 
 #: applications/luci-app-opkg/htdocs/luci-static/resources/view/opkg.js:1023
-msgid "Free space"
+msgid "Free Space"
 msgstr "여유 공간"
 
 #: applications/luci-app-opkg/root/usr/share/rpcd/acl.d/luci-app-opkg.json:3

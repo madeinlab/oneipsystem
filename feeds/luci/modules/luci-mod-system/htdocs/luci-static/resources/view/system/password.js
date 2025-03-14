@@ -55,33 +55,33 @@ return view.extend({
 				
 				// Check each condition and create messages
 				if (lengthCheck.test(value)) {
-					requirements.push(`<span style="color:green">✓</span> ${_("Length between %d and %d characters").format(minLength, maxLength)}`);
+					requirements.push(`<span style="color:green">✓</span> ${_('Length between %d and %d characters').format(minLength, maxLength)}`);
 				} else {
-					requirements.push(`<span style="color:red">✗</span> ${_("Length between %d and %d characters").format(minLength, maxLength)}`);
+					requirements.push(`<span style="color:red">✗</span> ${_('Length between %d and %d characters').format(minLength, maxLength)}`);
 				}
 				
 				if (!upperCheck.test(value)) {
-					requirements.push('<span style="color:red">✗</span> Include uppercase letters');
+					requirements.push(`<span style="color:red">✗</span> ${_('Include uppercase letters')}`);
 				} else {
-					requirements.push('<span style="color:green">✓</span> Include uppercase letters');
+					requirements.push(`<span style="color:green">✓</span> ${_('Include uppercase letters')}`);
 				}
 				
 				if (!lowerCheck.test(value)) {
-					requirements.push('<span style="color:red">✗</span> Include lowercase letters');
+					requirements.push(`<span style="color:red">✗</span> ${_('Include lowercase letters')}`);
 				} else {
-					requirements.push('<span style="color:green">✓</span> Include lowercase letters');
+					requirements.push(`<span style="color:green">✓</span> ${_('Include lowercase letters')}`);
 				}
 				
 				if (!numberCheck.test(value)) {
-					requirements.push('<span style="color:red">✗</span> Include numbers');
+					requirements.push(`<span style="color:red">✗</span> ${_('Include numbers')}`);
 				} else {
-					requirements.push('<span style="color:green">✓</span> Include numbers');
+					requirements.push(`<span style="color:green">✓</span> ${_('Include numbers')}`);
 				}
 				
 				if (!specialCheck.test(value)) {
-					requirements.push('<span style="color:red">✗</span> Include special characters (!@#$%^&*())');
+					requirements.push(`<span style="color:red">✗</span> ${_('Include special characters (!@#$%^&*())')}`);
 				} else {
-					requirements.push('<span style="color:green">✓</span> Include special characters (!@#$%^&*())');
+					requirements.push(`<span style="color:green">✓</span> ${_('Include special characters (!@#$%^&*())')}`);
 				}
 				
 				// Display all requirements in HTML
@@ -121,11 +121,11 @@ return view.extend({
 			
 			// Create requirements div inside the same cbi-value-field
 			var requirements = E('div', { 'class': 'cbi-value-description', 'style': 'display:none; font-size:13px; line-height:1.4; margin-top:5px;' }, [
-				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ` Length between ${minLength} and ${maxLength} characters`]),
-				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include uppercase letters']),
-				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include lowercase letters']),
-				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include numbers']),
-				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗'), ' Include special characters (@#$%^&*)'])
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Length between %d and %d characters').format(minLength, maxLength)]),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Include uppercase letters')]),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Include lowercase letters')]),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Include numbers')]),
+				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Include special characters (!@#$%^&*())')])
 			]);
 
 			node.appendChild(requirements);

@@ -48,7 +48,7 @@ return view.extend({
 
     render: function() {
         var m = new form.Map('admin_manage', _('Admin IP Configuration'),
-            _('Configure allowed admin IP addresses'));
+            _('Configure allowed admin IP addresses.'));
 
         // IP 목록 테이블
         var s2 = m.section(form.TableSection, 'admin_ip');
@@ -57,7 +57,7 @@ return view.extend({
         s2.sortable = false;
 
         // 번호 컬럼
-        var o = s2.option(form.DummyValue, '_index', _('Number'));
+        var o = s2.option(form.DummyValue, '_index');
         o.modalonly = false;
         o.width = '10%';
         o.cfgvalue = function(section_id) {

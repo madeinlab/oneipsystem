@@ -418,12 +418,12 @@ msgstr "활성화"
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:203
 msgid "Active <abbr title=\"Internet Protocol Version 4\">IPv4</abbr>-Routes"
 msgstr ""
-"Active <abbr title=\"Internet Protocol Version 4\">IPv4</abbr>-Route 경로"
+"활성화된 <abbr title=\"Internet Protocol Version 4\">IPv4</abbr> 라우트"
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:209
 msgid "Active <abbr title=\"Internet Protocol Version 6\">IPv6</abbr>-Routes"
 msgstr ""
-"Active <abbr title=\"Internet Protocol Version 6\">IPv6</abbr>-Route 경로"
+"활성화된 <abbr title=\"Internet Protocol Version 6\">IPv6</abbr> 라우트"
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/30_network.js:81
 msgid "Active Connections"
@@ -860,7 +860,7 @@ msgstr ""
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:4247
 msgid "Applying configuration changes… %ds"
-msgstr ""
+msgstr "구성 변경을 적용하는 중… %d초"
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js:56
 msgid "Architecture"
@@ -1010,7 +1010,7 @@ msgstr "백업"
 
 #: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:114
 msgid "Backup / Flash Firmware"
-msgstr "펌웨어 백업 / 플래시"
+msgstr "펌웨어 업그레이드"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:351
 #: modules/luci-mod-system/luasrc/model/cbi/admin_system/backupfiles.lua:12
@@ -1240,11 +1240,11 @@ msgstr "변경 사항"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:4343
 msgid "Changes have been reverted."
-msgstr ""
+msgstr "변경 사항이 취소되었습니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:46
 msgid "Changes the administrator password for accessing the device"
-msgstr "장비 접근을 위한 관리자 암호를 변경합니다"
+msgstr "관리자 암호를 변경합니다"
 
 #: modules/luci-compat/luasrc/view/cbi/wireless_modefreq.htm:162
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:128
@@ -1410,11 +1410,11 @@ msgstr "설정"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:4222
 msgid "Configuration changes applied."
-msgstr ""
+msgstr "구성 변경이 적용되었습니다."
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:4160
 msgid "Configuration changes have been rolled back!"
-msgstr ""
+msgstr "구성 변경이 롤백되었습니다!"
 
 #: modules/luci-compat/luasrc/model/network/proto_ncm.lua:63
 #: protocols/luci-proto-ncm/htdocs/luci-static/resources/protocol/ncm.js:21
@@ -1462,7 +1462,7 @@ msgstr "연결 해제 확인"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:55
 msgid "Confirmation"
-msgstr "다시 확인"
+msgstr "비밀번호 확인"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/tools/network.js:97
 #: modules/luci-mod-network/htdocs/luci-static/resources/tools/network.js:100
@@ -2463,7 +2463,7 @@ msgstr ""
 
 #: protocols/luci-proto-bonding/htdocs/luci-static/resources/protocol/bonding.js:50
 msgid "Expecting: non-empty value"
-msgstr ""
+msgstr "비어있지 않은 값"
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/30_network.js:50
 msgid "Expires"
@@ -2627,24 +2627,24 @@ msgstr ""
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:312
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:449
 msgid "Flash image..."
-msgstr "이미지로 플래시..."
+msgstr "파일 선택"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:308
 msgid "Flash image?"
-msgstr "이미지를 플래시 하시겠습니까?"
+msgstr "펌웨어를 업그레이드 하시겠습니까?"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:439
 msgid "Flash new firmware image"
-msgstr "새로운 펌웨어 이미지 플래시"
+msgstr "새로운 펌웨어 업그레이드"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:384
 msgid "Flash operations"
-msgstr "플래시 작업"
+msgstr "펌웨어 업그레이드"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:317
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:319
 msgid "Flashing…"
-msgstr "플래시 중…"
+msgstr "펌웨어 업그레이드 중..."
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:686
 msgid "Force"
@@ -3125,7 +3125,7 @@ msgstr ""
 #: modules/luci-base/htdocs/luci-static/resources/protocol/static.js:180
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:165
 msgid "IPv4 gateway"
-msgstr ""
+msgstr "게이트웨이"
 
 #: modules/luci-base/htdocs/luci-static/resources/protocol/static.js:179
 #: protocols/luci-proto-bonding/htdocs/luci-static/resources/protocol/bonding.js:170
@@ -3395,7 +3395,7 @@ msgstr ""
 msgid ""
 "Include in backup a list of current installed packages at /etc/backup/"
 "installed_packages.txt"
-msgstr ""
+msgstr "현재 설치된 패키지 목록을 /etc/backup/installed_packages.txt에 포함하여 백업합니다."
 
 #: protocols/luci-proto-gre/htdocs/luci-static/resources/protocol/gre.js:100
 #: protocols/luci-proto-gre/htdocs/luci-static/resources/protocol/gretap.js:105
@@ -3649,7 +3649,7 @@ msgstr "네트워크 연결중: %q"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:228
 msgid "Keep settings and retain the current configuration"
-msgstr ""
+msgstr "현재 설정과 구성을 유지합니다."
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/dmesg.js:20
 #: modules/luci-mod-status/root/usr/share/luci/menu.d/luci-mod-status.json:51
@@ -3912,14 +3912,14 @@ msgstr "부하 평균"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:2959
 msgid "Loading directory contents…"
-msgstr ""
+msgstr "디렉토리 내용 로딩 중"
 
 #: modules/luci-base/htdocs/luci-static/resources/luci.js:1942
 #: modules/luci-base/luasrc/view/view.htm:4
 #: modules/luci-mod-status/luasrc/view/admin_status/index.htm:12
 #: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/sysauth.htm:45
 msgid "Loading view…"
-msgstr ""
+msgstr "페이지 로딩 중"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/tools/network.js:870
 msgid "Local"
@@ -4265,7 +4265,7 @@ msgstr ""
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:166
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:185
 msgid "Metric"
-msgstr ""
+msgstr "메트릭"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:818
 msgid "Min <abbr title=\"Router Advertisement\">RA</abbr> interval"
@@ -4887,11 +4887,11 @@ msgstr "동작 주파수"
 #: modules/luci-base/htdocs/luci-static/resources/form.js:1975
 #: modules/luci-base/htdocs/luci-static/resources/form.js:3881
 msgid "Option \"%s\" contains an invalid input value."
-msgstr ""
+msgstr "옵션 "%s"에 잘못된 입력 값이 포함되어 있습니다."
 
 #: modules/luci-base/htdocs/luci-static/resources/form.js:1988
 msgid "Option \"%s\" must not be empty."
-msgstr ""
+msgstr "옵션 "%s"은(는) 비워둘 수 없습니다."
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:4069
 msgid "Option changed"
@@ -5226,11 +5226,11 @@ msgstr ""
 #: protocols/luci-proto-vpnc/htdocs/luci-static/resources/protocol/vpnc.js:58
 #: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/sysauth.htm:24
 msgid "Password"
-msgstr "암호"
+msgstr "비밀번호"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/dropbear.js:25
 msgid "Password authentication"
-msgstr "암호 인증"
+msgstr "비밀번호 인증"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:1604
 msgid "Password of Private Key"
@@ -5653,7 +5653,7 @@ msgstr "재부팅"
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/reboot.js:46
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/reboot.js:51
 msgid "Rebooting…"
-msgstr ""
+msgstr "재부팅 중입니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/reboot.js:21
 msgid "Reboots the operating system of your device"
@@ -5960,7 +5960,7 @@ msgstr ""
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:46
 #: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:26
 msgid "Router Password"
-msgstr "라우터 암호"
+msgstr "관리자 암호 설정"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/routes.js:15
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:197
@@ -6162,7 +6162,7 @@ msgstr "세션 만료됨"
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js:126
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js:175
 msgid "Set Static"
-msgstr ""
+msgstr "고정IP 설정"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:921
 msgid "Set interface as NDP-Proxy external slave. Default is off."
@@ -6299,7 +6299,7 @@ msgstr "건너뛰기"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:257
 msgid "Skip from backup files that are equal to those in /rom"
-msgstr ""
+msgstr "/rom에 있는 파일과 동일한 백업 파일은 제외합니다."
 
 #: themes/luci-theme-openwrt-2020/luasrc/view/themes/openwrt2020/header.htm:40
 #: themes/luci-theme-openwrt/luasrc/view/themes/openwrt.org/header.htm:46
@@ -6820,14 +6820,14 @@ msgstr ""
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:167
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:186
 msgid "Table"
-msgstr ""
+msgstr "테이블"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/routes.js:36
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/iptables.js:66
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:164
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:183
 msgid "Target"
-msgstr ""
+msgstr "대상"
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js:57
 msgid "Target Platform"
@@ -6992,9 +6992,9 @@ msgid ""
 "compare them with the original file to ensure data integrity. <br /> Click "
 "'Continue' below to start the flash procedure."
 msgstr ""
-"플래시 이미지가 업로드 되었습니다. 아래는 체크섬과 파일 크기 목록입니다. 원"
+"펌웨어 파일이 업로드 되었습니다. 아래는 체크섬과 파일 크기 목록입니다. 원"
 "본 파일과 비교하여 데이터 무결성을 검증하세요.<br />아래 \"진행하기\"를 눌러 "
-"플래시 절차를 시작하세요."
+"업그레이드 절차를 시작하세요."
 
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/routes.js:198
 #, fuzzy
@@ -7143,7 +7143,7 @@ msgid ""
 "address of your computer to reach the device again, depending on your "
 "settings."
 msgstr ""
-"시스템이 플래싱 됩니다.<br />절대 기기의 전원을 끄지 마세요!<br />다시 연결하"
+"펌웨어 업그레이드 중입니다.<br />절대 기기의 전원을 끄지 마세요!<br />다시 연결하"
 "기 전에 잠시 기다리세요. 설정에 따라 장치에 다시 연결하려면 컴퓨터 주소를 갱"
 "신해야 할 수도 있습니다."
 
@@ -7616,7 +7616,7 @@ msgstr "업로드"
 msgid ""
 "Upload a sysupgrade-compatible image here to replace the running firmware."
 msgstr ""
-"현재 실행 중인 펌웨어를 교체하려면 여기에서 sysupgrade 와 호환되는 이미지를 "
+"현재 실행 중인 펌웨어를 교체하려면 여기에서 호환되는 파일을 찾아 "
 "업로드하세요."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:138
@@ -7636,7 +7636,7 @@ msgstr ""
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:2759
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3880
 msgid "Upload request failed: %s"
-msgstr ""
+msgstr "업로드 요청을 실패했습니다: %s"
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3799
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3853
@@ -7861,7 +7861,7 @@ msgstr ""
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/switch.js:173
 msgid "VLANs on %q"
-msgstr ""
+msgstr "%q의 VLAN"
 
 #: modules/luci-base/root/usr/share/luci/menu.d/luci-base.json:54
 msgid "VPN"
@@ -7869,27 +7869,27 @@ msgstr "VPN"
 
 #: protocols/luci-proto-vpnc/htdocs/luci-static/resources/protocol/vpnc.js:42
 msgid "VPN Local address"
-msgstr ""
+msgstr "VPN 로컬 주소"
 
 #: protocols/luci-proto-vpnc/htdocs/luci-static/resources/protocol/vpnc.js:46
 msgid "VPN Local port"
-msgstr ""
+msgstr "VPN 로컬 포트"
 
 #: protocols/luci-proto-openconnect/htdocs/luci-static/resources/protocol/openconnect.js:96
 msgid "VPN Protocol"
-msgstr ""
+msgstr "VPN 프로토콜"
 
 #: protocols/luci-proto-openconnect/htdocs/luci-static/resources/protocol/openconnect.js:102
 #: protocols/luci-proto-openfortivpn/htdocs/luci-static/resources/protocol/openfortivpn.js:42
 #: protocols/luci-proto-ppp/htdocs/luci-static/resources/protocol/pptp.js:58
 #: protocols/luci-proto-vpnc/htdocs/luci-static/resources/protocol/vpnc.js:39
 msgid "VPN Server"
-msgstr ""
+msgstr "VPN 서버"
 
 #: protocols/luci-proto-openconnect/htdocs/luci-static/resources/protocol/openconnect.js:105
 #: protocols/luci-proto-openfortivpn/htdocs/luci-static/resources/protocol/openfortivpn.js:45
 msgid "VPN Server port"
-msgstr ""
+msgstr "VPN 서버 포트"
 
 #: protocols/luci-proto-openconnect/htdocs/luci-static/resources/protocol/openconnect.js:109
 #: protocols/luci-proto-openfortivpn/htdocs/luci-static/resources/protocol/openfortivpn.js:60
@@ -7943,7 +7943,7 @@ msgstr "DHCP 요청시 전송할 Vendor Class"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:196
 msgid "Verifying the uploaded image file."
-msgstr ""
+msgstr "업로드된 파일을 확인하는 중입니다."
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:957
 msgid "Very High"
@@ -7997,7 +7997,7 @@ msgstr "WPS 상태"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/reboot.js:47
 msgid "Waiting for device..."
-msgstr ""
+msgstr "장치를 기다리는 중입니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js:189
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/system.js:199
@@ -8381,7 +8381,7 @@ msgstr "link 없음"
 #: modules/luci-base/htdocs/luci-static/resources/form.js:2229
 #: modules/luci-base/htdocs/luci-static/resources/validation.js:59
 msgid "non-empty value"
-msgstr ""
+msgstr "필수 입력 항목입니다"
 
 #: modules/luci-base/htdocs/luci-static/resources/form.js:3201
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js:800
@@ -8860,3 +8860,134 @@ msgstr "시간 설정"
 
 msgid "Log Settings"
 msgstr "로그 설정"
+
+msgid "Password Rules"
+msgstr "암호 설정 규칙"
+
+msgid "Configure password length requirements"
+msgstr "암호의 최소/최대 길이를 설정합니다."
+
+msgid "Minimum Length"
+msgstr "최소 길이"
+
+msgid "Maximum Length"
+msgstr "최대 길이"
+
+msgid "Do you want to reboot the camera?"
+msgstr "카메라를 재부팅하시겠습니까?"
+
+msgid "Enter Camera Username"
+msgstr "카메라의 사용자계정을 입력하세요."
+
+msgid "Enter Camera Password"
+msgstr "카메라의 비밀번호를 입력하세요."
+
+msgid "Enter the username and password for Camera %d."
+msgstr "카메라 %d의 사용자계정과 비밀번호를 입력하세요."
+
+msgid "Login Configuration"
+msgstr "로그인 설정"
+
+msgid "Configure login retry settings"
+msgstr "로그인 실패 시 접속 제한을 설정합니다."
+
+msgid "Number of retries"
+msgstr "재시도 횟수"
+
+msgid "Allowed number of login failures"
+msgstr "허용된 로그인 실패 횟수"
+
+msgid "Interval retries(minutes)"
+msgstr "재시도 간격(분)"
+
+msgid "Time allowed for retrying login after failure (in minutes)"
+msgstr "로그인 실패 후 재시도 가능 시간 (분)"
+
+msgid "Admin IP"
+msgstr "관리자 IP"
+
+msgid "Allowed IP Address"
+msgstr "허용된 IP 주소"
+
+msgid "LuCI Session Configuration"
+msgstr "세션 구성"
+
+msgid "Session Settings"
+msgstr "세션 설정"
+
+msgid "Configure LuCI session timeout."
+msgstr "세션의 만료 시간을 설정합니다."
+
+msgid "Session Timeout"
+msgstr "세션 만료 시간"
+
+msgid "Session timeout in seconds (0 for no timeout)"
+msgstr "세션 만료 시간(초 단위) (0을 입력하면 세션 만료 없음)"
+
+msgid "Upload has been cancelled"
+msgstr "업로드가 취소되었습니다."
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js
+msgid "Admin IP Configuration"
+msgstr "관리자 IP 설정"
+
+msgid "Configure allowed admin IP addresses."
+msgstr "접속 가능한 관리자 IP 주소를 설정합니다."
+
+msgid "Number"
+msgstr "번호"
+
+msgid "Enter IPv4 address"
+msgstr "IPv4 주소 입력"
+
+msgid "Enter description"
+msgstr "설명 입력"
+
+msgid "New Admin IP"
+msgstr "새로운 관리자 IP 설정"
+
+msgid "IP address is required"
+msgstr "IP 주소가 필요합니다."
+
+msgid "Invalid IP address format"
+msgstr "잘못된 IP 주소 형식입니다."
+
+msgid "Admin IP settings have been saved and applied."
+msgstr "관리자 IP 설정이 저장 및 적용되었습니다."
+
+msgid "Failed to apply settings: "
+msgstr "설정을 적용하지 못했습니다: %s"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js
+msgid "Length between %d and %d characters"  
+msgstr "길이 %d~%d자"  
+
+msgid "Length between 9 and 32 characters"  
+msgstr "길이 9~32자"  
+
+msgid "Include uppercase letters"  
+msgstr "대문자 포함"  
+
+msgid "Include lowercase letters"  
+msgstr "소문자 포함"  
+
+msgid "Include numbers"  
+msgstr "숫자 포함"  
+
+msgid "Include special characters (!@#$%^&*())"  
+msgstr "특수문자 포함(!@#$%^&*())"
+
+msgid "Change Password - OneIPSystem"  
+msgstr "비밀번호 변경 - OneIPSystem"
+
+msgid "Change Password"  
+msgstr "비밀번호 변경"  
+
+msgid "Current Password"  
+msgstr "현재 비밀번호"  
+
+msgid "New Password"  
+msgstr "새 비밀번호"  
+
+msgid "Confirm Password"
+msgstr "새 비밀번호 확인"  

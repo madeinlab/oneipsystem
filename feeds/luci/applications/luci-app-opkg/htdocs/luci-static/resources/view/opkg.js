@@ -1138,7 +1138,7 @@ return view.extend({
 			E('div', { 'class': 'cbi-map' }, [
 				E('h2', { 'name': 'content' }, [ _('Software') ]),
 				E('div', { 'class': 'cbi-section' }, [
-					E('p', {}, [ _('Free Space:') ]),
+					E('p', {}, [ _('Free Space')  + ':' ]),
 					E('div', { 'style': 'position: relative; height: 32px; margin-bottom: 10px;' }, [
 						E('div', { 
 							'style': 'position: absolute; left: 0; right: 0; height: 100%; background-color: #3bb4d8; border-radius: 3px;'
