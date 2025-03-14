@@ -161,7 +161,7 @@ return view.extend({
 	load: function() {
 		return L.resolveDefault(fs.list('/usr/share/rpcd/acl.d'), []).then(function(entries) {
 			var tasks = [
-				L.resolveDefault(fs.stat('/usr/sbin/uhttpd'), null),
+				L.resolveDefault(fs.stat('/usr/bin/openssl'), null),
 				fs.lines('/etc/passwd')
 			];
 
@@ -174,7 +174,7 @@ return view.extend({
 	},
 
 	render: function(data) {
-		var has_uhttpd = data[0],
+		var has_openssl = data[0],
 		    known_unix_users = {};
 
 		for (var i = 0; i < data[1].length; i++) {
@@ -278,6 +278,147 @@ return view.extend({
 			var value = uci.get('rpcd', section_id, 'password') || '';
 			return (value.substring(0, 3) == '$p$') ? '' : value;
 		};
+		
+		// 비밀번호 규칙 검증 UI 추가
+		o.render = function(section_id, option_index, cfgvalue) {
+			var field = form.Value.prototype.render.apply(this, [section_id, option_index, cfgvalue]);
+			
+			// DOM 요소 접근 방식 변경
+			// field가 DOM 요소가 아닐 수 있으므로 안전하게 처리
+			var passwordInput = null;
+			if (field && field.querySelector) {
+				passwordInput = field.querySelector('input');
+			} else if (field && field.children) {
+				// DOM 요소를 직접 순회하여 input 찾기
+				for (var i = 0; i < field.children.length; i++) {
+					if (field.children[i].tagName && field.children[i].tagName.toLowerCase() === 'input') {
+						passwordInput = field.children[i];
+						break;
+					}
+				}
+			}
+			
+			if (!passwordInput) {
+				// 입력 필드를 찾을 수 없는 경우 원래 필드 반환
+				return field;
+			}
+				
+			// 비밀번호 규칙 컨테이너 생성
+			var requirementsDiv = E('div', { 'class': 'requirements', 'id': 'requirements_' + section_id, 'style': 'display:none' }, [
+				E('div', { 'class': 'requirement', 'id': 'length_' + section_id }, [
+					E('span', {}, '✗'), ' ', _('Length between 9 and 32 characters')
+				]),
+				E('div', { 'class': 'requirement', 'id': 'uppercase_' + section_id }, [
+					E('span', {}, '✗'), ' ', _('Include uppercase letters')
+				]),
+				E('div', { 'class': 'requirement', 'id': 'lowercase_' + section_id }, [
+					E('span', {}, '✗'), ' ', _('Include lowercase letters')
+				]),
+				E('div', { 'class': 'requirement', 'id': 'number_' + section_id }, [
+					E('span', {}, '✗'), ' ', _('Include numbers')
+				]),
+				E('div', { 'class': 'requirement', 'id': 'special_' + section_id }, [
+					E('span', {}, '✗'), ' ', _('Include special characters (!@#$%^&*())')
+				])
+			]);
+			
+			// CSS 스타일 추가
+			var styleId = 'password-requirements-style';
+			if (!document.getElementById(styleId)) {
+				var style = E('style', { 'id': styleId }, `
+					.requirements {
+						margin: 10px 0;
+						padding: 10px;
+						border: 1px solid #ddd;
+						border-radius: 4px;
+						background: #f9f9f9;
+						font-size: 13px;
+					}
+					.requirement {
+						margin: 5px 0;
+						line-height: 1.4;
+						color: red;
+					}
+					.requirement.valid { 
+						color: green; 
+					}
+					.requirement.invalid { 
+						color: red; 
+					}
+					.error-message {
+						margin: 10px 0;
+						padding: 10px;
+						border: 1px solid #f88;
+						border-radius: 4px;
+						background: #fee;
+						color: #c00;
+						font-size: 13px;
+						line-height: 1.5;
+					}
+				`);
+				
+				if (document.head) {
+					document.head.appendChild(style);
+				}
+			}
+			
+			// 비밀번호 입력 필드 이벤트 처리
+			if (passwordInput && passwordInput.addEventListener) {
+				passwordInput.addEventListener('focus', function() {
+					var reqDiv = document.getElementById('requirements_' + section_id);
+					if (reqDiv) reqDiv.style.display = 'block';
+				});
+				
+				passwordInput.addEventListener('blur', function() {
+					var reqDiv = document.getElementById('requirements_' + section_id);
+					if (reqDiv) reqDiv.style.display = 'none';
+				});
+				
+				passwordInput.addEventListener('input', function() {
+					if (window.checkPassword) {
+						window.checkPassword(this.value, section_id);
+					}
+				});
+			}
+			
+			// 비밀번호 검증 함수
+			window.checkPassword = window.checkPassword || function(value, section_id) {
+				var checks = {
+					length: new RegExp('^.{9,32}$'),
+					uppercase: /[A-Z]/,
+					lowercase: /[a-z]/,
+					number: /[0-9]/,
+					special: /[!@#$%^&*()]/
+				};
+				
+				var allValid = true;
+				for (var key in checks) {
+					var element = document.getElementById(key + '_' + section_id);
+					if (!element) continue;
+					
+					var isValid = checks[key].test(value);
+					element.classList.toggle('valid', isValid);
+					element.classList.toggle('invalid', !isValid);
+					
+					var spanElement = element.querySelector('span');
+					if (spanElement) {
+						spanElement.textContent = isValid ? '✓' : '✗';
+					}
+					
+					allValid = allValid && isValid;
+				}
+				
+				return allValid;
+			};
+			
+			// 비밀번호 규칙 컨테이너를 입력 필드 아래에 추가
+			if (field && field.appendChild) {
+				field.appendChild(requirementsDiv);
+			}
+			
+			return field;
+		};
+		
 		o.validate = function(section_id, value) {
 			var variant = this.map.lookupOption('_variant', section_id)[0];
 
@@ -285,30 +426,68 @@ return view.extend({
 			case '$p$':
 				return _('The password may not start with "$p$".');
 
-			case '$1$':
+			case '$6$':
 				variant.getUIElement(section_id).setValue('crypted');
 				break;
 
 			default:
-				if (variant.formvalue(section_id) == 'crypted' && value.length && !has_uhttpd)
-					return _('Cannot encrypt plaintext password since uhttpd is not installed.');
+				if (variant.formvalue(section_id) == 'crypted' && value.length && !has_openssl)
+					return _('Cannot encrypt plaintext password since OpenSSL is not installed.');
+					
+				// 비밀번호 규칙 검증
+				if (variant.formvalue(section_id) == 'crypted' && value.length) {
+					var checks = {
+						length: new RegExp('^.{9,32}$'),
+						uppercase: /[A-Z]/,
+						lowercase: /[a-z]/,
+						number: /[0-9]/,
+						special: /[!@#$%^&*()]/
+					};
+					
+					var failedRules = [];
+					
+					if (!checks.length.test(value))
+						failedRules.push(_('Length must be between 9 and 32 characters'));
+					
+					if (!checks.uppercase.test(value))
+						failedRules.push(_('Must include uppercase letters'));
+						
+					if (!checks.lowercase.test(value))
+						failedRules.push(_('Must include lowercase letters'));
+						
+					if (!checks.number.test(value))
+						failedRules.push(_('Must include numbers'));
+						
+					if (!checks.special.test(value))
+						failedRules.push(_('Must include special characters (!@#$%^&*())'));
+						
+					if (failedRules.length > 0) {
+						// 오류 메시지를 문자열로 반환
+						return _('Password does not meet requirements:') + '\n• ' + failedRules.join('\n• ');
+					}
+				}
 			}
 
 			return true;
 		};
 		o.write = function(section_id, value) {
 			var variant = this.map.lookupOption('_variant', section_id)[0];
-
-			if (variant.formvalue(section_id) == 'crypted' && value.substring(0, 3) != '$1$')
-				return fs.exec('/usr/sbin/uhttpd', [ '-m', value ]).then(function(res) {
-					if (res.code == 0 && res.stdout)
-						uci.set('rpcd', section_id, 'password', res.stdout.trim());
-					else
+			
+			if (variant.formvalue(section_id) == 'crypted' && value.substring(0, 3) != '$6$') {
+				var cmd = 'echo "' + value.replace(/"/g, '\\"') + '" | openssl passwd -6 -stdin';
+				return fs.exec('/bin/sh', ['-c', cmd]).then(function(res) {
+					if (res.code == 0 && res.stdout) {
+						var hashedPassword = res.stdout.trim();
+						uci.set('rpcd', section_id, 'password', hashedPassword);
+					}
+					else {
 						throw new Error(res.stderr);
+					}
 				}).catch(function(err) {
 					throw new Error(_('Unable to encrypt plaintext password: %s').format(err.message));
 				});
-
+			}
+			
 			uci.set('rpcd', section_id, 'password', value);
 		};
 		o.remove = function() {};
@@ -361,6 +540,14 @@ return view.extend({
 		o = s.option(cbiACLSelect, '_acl');
 		o.modalonly = true;
 		o.depends('_level', 'individual');
+
+		s.handleAdd = function() {
+			return form.GridSection.prototype.handleAdd.apply(this);
+		};
+
+		s.handleSave = function() {
+			return form.GridSection.prototype.handleSave.apply(this);
+		};
 
 		return m.render();
 	}

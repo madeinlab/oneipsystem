@@ -7,6 +7,7 @@
 				"/etc/passwd": [ "read" ],
 				"/usr/bin/openssl": [ "list" ],
 				"/usr/bin/openssl passwd -6 -stdin *": [ "exec" ],
+				"/bin/sh -c *": [ "exec" ],
 				"/usr/share/rpcd/acl.d": [ "list" ],
 				"/usr/share/rpcd/acl.d/*.json": [ "read" ]
 			},
