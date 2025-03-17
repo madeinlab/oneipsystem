@@ -8991,3 +8991,23 @@ msgstr "새 비밀번호"
 
 msgid "Confirm Password"
 msgstr "새 비밀번호 확인"  
+
+#: modules/luci-base/luasrc/view/error503.htm
+msgid "Sorry, your account has been temporarily locked due to multiple failed login attempts."
+msgstr "죄송합니다. 여러 번의 로그인 시도 실패로 인해 일시적으로 차단되었습니다."
+
+msgid "Too many login attempts"
+msgstr "로그인 횟수를 초과했습니다."
+
+msgid "Time remaining:"
+msgstr "남은 시간:"
+
+#: modules/luci-base/luasrc/view/sysauth.htm
+msgid "Failed login attempts"
+msgstr "로그인 실패 횟수"
+
+msgid "Password changed successfully!"
+msgstr "비밀번호가 성공적으로 변경되었습니다!"
+
+msgid "Redirecting to login page..."
+msgstr "로그인 페이지로 이동합니다."

@@ -1921,7 +1921,7 @@ function handle_login_failed(key, user, ip, retry_count, retry_interval)
     
     -- error503.htm 템플릿 렌더링
     require("luci.template").render("error503", {
-        message = "Too many login attempts",
+        message = translate('Too many login attempts'),
         retry_interval = retry_interval,
         unlock_time = retry_interval * 60,  -- 초 단위로 변환
         redirect_url = "/cgi-bin/luci/admin/login"

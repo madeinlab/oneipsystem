@@ -19,7 +19,7 @@
 		%>
 		<div class="alert-message warning">
 			<p><%:Invalid username and/or password! Please try again.%></p>
-			<%- if fail_count and fail_count > 0 then %>
+			<!-- <%- if fail_count and fail_count > 0 then %>
 				<p class="failed-attempts">
 					<%:Failed login attempts%>: <strong><%= fail_count %></strong>
 					<%- if fail_count >= retry_count then %>
@@ -30,7 +30,7 @@
 			<%- end %>
 			<%- if message then %>
 				<p class="error-message"><%= message %></p>
-			<%- end %>
+			<%- end %> -->
 		</div>
 	<% end -%>
 
