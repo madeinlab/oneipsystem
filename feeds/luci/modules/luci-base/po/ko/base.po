@@ -8861,6 +8861,8 @@ msgstr "시간 설정"
 msgid "Log Settings"
 msgstr "로그 설정"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
 msgid "Password Rules"
 msgstr "암호 설정 규칙"
 
@@ -8885,6 +8887,8 @@ msgstr "카메라의 비밀번호를 입력하세요."
 msgid "Enter the username and password for Camera %d."
 msgstr "카메라 %d의 사용자계정과 비밀번호를 입력하세요."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
 msgid "Login Configuration"
 msgstr "로그인 설정"
 
@@ -8903,12 +8907,16 @@ msgstr "재시도 간격(분)"
 msgid "Time allowed for retrying login after failure (in minutes)"
 msgstr "로그인 실패 후 재시도 가능 시간 (분)"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
 msgid "Admin IP"
 msgstr "관리자 IP"
 
 msgid "Allowed IP Address"
 msgstr "허용된 IP 주소"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/session.js
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
 msgid "LuCI Session Configuration"
 msgstr "세션 구성"
 
