@@ -2659,6 +2659,12 @@
 		notifySessionExpiry: function() {
 			Poll.stop();
 
+			// 세션 만료 시 자동으로 로그인 화면으로 리다이렉트
+			var loc = window.location;
+			window.location = loc.protocol + '//' + loc.host + loc.pathname + loc.search;
+
+			// 기존 모달 창 표시 코드는 주석 처리
+			/*
 			classes.ui.showModal(_('Session expired'), [
 				E('div', { class: 'alert-message warning' },
 					_('A new login is required since the authentication session expired.')),
@@ -2671,6 +2677,7 @@
 						}
 					}, _('To login…')))
 			]);
+			*/
 
 			LuCI.prototype.raise('SessionError', 'Login session is expired');
 		},
