@@ -909,7 +909,7 @@ msgstr ""
 msgid "Authoritative"
 msgstr ""
 
-#: modules/luci-base/luasrc/view/sysauth.htm:17
+#: modules/luci-base/luasrc/view/sysauth.htm:44
 #: themes/luci-theme-bootstrap/htdocs/luci-static/resources/view/bootstrap/sysauth.js:11
 msgid "Authorization Required"
 msgstr "인증이 필요합니다"
@@ -3614,7 +3614,7 @@ msgstr ""
 msgid "Invalid hexadecimal value"
 msgstr ""
 
-#: modules/luci-base/luasrc/view/sysauth.htm:12
+#: modules/luci-base/luasrc/view/sysauth.htm:21
 #: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/sysauth.htm:37
 msgid "Invalid username and/or password! Please try again."
 msgstr "잘못된 사용자 이름 또는 비밀번호입니다! 다시 시도해 주세요."
@@ -3916,6 +3916,7 @@ msgstr "디렉토리 내용 로딩 중"
 
 #: modules/luci-base/htdocs/luci-static/resources/luci.js:1942
 #: modules/luci-base/luasrc/view/view.htm:4
+#: modules/luci-mod-camera/luasrc/view/admin_camera/index.htm:12
 #: modules/luci-mod-status/luasrc/view/admin_status/index.htm:12
 #: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/sysauth.htm:45
 msgid "Loading view…"
@@ -4038,7 +4039,7 @@ msgstr ""
 msgid "Logical network to which the tunnel will be added (bridged) (optional)."
 msgstr ""
 
-#: modules/luci-base/luasrc/view/sysauth.htm:38
+#: modules/luci-base/luasrc/view/sysauth.htm:65
 #: themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/sysauth.htm:41
 msgid "Login"
 msgstr "로그인"
@@ -5218,9 +5219,9 @@ msgctxt "MACVLAN mode"
 msgid "Pass-through (Mirror physical device to single MAC VLAN)"
 msgstr ""
 
-#: modules/luci-base/luasrc/view/sysauth.htm:29
+#: modules/luci-base/luasrc/view/sysauth.htm:56
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:1672
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:51
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:114
 #: protocols/luci-proto-openconnect/htdocs/luci-static/resources/protocol/openconnect.js:114
 #: protocols/luci-proto-openfortivpn/htdocs/luci-static/resources/protocol/openfortivpn.js:52
 #: protocols/luci-proto-vpnc/htdocs/luci-static/resources/protocol/vpnc.js:58
@@ -5368,9 +5369,13 @@ msgstr ""
 msgid "Pkts."
 msgstr "Pkts."
 
-#: modules/luci-base/luasrc/view/sysauth.htm:19
+#: modules/luci-base/luasrc/view/sysauth.htm:46
 msgid "Please enter your username and password."
 msgstr "사용자이름과 암호를 입력해 주세요."
+
+#: modules/luci-base/luasrc/view/sysauth.htm:86
+msgid "Please enter your password."
+msgstr "암호를 입력해 주세요."
 
 #: modules/luci-base/htdocs/luci-static/resources/ui.js:3800
 msgid "Please select the file to upload."
@@ -5848,7 +5853,7 @@ msgid "Reselection policy for primary slave"
 msgstr ""
 
 #: modules/luci-base/htdocs/luci-static/resources/luci.js:2197
-#: modules/luci-base/luasrc/view/sysauth.htm:39
+#: modules/luci-base/luasrc/view/sysauth.htm:66
 #: modules/luci-compat/luasrc/view/cbi/delegator.htm:17
 #: modules/luci-compat/luasrc/view/cbi/footer.htm:30
 #: modules/luci-compat/luasrc/view/cbi/simpleform.htm:66
@@ -5957,7 +5962,7 @@ msgid ""
 "134\">RA</abbr> messages. Maximum is 9000 seconds."
 msgstr ""
 
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:46
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:108
 #: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:26
 msgid "Router Password"
 msgstr "관리자 암호 설정"
@@ -7823,7 +7828,7 @@ msgstr ""
 msgid "User key (PEM encoded)"
 msgstr ""
 
-#: modules/luci-base/luasrc/view/sysauth.htm:23
+#: modules/luci-base/luasrc/view/sysauth.htm:50
 #: protocols/luci-proto-openconnect/htdocs/luci-static/resources/protocol/openconnect.js:112
 #: protocols/luci-proto-openfortivpn/htdocs/luci-static/resources/protocol/openfortivpn.js:50
 #: protocols/luci-proto-vpnc/htdocs/luci-static/resources/protocol/vpnc.js:56
@@ -8751,68 +8756,26 @@ msgstr "기타장비 2"
 #~ "하는데 사용될 수 있습니다. 예를 들어 12h, 3d 혹은 infinite 값들이 가능합니"
 #~ "다."
 
-# Add by yjyoon
-msgid "Connection Status"
-msgstr "연결 상태"
-
-msgid "Status_CONNECT"
-msgstr "연결"
-
-msgid "Status_NONE"
-msgstr "연결 안됨"
-
-msgid "Channel"
-msgstr "채널"
-
-msgid "Site name"
-msgstr "사이트명"
-
-msgid "Transport"
-msgstr "전송/HTTP(S)"
-
-msgid "Authentication ID"
-msgstr "인증 ID"
-
-msgid "Authentication password"
-msgstr "인증 PW"
-
-msgid "User management"
-msgstr "사용자 관리"
-
-msgid "VLAN connection status"
-msgstr "VLAN 연결 상태"
-
-msgid "Search for camera"
-msgstr "카메라 검색"
-
-msgid "Webpage"
-msgstr "웹페이지"
-
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js
-msgid "The system is erasing the configuration partition now and will reboot itself when finished."
-msgstr "시스템이 설정 파티션을 지우고 있으며, 완료되면 자동으로 재부팅됩니다."
-
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:97
 msgid "Erasing..."
 msgstr "삭제 중..."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:98
+msgid "The system is erasing the configuration partition now and will reboot itself when finished."
+msgstr "시스템이 설정 파티션을 지우고 있으며, 완료되면 자동으로 재부팅됩니다."
+
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:386
 msgid "Model name"
 msgstr "모델명"
 
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:394
 msgid "Manufacturer"
 msgstr "제조사"
-
-msgid "linked"
-msgstr "링크 됨"
-
-msgid "Please enter your username."
-msgstr "사용자이름을 입력해 주세요."
-
-msgid "Please enter your password."
-msgstr "암호를 입력해 주세요."
 
 msgid "Streaming"
 msgstr "스트리밍"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/openssh.js:44
 msgid "SSH Configuration"
 msgstr "SSH 설정"
 
@@ -8861,17 +8824,20 @@ msgstr "시간 설정"
 msgid "Log Settings"
 msgstr "로그 설정"
 
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js
-#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:23
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:88
 msgid "Password Rules"
 msgstr "암호 설정 규칙"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:24
 msgid "Configure password length requirements"
 msgstr "암호의 최소/최대 길이를 설정합니다."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:31
 msgid "Minimum Length"
 msgstr "최소 길이"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
 msgid "Maximum Length"
 msgstr "최대 길이"
 
@@ -8887,84 +8853,86 @@ msgstr "카메라의 비밀번호를 입력하세요."
 msgid "Enter the username and password for Camera %d."
 msgstr "카메라 %d의 사용자계정과 비밀번호를 입력하세요."
 
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js
-#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js:23
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:100
 msgid "Login Configuration"
 msgstr "로그인 설정"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js:24
 msgid "Configure login retry settings"
 msgstr "로그인 실패 시 접속 제한을 설정합니다."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js:31
 msgid "Number of retries"
 msgstr "재시도 횟수"
 
-msgid "Allowed number of login failures"
-msgstr "허용된 로그인 실패 횟수"
-
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js:39
 msgid "Interval retries(minutes)"
 msgstr "재시도 간격(분)"
 
-msgid "Time allowed for retrying login after failure (in minutes)"
-msgstr "로그인 실패 후 재시도 가능 시간 (분)"
-
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js
-#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:112
 msgid "Admin IP"
 msgstr "관리자 IP"
 
-msgid "Allowed IP Address"
-msgstr "허용된 IP 주소"
-
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/session.js
-#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
-msgid "LuCI Session Configuration"
-msgstr "세션 구성"
-
-msgid "Session Settings"
-msgstr "세션 설정"
-
-msgid "Configure LuCI session timeout."
-msgstr "세션의 만료 시간을 설정합니다."
-
-msgid "Session Timeout"
-msgstr "세션 만료 시간"
-
-msgid "Session timeout in seconds (0 for no timeout)"
-msgstr "세션 만료 시간(초 단위) (0을 입력하면 세션 만료 없음)"
-
-msgid "Upload has been cancelled"
-msgstr "업로드가 취소되었습니다."
-
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:50
 msgid "Admin IP Configuration"
 msgstr "관리자 IP 설정"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:51
 msgid "Configure allowed admin IP addresses."
 msgstr "접속 가능한 관리자 IP 주소를 설정합니다."
 
-msgid "Number"
-msgstr "번호"
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:70
+msgid "Allowed IP Address"
+msgstr "허용된 IP 주소"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:75
 msgid "Enter IPv4 address"
 msgstr "IPv4 주소 입력"
 
-msgid "Enter description"
-msgstr "설명 입력"
-
-msgid "New Admin IP"
-msgstr "새로운 관리자 IP 설정"
-
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:78
 msgid "IP address is required"
 msgstr "IP 주소가 필요합니다."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:81
 msgid "Invalid IP address format"
 msgstr "잘못된 IP 주소 형식입니다."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:100
+msgid "Enter description"
+msgstr "설명 입력"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:225
 msgid "Admin IP settings have been saved and applied."
 msgstr "관리자 IP 설정이 저장 및 적용되었습니다."
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:228
 msgid "Failed to apply settings: "
-msgstr "설정을 적용하지 못했습니다: %s"
+msgstr "설정을 적용하지 못했습니다"
+
+#: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:137
+msgid "Session Settings"
+msgstr "세션 설정"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/session.js:15
+msgid "LuCI Session Configuration"
+msgstr "세션 구성"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/session.js:16
+msgid "Configure LuCI session timeout."
+msgstr "세션의 만료 시간을 설정합니다."
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/session.js:23
+msgid "Session Timeout"
+msgstr "세션 만료 시간"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/session.js:24
+msgid "Session timeout in seconds (0 for no timeout)"
+msgstr "세션 만료 시간(초 단위) (0을 입력하면 세션 만료 없음)"
+
+#: modules/luci-base/htdocs/luci-static/resources/ui.js:3838
+msgid "Upload has been cancelled"
+msgstr "업로드가 취소되었습니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js
 msgid "Length between %d and %d characters"  
@@ -8985,18 +8953,23 @@ msgstr "숫자 포함"
 msgid "Include special characters (!@#$%^&*())"  
 msgstr "특수문자 포함(!@#$%^&*())"
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:5
 msgid "Change Password - OneIPSystem"  
 msgstr "비밀번호 변경 - OneIPSystem"
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:124
 msgid "Change Password"  
 msgstr "비밀번호 변경"  
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:151
 msgid "Current Password"  
 msgstr "현재 비밀번호"  
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:156
 msgid "New Password"  
 msgstr "새 비밀번호"  
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:179
 msgid "Confirm Password"
 msgstr "새 비밀번호 확인"  
 
@@ -9004,18 +8977,24 @@ msgstr "새 비밀번호 확인"
 msgid "Sorry, your account has been temporarily locked due to multiple failed login attempts."
 msgstr "죄송합니다. 여러 번의 로그인 시도 실패로 인해 일시적으로 차단되었습니다."
 
+#: modules/luci-base/luasrc/dispatcher.lua:1924
 msgid "Too many login attempts"
 msgstr "로그인 횟수를 초과했습니다."
 
+#: modules/luci-base/luasrc/view/error503.htm:58
 msgid "Time remaining:"
 msgstr "남은 시간:"
 
-#: modules/luci-base/luasrc/view/sysauth.htm
+#: modules/luci-base/luasrc/view/sysauth.htm:24
 msgid "Failed login attempts"
 msgstr "로그인 실패 횟수"
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:128
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:293
 msgid "Password changed successfully!"
 msgstr "비밀번호가 성공적으로 변경되었습니다!"
 
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:129
+#: modules/luci-base/luasrc/view/admin/changepassword.htm:294
 msgid "Redirecting to login page..."
 msgstr "로그인 페이지로 이동합니다."
