@@ -11,6 +11,7 @@ function action_change_password()
     local dispatcher = require "luci.dispatcher"
     local nixio = require "nixio"
     local util = require "luci.util"
+    local i18n = require "luci.i18n"
     
 
 	if dispatcher.context and dispatcher.context.authuser then
@@ -39,7 +40,7 @@ function action_change_password()
                             template.render("admin/changepassword", {
                                 success = true,
                                 error = false,
-                                message = "Password changed successfully. Please log in with your new password.",
+                                message = i18n.translate("Password changed successfully. Please log in with your new password."),
                                 redirect = true,
                                 debug_info = debug_info
                             })
@@ -64,7 +65,7 @@ function action_change_password()
         template.render("admin/changepassword", {
             success = false,
             error = true,
-            message = "Password change failed. Please check your inputs.",
+            message = i18n.translate("Password change failed. Please check your inputs."),
             redirect = false,
             debug_info = debug_info
         })

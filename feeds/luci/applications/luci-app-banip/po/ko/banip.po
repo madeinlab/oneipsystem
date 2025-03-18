@@ -887,11 +887,19 @@ msgstr ""
 msgid "banIP action"
 msgstr ""
 
+#: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:79
 msgid "Blacklist"
 msgstr "IP 차단 목록"
 
+#: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:48
 msgid "Whitelist"
 msgstr "IP 허용 목록"
 
+#: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:30
 msgid "IP Filtering"
 msgstr "IP 필터링"
+
+#: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:76
+#: applications/luci-app-banip/htdocs/luci-static/resources/view/banip/overview.js:107
+msgid "Exclude from the list"
+msgstr "목록에서 제외"

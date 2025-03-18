@@ -73,7 +73,7 @@ return view.extend({
 				return await Promise.reject(e);
 			}
 		};
-		o.placeholder = '192.168.1.100\n#192.168.1.101 목록에서 제외';
+		o.placeholder = String.format('192.168.1.100\n#192.168.1.101 %s', _('Exclude from the list'))
 
 		// Blacklist
 		o = s.option(form.TextValue, 'ban_black', _('Blacklist'), 
@@ -104,7 +104,7 @@ return view.extend({
 				return await Promise.reject(e);
 			}
 		};
-		o.placeholder = '192.168.1.100\n#192.168.1.101 목록에서 제외';
+		o.placeholder = String.format('192.168.1.100\n#192.168.1.101 %s', _('Exclude from the list'))
 
 		return m.render();
 	},
