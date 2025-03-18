@@ -385,8 +385,11 @@ function process.list()
 	-- Skip header line
 	ps()
 
+	-- # ps aux
+	-- USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+	-- doowon       1  0.0  0.9   3392  2240 ?        Ss   02:40   0:01 /sbin/procd
 	for line in ps do
-		local pid, user, cpu, mem, vsz, rss, tty, stat, start, time, cmd = line:match(
+		local user, pid, cpu, mem, vsz, rss, tty, stat, start, time, cmd = line:match(
 			"^%s*(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(.+)"
 		)
 
