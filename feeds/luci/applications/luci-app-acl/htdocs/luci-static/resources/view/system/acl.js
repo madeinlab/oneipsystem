@@ -157,6 +157,8 @@ var cbiACLSelect = form.Value.extend({
 	}
 });
 
+var minLength, maxLength
+
 return view.extend({
 	load: function() {
 		return L.resolveDefault(fs.list('/usr/share/rpcd/acl.d'), []).then(function(entries) {
@@ -168,6 +170,18 @@ return view.extend({
 			for (var i = 0; i < entries.length; i++)
 				if (entries[i].type == 'file' && entries[i].name.match(/\.json$/))
 					tasks.push(L.resolveDefault(fs.read('/usr/share/rpcd/acl.d/' + entries[i].name).then(JSON.parse)));
+
+			tasks.push(uci.load('admin_manage').then(function() {
+				var sections = uci.sections('admin_manage', 'password_rule');
+			
+				if (sections.length > 0) {
+					minLength = sections[0].min_length || '9';
+					maxLength = sections[0].max_length || '32';
+				} else {
+					minLength = '9';  // default
+					maxLength = '32'; // default
+				}
+			}));
 
 			return Promise.all(tasks);
 		});
@@ -372,7 +386,7 @@ return view.extend({
 			// 비밀번호 규칙 컨테이너 생성
 			var requirementsDiv = E('div', { 'class': 'requirements', 'id': 'requirements_' + section_id, 'style': 'display:none' }, [
 				E('div', { 'class': 'requirement', 'id': 'length_' + section_id }, [
-					E('span', {}, '✗'), ' ', _('Length between 9 and 32 characters')
+					E('span', {}, '✗'), ' ', _('Length between %d and %d characters').format(minLength, maxLength)
 				]),
 				E('div', { 'class': 'requirement', 'id': 'uppercase_' + section_id }, [
 					E('span', {}, '✗'), ' ', _('Include uppercase letters')
@@ -450,7 +464,7 @@ return view.extend({
 			// 비밀번호 검증 함수
 			window.checkPassword = window.checkPassword || function(value, section_id) {
 				var checks = {
-					length: new RegExp('^.{9,32}$'),
+					length: new RegExp(`^.{${minLength},${maxLength}}$`),
 					uppercase: /[A-Z]/,
 					lowercase: /[a-z]/,
 					number: /[0-9]/,
@@ -503,7 +517,7 @@ return view.extend({
 				// 비밀번호 규칙 검증
 				if (variant.formvalue(section_id) == 'crypted' && value.length) {
 					var checks = {
-						length: new RegExp('^.{9,32}$'),
+						length: new RegExp(`^.{${minLength},${maxLength}}$`),
 						uppercase: /[A-Z]/,
 						lowercase: /[a-z]/,
 						number: /[0-9]/,
@@ -513,19 +527,19 @@ return view.extend({
 					var failedRules = [];
 					
 					if (!checks.length.test(value))
-						failedRules.push(_('Length must be between 9 and 32 characters'));
-					
+						failedRules.push(_('Length between %d and %d characters').format(minLength, maxLength));
+
 					if (!checks.uppercase.test(value))
-						failedRules.push(_('Must include uppercase letters'));
+						failedRules.push(_('Include uppercase letters'));
 						
 					if (!checks.lowercase.test(value))
-						failedRules.push(_('Must include lowercase letters'));
+						failedRules.push(_('Include lowercase letters'));
 						
 					if (!checks.number.test(value))
-						failedRules.push(_('Must include numbers'));
+						failedRules.push(_('Include numbers'));
 						
 					if (!checks.special.test(value))
-						failedRules.push(_('Must include special characters (!@#$%^&*())'));
+						failedRules.push(_('Include special characters (!@#$%^&*())'));
 						
 					if (failedRules.length > 0) {
 						// 오류 메시지를 문자열로 반환

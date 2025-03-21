@@ -40,7 +40,7 @@ return view.extend({
 		let maxLength = sections[0]?.max_length || '32';
 
 		// Regular expressions for password validation
-		var lengthCheck = new RegExp(`.{${minLength},${maxLength}}`);
+		var lengthCheck = new RegExp(`^.{${minLength},${maxLength}}$`);
 		var upperCheck = /[A-Z]/;                     // Uppercase letters
 		var lowerCheck = /[a-z]/;                     // Lowercase letters
 		var numberCheck = /[0-9]/;                    // Numbers
