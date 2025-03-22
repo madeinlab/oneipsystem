@@ -13,6 +13,7 @@ return view.extend({
 			.then(function(rc) {
 				document.querySelector('textarea').value = value;
 				ui.addNotification(null, E('p', _('Blacklist changes have been saved. Refresh your banIP lists that changes take effect.')), 'info');
+				fs.exec_direct('/etc/init.d/banip', ['restart'])
 			}).catch(function(e) {
 				ui.addNotification(null, E('p', _('Unable to save changes: %s').format(e.message)));
 			});
