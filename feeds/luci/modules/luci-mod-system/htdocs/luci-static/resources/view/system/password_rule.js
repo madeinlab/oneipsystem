@@ -44,6 +44,21 @@ return view.extend({
             return uci.set('admin_manage', section_id, 'max_length', formvalue);
         };
 
+        o = s.option(form.Flag, 'check_sequential', _('Check sequential characters'),
+            _('Prohibits three or more consecutive or identical characters. (e.g., 123, 111, abc, aaa)'));
+        o.rmempty = false;
+        o.default = o.disabled; // Disable
+
+        o = s.option(form.Flag, 'check_sequential_ignore_case', _('Ignore case'),
+            _('Case insensitive. (e.g., abc, Abc)'));
+        o.depends('check_sequential', '1');
+        o.default = o.disabled; // Disable
+
+        o = s.option(form.Flag, 'check_sequential_special', _('Check special charaters'),
+            _('Prohibits the setting of three or more consecutive or identical special characters. (e.g., !@#, !!!)'));
+        o.depends('check_sequential', '1');
+        o.default = o.disabled; // Disable
+
         return m.render();
     }
 });

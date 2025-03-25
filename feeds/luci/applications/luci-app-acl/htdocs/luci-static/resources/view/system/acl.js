@@ -157,7 +157,58 @@ var cbiACLSelect = form.Value.extend({
 	}
 });
 
-var minLength, maxLength
+function hasSequentialCharacters(password, ignoreCase, checkSpecialChars) {
+
+	// 패스워드 길이가 0일 때 'x'로 표시 
+	if (password.length === 0) 
+		return true
+
+	const specialChars = "!@#$%^&*()";
+
+	const normalized = (ignoreCase == '1') ? password.toLowerCase() // 대소문자 구분 안함. 
+										: password // 대소문자 구분.
+	
+	for (let i = 0; i < normalized.length - 2; i++) {
+		let char1 = normalized[i];
+		let char2 = normalized[i + 1];
+		let char3 = normalized[i + 2];
+
+		// ASCII 코드 기준으로 연속된 문자 검사 (예: abc, 123)
+		if (char2.charCodeAt(0) === char1.charCodeAt(0) + 1 &&
+			char3.charCodeAt(0) === char2.charCodeAt(0) + 1) {
+			return true; // 연속된 3자리 문자 확인
+		}
+
+		// 동일한 문자 3개 이상 반복 검사 (예: aaa, 111, $$$)
+		if (char1 === char2 && char2 === char3) {
+			return true; // 동일 문자 3개 이상 반복
+		}
+
+		if (checkSpecialChars == '1') {
+			// 특수문자 연속성 체크 (예: !@#, #$%)
+			if (specialChars.includes(char1) &&
+				specialChars.includes(char2) &&
+				specialChars.includes(char3)) {
+				let idx1 = specialChars.indexOf(char1);
+				let idx2 = specialChars.indexOf(char2);
+				let idx3 = specialChars.indexOf(char3);
+
+				if (idx2 === idx1 + 1 && idx3 === idx2 + 1) {
+					return true; // 연속된 특수문자 확인
+				}
+			}
+
+			// 동일한 특수문자 3개 이상 반복 검사 (예: !!!, @@@)
+			if (char1 === char2 && char2 === char3 && specialChars.includes(char1)) {
+				return true; // 동일 특수문자 3개 이상 반복
+			}
+		}
+	}
+	
+	return false; // 연속된 문자 없음
+}
+
+var minLength, maxLength, checkSequential, checkSequnetialIgnoreCase, checkSequentialSpecial
 
 return view.extend({
 	load: function() {
@@ -175,11 +226,23 @@ return view.extend({
 				var sections = uci.sections('admin_manage', 'password_rule');
 			
 				if (sections.length > 0) {
-					minLength = sections[0].min_length || '9';
-					maxLength = sections[0].max_length || '32';
+					minLength = sections[0]?.min_length || '9';
+					maxLength = sections[0]?.max_length || '32';
+
+					checkSequential = sections[0]?.check_sequential || '0';
+					if (checkSequential == '1') {
+						checkSequnetialIgnoreCase = sections[0]?.check_sequential_ignore_case || '0';
+						checkSequentialSpecial = sections[0]?.check_sequential_special || '0';
+					} else {
+						checkSequnetialIgnoreCase = '0';
+						checkSequentialSpecial = '0';
+					}
 				} else {
 					minLength = '9';  // default
 					maxLength = '32'; // default
+					checkSequential = '0'
+					checkSequnetialIgnoreCase = '0'
+					checkSequentialSpecial = '0'
 				}
 			}));
 
@@ -401,6 +464,12 @@ return view.extend({
 					E('span', {}, '✗'), ' ', _('Include special characters (!@#$%^&*())')
 				])
 			]);
+
+			if (checkSequential === '1') {
+				requirementsDiv.appendChild(E('div', { 'class': 'requirement', 'id': 'sequential_' + section_id }, [
+					E('span', {}, '✗'), ' ', _('Do not include 3 or more sequential or identical characters')
+				]));
+			}
 			
 			// CSS 스타일 추가
 			var styleId = 'password-requirements-style';
@@ -487,6 +556,22 @@ return view.extend({
 					
 					allValid = allValid && isValid;
 				}
+
+				if (checkSequential == '1') {
+					var element = document.getElementById('sequential_' + section_id);
+					if (element) {
+						var isValid = !(hasSequentialCharacters(value, checkSequnetialIgnoreCase, checkSequentialSpecial))
+						element.classList.toggle('valid', isValid);
+						element.classList.toggle('invalid', !isValid);
+
+						var spanElement = element.querySelector('span');
+						if (spanElement) {
+							spanElement.textContent = isValid ? '✓' : '✗';
+						}
+						
+						allValid = allValid && isValid;
+					}
+				}
 				
 				return allValid;
 			};
@@ -540,7 +625,10 @@ return view.extend({
 						
 					if (!checks.special.test(value))
 						failedRules.push(_('Include special characters (!@#$%^&*())'));
-						
+
+					if (hasSequentialCharacters(value, checkSequnetialIgnoreCase, checkSequentialSpecial))
+						failedRules.push(_('Do not include 3 or more sequential or identical characters'));
+
 					if (failedRules.length > 0) {
 						// 오류 메시지를 문자열로 반환
 						return _('Password does not meet requirements:') + '\n• ' + failedRules.join('\n• ');

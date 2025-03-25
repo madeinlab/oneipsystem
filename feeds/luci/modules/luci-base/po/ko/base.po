@@ -6069,7 +6069,7 @@ msgstr "저장 & 적용"
 
 #: modules/luci-base/htdocs/luci-static/resources/form.js:603
 msgid "Save error"
-msgstr ""
+msgstr "저장 오류"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:434
 msgid "Save mtdblock"
@@ -8850,6 +8850,30 @@ msgstr "최소 길이"
 msgid "Maximum Length"
 msgstr "최대 길이"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
+msgid "Check sequential characters"
+msgstr "연속된 문자 설정 금지"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
+msgid "Prohibits three or more consecutive or identical characters. (e.g., 123, 111, abc, aaa)"
+msgstr "3자 이상의 연속 또는 동일 문자 설정을 금지합니다. (예: 123, 111, abc, aaa)"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
+msgid "Ignore case"
+msgstr "대소문자 구분 안함"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
+msgid "Case insensitive. (e.g., abc, Abc)"
+msgstr "대소문자를 구분하지 않습니다. (예: abc, Abc)"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
+msgid "Check special charaters"
+msgstr "연속된 특수문자 금지"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
+msgid "Prohibits the setting of three or more consecutive or identical special characters. (e.g., !@#, !!!)"
+msgstr "3자 이상의 연속 또는 동일 특수문자 설정을 금지합니다.(예: !@#, !!!)"
+
 msgid "Do you want to reboot the camera?"
 msgstr "카메라를 재부팅하시겠습니까?"
 
@@ -8943,7 +8967,7 @@ msgstr "세션 만료 시간(초 단위) (0을 입력하면 세션 만료 없음
 msgid "Upload has been cancelled"
 msgstr "업로드가 취소되었습니다."
 
-#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:105
 msgid "Length between %d and %d characters"  
 msgstr "길이 %d~%d자"  
 
@@ -8966,6 +8990,10 @@ msgstr "숫자 포함"
 #: modules/luci-base/luasrc/view/admin/changepassword.htm:173
 msgid "Include special characters (!@#$%^&*())"  
 msgstr "특수문자 포함(!@#$%^&*())"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:136
+msgid "Do not include 3 or more sequential or identical characters"
+msgstr "3자 이상 연속 또는 동일 문자 설정 금지"
 
 #: modules/luci-base/luasrc/view/admin/changepassword.htm:5
 msgid "Change Password - OneIPSystem"  

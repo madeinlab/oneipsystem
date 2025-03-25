@@ -24,6 +24,59 @@ var callSetPassword = rpc.declare({
 	expect: { result: false }
 });
 
+function hasSequentialCharacters(password, ignoreCase, checkSpecialChars) {
+
+	// 패스워드 길이가 0일 때 'x'로 표시 
+	if (password.length === 0) 
+		return true
+
+	const specialChars = "!@#$%^&*()";
+		
+	const normalized = (ignoreCase == '1') ? password.toLowerCase() // 대소문자 구분 안함. 
+										: password // 대소문자 구분.
+	
+	for (let i = 0; i < normalized.length - 2; i++) {
+		let char1 = normalized[i];
+		let char2 = normalized[i + 1];
+		let char3 = normalized[i + 2];
+
+		// ASCII 코드 기준으로 연속된 문자 검사 (예: abc, 123)
+		if (char2.charCodeAt(0) === char1.charCodeAt(0) + 1 &&
+			char3.charCodeAt(0) === char2.charCodeAt(0) + 1) {
+			return true; // 연속된 3자리 문자 확인
+		}
+
+		// 동일한 문자 3개 이상 반복 검사 (예: aaa, 111, $$$)
+		if (char1 === char2 && char2 === char3) {
+			return true; // 동일 문자 3개 이상 반복
+		}
+
+		if (checkSpecialChars == '1') {
+			// 특수문자 연속성 체크 (예: !@#, #$%)
+			if (specialChars.includes(char1) &&
+				specialChars.includes(char2) &&
+				specialChars.includes(char3)) {
+				let idx1 = specialChars.indexOf(char1);
+				let idx2 = specialChars.indexOf(char2);
+				let idx3 = specialChars.indexOf(char3);
+
+				if (idx2 === idx1 + 1 && idx3 === idx2 + 1) {
+					return true; // 연속된 특수문자 확인
+				}
+			}
+
+			// 동일한 특수문자 3개 이상 반복 검사 (예: !!!, @@@)
+			if (char1 === char2 && char2 === char3 && specialChars.includes(char1)) {
+				return true; // 동일 특수문자 3개 이상 반복
+			}
+		}
+	}
+	
+	return false; // 연속된 문자 없음
+}
+
+let checkSequential, checkSequnetialIgnoreCase, checkSequentialSpecial;
+
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -45,6 +98,7 @@ return view.extend({
 		var lowerCheck = /[a-z]/;                     // Lowercase letters
 		var numberCheck = /[0-9]/;                    // Numbers
 		var specialCheck = /[!@#$%^&*()]/;            // Special characters
+		var sequentialCheck = true;                   // Sequentail characters
 		
 		if (strength) {
 			// Show requirements only when there's input
@@ -83,6 +137,16 @@ return view.extend({
 				} else {
 					requirements.push(`<span style="color:green">✓</span> ${_('Include special characters (!@#$%^&*())')}`);
 				}
+
+				if (checkSequential == '1') {
+					if (hasSequentialCharacters(value, checkSequnetialIgnoreCase, checkSequentialSpecial)) {
+						requirements.push(`<span style="color:red">✗</span> ${_('Do not include 3 or more sequential or identical characters')}`);
+						sequentialCheck = false;
+					} else {
+						requirements.push(`<span style="color:green">✓</span> ${_('Do not include 3 or more sequential or identical characters')}`);
+						sequentialCheck = true;
+					}
+				}
 				
 				// Display all requirements in HTML
 				strength.innerHTML = requirements.join('<br>');
@@ -93,7 +157,8 @@ return view.extend({
 				   upperCheck.test(value) &&
 				   lowerCheck.test(value) &&
 				   numberCheck.test(value) &&
-				   specialCheck.test(value);
+				   specialCheck.test(value) &&
+				   sequentialCheck;
 		}
 		
 		return true;
@@ -104,6 +169,15 @@ return view.extend({
 		let sections = uci.sections('admin_manage', 'password_rule');
 		let minLength = sections[0]?.min_length || '9';
 		let maxLength = sections[0]?.max_length || '32';
+
+		checkSequential = sections[0]?.check_sequential || '0';
+		if (checkSequential == '1') {
+			checkSequnetialIgnoreCase = sections[0]?.check_sequential_ignore_case || '0';
+			checkSequentialSpecial = sections[0]?.check_sequential_special || '0';
+		} else {
+			checkSequnetialIgnoreCase = '0';
+			checkSequentialSpecial = '0';
+		}		
 
 		m = new form.JSONMap(formData, _('Router Password'), _('Changes the administrator password for accessing the device'));
 		m.readonly = !L.hasViewPermission();
@@ -127,6 +201,10 @@ return view.extend({
 				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Include numbers')]),
 				E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Include special characters (!@#$%^&*())')])
 			]);
+
+			if (checkSequential === '1') {
+				requirements.appendChild(E('div', {}, [E('span', { 'style': 'color:var(--danger-color)' }, '✗ '), _('Do not include 3 or more sequential or identical characters')]));
+			}
 
 			node.appendChild(requirements);
 			return node;

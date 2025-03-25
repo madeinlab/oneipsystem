@@ -29,6 +29,9 @@
 			"type": "firstchild",
 			"preferred": "system",
 			"recurse": true
+		},
+		"depends": {
+			"acl": [ "luci-base" ]
 		}
 	},
 

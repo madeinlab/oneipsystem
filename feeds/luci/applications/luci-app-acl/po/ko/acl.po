@@ -163,5 +163,8 @@ msgstr "숫자 포함"
 msgid "Include special characters (!@#$%^&*())"
 msgstr "특수문자 포함(!@#$%^&*())"
 
+msgid "Do not include 3 or more sequential or identical characters"  
+msgstr "3자 이상 연속 또는 동일 문자 설정 금지"
+
 msgid "Password does not meet requirements:"
 msgstr "비밀번호가 요구 사항을 충족하지 않습니다:"

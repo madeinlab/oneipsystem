@@ -1,7 +1,15 @@
+sys = require "luci.sys"
+http = require "luci.http"
+util = require "luci.util"
+fs = require "nixio.fs"
+uci = require("luci.model.uci").cursor()
+nixio = require "nixio", require "nixio.util"
+json = require "luci.jsonc"
+
 module("luci.controller.admin.system", package.seeall)
 
 function index()
-    -- menu.d/luci-base.json에 이미 정의되어 있으므로 entry() 불필요
+    entry({"admin", "system", "password_rules", "get"}, call("get_password_rules")).leaf = true
 end
 
 function action_change_password()
@@ -12,7 +20,6 @@ function action_change_password()
     local nixio = require "nixio"
     local util = require "luci.util"
     local i18n = require "luci.i18n"
-    
 
 	if dispatcher.context and dispatcher.context.authuser then
 		username = dispatcher.context.authuser
@@ -78,4 +85,39 @@ function action_change_password()
             debug_info = debug_info
         })
     end
+end
+
+function get_password_rules()
+    local first_section = nil 
+    uci:foreach("admin_manage", "password_rule", function(section)
+        if not first_section then
+            first_section = section
+            return false
+        end
+    end)
+
+    if first_section then
+        local section_name = first_section[".name"]
+
+        -- UCI에서 값 읽기
+        local min_length = uci:get('admin_manage', section_name, 'min_length') or "9"
+        local max_length = uci:get('admin_manage', section_name, 'max_length') or "32"
+        local check_sequential = uci:get('admin_manage', section_name, 'check_sequential') or "0"
+        local check_sequential_ignore_case = uci:get('admin_manage', section_name, 'check_sequential_ignore_case') or "0"
+        local check_sequential_special = uci:get('admin_manage', section_name, 'check_sequential_special') or "0"
+
+        -- JSON 반환
+        luci.http.prepare_content("application/json")
+        luci.http.write(json.stringify({
+            minLength = tonumber(min_length),
+            maxLength = tonumber(max_length),
+            checkSequential = check_sequential,
+            checkSequentialIgnoreCase = check_sequential_ignore_case,
+            checkSequentialSpecial = check_sequential_special
+        }))
+    end
+
+    nixio.syslog("err", "No password_rule section found in uci")
+    return
+
 end
