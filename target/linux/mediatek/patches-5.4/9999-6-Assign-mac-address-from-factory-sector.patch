@@ -1,0 +1,42 @@
+diff -urN a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts b/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts
+--- a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts	2025-03-26 13:05:06.468425067 +0000
++++ b/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts	2025-03-27 00:51:39.990602304 +0000
+@@ -56,6 +56,18 @@
+ 			partition@180000 {
+ 				label = "Factory";
+ 				reg = <0x180000 0x0200000>;
++				nvmem-layout {
++					compatible = "fixed-layout";
++					#address-cells = <1>;
++					#size-cells = <1>;
++
++					macaddr_factory_24: macaddr@24 {
++						reg = <0x24 0x6>;
++					};
++					macaddr_factory_2A: macaddr@2A {
++						reg = <0x2A 0x6>;
++					};
++				};
+ 			};
+ 
+ 			partition@380000 {
+@@ -134,6 +146,9 @@
+                         full-duplex;
+                         pause;
+                 };
++
++				nvmem-cells = <&macaddr_factory_2A>;
++				nvmem-cell-names = "mac-address";
+         };
+ 
+         gmac1: mac@1 {
+@@ -141,6 +156,9 @@
+                 reg = <1>;
+                 phy-mode = "gmii";
+                 phy-handle = <&phy0>;
++
++				nvmem-cells = <&macaddr_factory_24>;
++				nvmem-cell-names = "mac-address";
+         };
+ 
+         mdio: mdio-bus {
