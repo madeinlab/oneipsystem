@@ -387,9 +387,6 @@ return view.extend({
 
 		s = m.section(form.NamedSection, 'actions', _('Actions'));
 
-
-// Remove Block by LSS
-/*
 		o = s.option(form.SectionValue, 'actions', form.NamedSection, 'actions', 'actions', _('Backup'), _('Click "Generate archive" to download a tar archive of the current configuration files.'));
 		ss = o.subsection;
 
@@ -397,7 +394,6 @@ return view.extend({
 		o.inputstyle = 'action important';
 		o.inputtitle = _('Generate archive');
 		o.onclick = this.handleBackup;
-
 
 		o = s.option(form.SectionValue, 'actions', form.NamedSection, 'actions', 'actions', _('Restore'), _('To restore configuration files, you can upload a previously generated backup archive here. To reset the firmware to its initial state, click "Perform reset" (only possible with squashfs images).'));
 		ss = o.subsection;
@@ -414,7 +410,8 @@ return view.extend({
 		o.inputtitle = _('Upload archive...');
 		o.onclick = L.bind(this.handleRestore, this);
 
-
+// Remove Block by LSS
+/*
 		var mtdblocks = [];
 		procmtd.split(/\n/).forEach(function(ln) {
 			var match = ln.match(/^mtd(\d+): .+ "(.+?)"$/);
