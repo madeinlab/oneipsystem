@@ -1,0 +1,80 @@
+diff -urN a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts b/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts
+--- a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts	2025-03-26 13:05:06.468425067 +0000
++++ b/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts	2025-03-27 01:19:54.110269296 +0000
+@@ -56,6 +56,18 @@
+ 			partition@180000 {
+ 				label = "Factory";
+ 				reg = <0x180000 0x0200000>;
++				nvmem-layout {
++					compatible = "fixed-layout";
++					#address-cells = <1>;
++					#size-cells = <1>;
++
++					macaddr_factory_24: macaddr@24 {
++						reg = <0x24 0x6>;
++					};
++					macaddr_factory_2A: macaddr@2A {
++						reg = <0x2A 0x6>;
++					};
++				};
+ 			};
+ 
+ 			partition@380000 {
+@@ -128,6 +140,8 @@
+                 compatible = "mediatek,eth-mac";
+                 reg = <0>;
+                 phy-mode = "2500base-x";
++				nvmem-cells = <&macaddr_factory_2A>;
++				nvmem-cell-names = "mac-address";
+ 
+                 fixed-link {
+                         speed = <2500>;
+@@ -141,6 +155,8 @@
+                 reg = <1>;
+                 phy-mode = "gmii";
+                 phy-handle = <&phy0>;
++				nvmem-cells = <&macaddr_factory_24>;
++				nvmem-cell-names = "mac-address";
+         };
+ 
+         mdio: mdio-bus {
+diff -urN a/scripts/dtc/include-prefixes/arm64/mediatek/mt7981-spim-nand-gsw.dts b/scripts/dtc/include-prefixes/arm64/mediatek/mt7981-spim-nand-gsw.dts
+--- a/scripts/dtc/include-prefixes/arm64/mediatek/mt7981-spim-nand-gsw.dts	2025-03-26 13:05:06.468425067 +0000
++++ b/scripts/dtc/include-prefixes/arm64/mediatek/mt7981-spim-nand-gsw.dts	2025-03-27 01:19:54.110269296 +0000
+@@ -56,6 +56,18 @@
+ 			partition@180000 {
+ 				label = "Factory";
+ 				reg = <0x180000 0x0200000>;
++				nvmem-layout {
++					compatible = "fixed-layout";
++					#address-cells = <1>;
++					#size-cells = <1>;
++
++					macaddr_factory_24: macaddr@24 {
++						reg = <0x24 0x6>;
++					};
++					macaddr_factory_2A: macaddr@2A {
++						reg = <0x2A 0x6>;
++					};
++				};
+ 			};
+ 
+ 			partition@380000 {
+@@ -128,6 +140,8 @@
+                 compatible = "mediatek,eth-mac";
+                 reg = <0>;
+                 phy-mode = "2500base-x";
++				nvmem-cells = <&macaddr_factory_2A>;
++				nvmem-cell-names = "mac-address";
+ 
+                 fixed-link {
+                         speed = <2500>;
+@@ -141,6 +155,8 @@
+                 reg = <1>;
+                 phy-mode = "gmii";
+                 phy-handle = <&phy0>;
++				nvmem-cells = <&macaddr_factory_24>;
++				nvmem-cell-names = "mac-address";
+         };
+ 
+         mdio: mdio-bus {
