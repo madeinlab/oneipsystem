@@ -1,0 +1,18 @@
+diff -urN a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c	2025-03-29 09:38:18.034206261 +0000
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c	2025-03-29 09:04:59.957305073 +0000
+@@ -3824,8 +3824,13 @@
+ 	const char *mac_addr;
+ 
+ 	mac_addr = of_get_mac_address(mac->of_node);
+-	if (!IS_ERR(mac_addr))
++	if (!IS_ERR(mac_addr)) {
+ 		ether_addr_copy(dev->dev_addr, mac_addr);
++	}
++	else {
++		dev_info(eth->dev, "MTD not ready, deferring probe\n");
++		return -EPROBE_DEFER;
++	}
+ 
+ 	/* If the mac address is invalid, use random mac address  */
+ 	if (!is_valid_ether_addr(dev->dev_addr)) {
