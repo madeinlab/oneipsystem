@@ -174,6 +174,7 @@ return view.extend({
 		o.placeholder = 16
 		o.datatype    = 'uinteger'
 
+/* Remove by LSS Do not use external log server
 		o = s.taboption('logging', form.Value, 'log_ip', _('External system log server'))
 		o.optional    = true
 		o.placeholder = '0.0.0.0'
@@ -187,6 +188,7 @@ return view.extend({
 		o = s.taboption('logging', form.ListValue, 'log_proto', _('External system log server protocol'))
 		o.value('udp', 'UDP')
 		o.value('tcp', 'TCP')
+*/
 
 		o = s.taboption('logging', form.Value, 'log_file', _('Write system log to file'))
 		o.optional    = true
