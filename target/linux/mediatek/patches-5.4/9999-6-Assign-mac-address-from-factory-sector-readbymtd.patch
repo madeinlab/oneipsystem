@@ -15,7 +15,7 @@ diff -urN a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts b/arch/arm64/b
                  reg = <0>;
                  phy-mode = "2500base-x";
 -
-+				mtd-mac-address = <&factory_part 0x2A>;
++				mtd-mac-address = <&factory_part 0x24>;
                  fixed-link {
                          speed = <2500>;
                          full-duplex;
@@ -23,7 +23,7 @@ diff -urN a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts b/arch/arm64/b
                  reg = <1>;
                  phy-mode = "gmii";
                  phy-handle = <&phy0>;
-+				mtd-mac-address = <&factory_part 0x24>;
++				mtd-mac-address = <&factory_part 0x2A>;
          };
  
          mdio: mdio-bus {
