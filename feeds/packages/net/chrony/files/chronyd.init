@@ -73,21 +73,24 @@ handle_nts() {
 start_service() {
 	. /lib/functions/network.sh
 
-	procd_open_instance
-	procd_set_param command $PROG -n
-	procd_set_param file $CONFIGFILE
-	procd_set_param file $INCLUDEFILE
-	procd_close_instance
+	enabled=$(uci get chrony.@chrony[0].enabled 2>/dev/null)
+	if [ "$enabled" = "1" ]; then
+		procd_open_instance
+		procd_set_param command $PROG -n
+		procd_set_param file $CONFIGFILE
+		procd_set_param file $INCLUDEFILE
+		procd_close_instance
 
-	config_load chrony
-	mkdir -p $(dirname $INCLUDEFILE)
+		config_load chrony
+		mkdir -p $(dirname $INCLUDEFILE)
 
-	(
-		config_foreach handle_source server server
-		config_foreach handle_source pool pool
-		config_foreach handle_source peer peer
-		config_foreach handle_allow allow
-		config_foreach handle_makestep makestep
-		config_foreach handle_nts nts
-	) > $INCLUDEFILE
+		(
+			config_foreach handle_source server server
+			config_foreach handle_source pool pool
+			config_foreach handle_source peer peer
+			config_foreach handle_allow allow
+			config_foreach handle_makestep makestep
+			config_foreach handle_nts nts
+		) > $INCLUDEFILE
+	fi
 }

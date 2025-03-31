@@ -23,7 +23,6 @@ if [ "$((last_octet % 10))" -ne 0 ] || [ "$((last_octet / 10))" -lt 1 ] || [ "$(
         ping -c 3 -W 2 "$ip_addr" > /dev/null 2>&1
         if [ $? -eq 0 ]; then
             echo "Invalid IP address, rebooting camera..."
-            #onvif-util -u admin -p admin1357 -r "$ip_addr"
             . /usr/lib/dnsmasq/reboot-camera.sh "$ip_addr"
         else
             echo "Camera IP is unreachable."

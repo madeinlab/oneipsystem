@@ -3,7 +3,7 @@
 ip_addr="$1"
 
 if [ -n "$ip_addr" ]; then
-    onvif-util -u admin -p admin1357 -r "$ip_addr" &
+    onvif-util -r "$ip_addr" &
     PID=$!
 
     sleep 2

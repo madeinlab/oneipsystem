@@ -6,13 +6,13 @@
 				"luci": [ "getInitList", "getLEDs", "getTimezones", "getUSBDevices" ],
 				"system": [ "info" ]
 			},
-			"uci": [ "luci", "system" ]
+			"uci": [ "luci", "system", "chrony" ]
 		},
 		"write": {
 			"ubus": {
 				"luci": [ "setInitAction", "setLocaltime", "setPassword" ]
 			},
-			"uci": [ "luci", "system" ]
+			"uci": [ "luci", "system", "chrony" ]
 		}
 	},
 

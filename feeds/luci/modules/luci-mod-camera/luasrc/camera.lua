@@ -16,8 +16,8 @@ local camera_dump_path = "/etc/cameras"
 local config_file_path = "/etc/config"
 local config_file = "camera"	-- /etc/config/camera
 local config_section_type = "camera"
-local account = "admin"
-local accountPW = "admin1357"
+local account = ""
+local accountPW = ""
 
 function get_ip_address(intf)
 	res = sys.exec("/sbin/ifconfig " .. intf .. " | awk -F ' *|:' '/inet addr/{print $4}'")
@@ -286,14 +286,16 @@ function createCameraDumpFiles(info)
 	-- Iterate over the info array
 	for i, ip in ipairs(info) do
 		local filepath = camera_dump_path .. "/cam" .. i
-		local cmd = string.format("onvif-util -d -u %s -p %s %s > %s", account, accountPW, ip, filepath)
+		--local cmd = string.format("onvif-util -d -u %s -p %s %s > %s", account, accountPW, ip, filepath)
+		local cmd = string.format("onvif-util -d %s > %s", ip, filepath)
 		sys.exec(cmd)
 	end
 end
 
 -- Generate dump file
 function createCameraDumpFile(ip, filename)
-	local cmd = string.format("onvif-util -d -u %s -p %s %s", account, accountPW, ip)
+	--local cmd = string.format("onvif-util -d -u %s -p %s %s", account, accountPW, ip)
+	local cmd = string.format("onvif-util -d %s", ip)
 	local result = sys.exec(cmd)
 
 	if result:find("%s*successfully connected to host") then

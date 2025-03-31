@@ -107,11 +107,13 @@ CBILocalTime = form.DummyValue.extend({
 return view.extend({
 	load: function() {
 		return Promise.all([
-			callInitList('sysntpd'),
+			//callInitList('sysntpd'),
+			callInitList('chronyd'),
 			callTimezone(),
 			callGetLocaltime(),
 			uci.load('luci'),
-			uci.load('system')
+			uci.load('system'),
+			uci.load('chrony')
 		]);
 	},
 
@@ -123,6 +125,7 @@ return view.extend({
 
 		m = new form.Map('system');
 		m.chain('luci');
+		m.chain('chrony')
 
 		s = m.section(form.TypedSection, 'system', _('System Properties'));
 		s.anonymous = true;
@@ -250,64 +253,107 @@ return view.extend({
 		/*
 		 * NTP
 		 */
+		o = s.taboption('time', form.Flag, 'enabled', _('Enable NTP client'));
+		o.rmempty = false;
+		o.load = function(section_id) {
+			var sections = uci.sections('chrony');
+			var firstSection = sections.length > 0 ? sections[0]['.name'] : null;
+			return firstSection ? uci.get('chrony', firstSection, 'enabled') : '0';
+		};		
+		o.write = function(section_id, value) {
+			var sections = uci.sections('chrony');
+			if (sections.length > 0) {
+				var firstSection = sections[0]['.name'];
+				uci.set('chrony', firstSection, 'enabled', value);
+				console.log("write:", uci.get('chrony', firstSection, 'enabled'))
+			}
+		};
 
-		if (L.hasSystemFeature('sysntpd')) {
-			var default_servers = [
-				'0.openwrt.pool.ntp.org', '1.openwrt.pool.ntp.org',
-				'2.openwrt.pool.ntp.org', '3.openwrt.pool.ntp.org'
-			];
+		o = s.taboption('time', form.DynamicList, 'pool', _('NTP server candidates'));
+		o.datatype = 'host(0)';
+		o.ucisection = 'chrony';
+		o.depends('enabled', '1');
+		o.load = function(section_id) {			
+			var pools = uci.sections('chrony', 'pool'); // 'pool' 타입의 모든 섹션 가져오기.
+			return pools.map(function(section) {
+				return section.hostname; // 각 pool 섹션의 hostname 값만 가져옴.
+			}).filter(Boolean); // 빈 값 제거.
+		};
+		o.write = function(section_id, value) {
+			var existingPools = uci.sections('chrony', 'pool');
 
-			o = s.taboption('time', form.Flag, 'enabled', _('Enable NTP client'));
-			o.rmempty = false;
-			o.ucisection = 'ntp';
-			o.default = o.disabled;
-			o.write = function(section_id, value) {
-				ntpd_enabled = +value;
+			// 기존 pool 섹션 삭제.
+			existingPools.forEach(function(section) {
+				uci.remove('chrony', section['.name']);
+			});
+		
+			// 새로운 pool 섹션 추가.
+			value.forEach(function(hostname) {
+				var newSection = uci.add('chrony', 'pool');
+				uci.set('chrony', newSection, 'hostname', hostname);
+				uci.set('chrony', newSection, 'maxpoll', '12');
+				uci.set('chrony', newSection, 'iburst', 'yes');
+			});	
+		};
 
-				if (ntpd_enabled && !uci.get('system', 'ntp')) {
-					uci.add('system', 'timeserver', 'ntp');
-					uci.set('system', 'ntp', 'server', default_servers);
-				}
+		// Not use sysntpd. it is busybox ntp.
+		// if (L.hasSystemFeature('sysntpd')) {
+		// 	var default_servers = [
+		// 		'0.openwrt.pool.ntp.org', '1.openwrt.pool.ntp.org',
+		// 		'2.openwrt.pool.ntp.org', '3.openwrt.pool.ntp.org'
+		// 	];
 
-				if (!ntpd_enabled)
-					uci.set('system', 'ntp', 'enabled', 0);
-				else
-					uci.unset('system', 'ntp', 'enabled');
+		// 	o = s.taboption('time', form.Flag, 'enabled', _('Enable NTP client'));
+		// 	o.rmempty = false;
+		// 	o.ucisection = 'ntp';
+		// 	o.default = o.disabled;
+		// 	o.write = function(section_id, value) {
+		// 		ntpd_enabled = +value;
 
-				return callInitAction('sysntpd', 'enable');
-			};
-			o.load = function(section_id) {
-				return (ntpd_enabled == 1 &&
-				        uci.get('system', 'ntp') != null &&
-				        uci.get('system', 'ntp', 'enabled') != 0) ? '1' : '0';
-			};
+		// 		if (ntpd_enabled && !uci.get('system', 'ntp')) {
+		// 			uci.add('system', 'timeserver', 'ntp');
+		// 			uci.set('system', 'ntp', 'server', default_servers);
+		// 		}
 
-			o = s.taboption('time', form.Flag, 'enable_server', _('Provide NTP server'));
-			o.ucisection = 'ntp';
-			o.depends('enabled', '1');
+		// 		if (!ntpd_enabled)
+		// 			uci.set('system', 'ntp', 'enabled', 0);
+		// 		else
+		// 			uci.unset('system', 'ntp', 'enabled');
 
-			o = s.taboption('time', widgets.NetworkSelect, 'interface',
-				_('Bind NTP server'),
-				_('Provide the NTP server to the selected interface or, if unspecified, to all interfaces'));
-			o.ucisection = 'ntp';
-			o.depends('enable_server', '1');
-			o.multiple = false;
-			o.nocreate = true;
-			o.optional = true;
+		// 		return callInitAction('sysntpd', 'enable');
+		// 	};
+		// 	o.load = function(section_id) {
+		// 		return (ntpd_enabled == 1 &&
+		// 		        uci.get('system', 'ntp') != null &&
+		// 		        uci.get('system', 'ntp', 'enabled') != 0) ? '1' : '0';
+		// 	};
 
-			o = s.taboption('time', form.Flag, 'use_dhcp', _('Use DHCP advertised servers'));
-			o.ucisection = 'ntp';
-			o.default = o.enabled;
-			o.depends('enabled', '1');
+		// 	o = s.taboption('time', form.Flag, 'enable_server', _('Provide NTP server'));
+		// 	o.ucisection = 'ntp';
+		// 	o.depends('enabled', '1');
 
-			o = s.taboption('time', form.DynamicList, 'server', _('NTP server candidates'));
-			o.datatype = 'host(0)';
-			o.ucisection = 'ntp';
-			o.depends('enabled', '1');
-			o.load = function(section_id) {
-				return uci.get('system', 'ntp', 'server');
-			};
-		}
+		// 	o = s.taboption('time', widgets.NetworkSelect, 'interface',
+		// 		_('Bind NTP server'),
+		// 		_('Provide the NTP server to the selected interface or, if unspecified, to all interfaces'));
+		// 	o.ucisection = 'ntp';
+		// 	o.depends('enable_server', '1');
+		// 	o.multiple = false;
+		// 	o.nocreate = true;
+		// 	o.optional = true;
+
+		// 	o = s.taboption('time', form.Flag, 'use_dhcp', _('Use DHCP advertised servers'));
+		// 	o.ucisection = 'ntp';
+		// 	o.default = o.enabled;
+		// 	o.depends('enabled', '1');
+
+		// 	o = s.taboption('time', form.DynamicList, 'server', _('NTP server candidates'));
+		// 	o.datatype = 'host(0)';
+		// 	o.ucisection = 'ntp';
+		// 	o.depends('enabled', '1');
+		// 	o.load = function(section_id) {
+		// 		return uci.get('system', 'ntp', 'server');
+		// 	};
+		// }
 
 		return m.render().then(function(mapEl) {
 			poll.add(function() {
@@ -318,5 +364,27 @@ return view.extend({
 
 			return mapEl;
 		});
-	}
+	},
+
+	handleSaveApply: function(ev, mode) {
+		return this.handleSave(ev).then(function() {			
+			classes.ui.changes.apply(mode == '0'); // 이 시점에서 apply 진행.
+
+			var sections = uci.sections('chrony');
+			var action = 'stop'
+			var value = '0'
+			if (sections.length > 0) {
+				var firstSection = sections[0]['.name'];
+				value = uci.get('chrony', firstSection, 'enabled')
+
+				if (value == '1') {
+					action = 'restart'
+				}
+			}
+			
+			// console.log(String.format("handleSaveApply: %s %s", uci.get('chrony', firstSection, 'enabled'), action))
+			// chronyd 서비스 재시작 또는 중지.
+			return callInitAction('chronyd', action);
+		});
+	},
 });
