@@ -8,12 +8,7 @@ diff -urN a/arch/arm64/boot/dts/mediatek/mt7981-spim-nand-gsw.dts b/arch/arm64/b
 +
 +			partition@7400000 {
 +				label = "LogA";
-+				reg = <0x7400000 0x400000>;
-+			};
-+
-+			partition@7800000 {
-+				label = "LogB";
-+				reg = <0x7800000 0x400000>;
++				reg = <0x7400000 0x800000>;
 +			};
  		};
  	};
