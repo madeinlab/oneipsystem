@@ -12,9 +12,9 @@
 
 var isReadonlyView = !L.hasViewPermission() || null;
 
-const debug = false;
+const _debug = false;
 function consoleLog(msg, ...args) {
-    if (debug) {
+    if (_debug) {
         console.log(msg, ...args);
     }
 }
@@ -22,6 +22,85 @@ function consoleLog(msg, ...args) {
 const _useRtkGswForLinkState = true;
 var _pollRegistered = false
 var _wanip = ''
+var _oldDescriptions = {}
+var _isConfigUpdating = false
+
+var initCameraConfig = rpc.declare({
+	object: 'luci',
+	method: 'initCameraConfig',
+	expect: { '': {} }
+});
+
+var cameraRedirect = rpc.declare({
+	object: 'luci',
+	method: 'cameraRedirect',
+	params: [ 'ip', 'port' ],
+	expect: { '': {} }
+});
+
+var rtspRedirect = rpc.declare({
+	object: 'luci',
+	method: 'rtspRedirect',
+	params: [ 'url', 'port' ],
+	expect: { '': {} }
+});
+
+var callSwconfigFeatures = rpc.declare({
+	object: 'luci',
+	method: 'getSwconfigFeatures',
+	params: [ 'switch' ],
+	expect: { '': {} }
+});
+
+var callSwconfigPortState = rpc.declare({
+	object: 'luci',
+	method: 'getSwconfigPortState',
+	params: [ 'switch' ],
+	expect: { result: [] }
+});
+
+var getCameraInfo = rpc.declare({
+    object: 'luci',
+    method: 'getCameraInfo',
+    params: [ 'section_id', 'type' ]
+});
+
+var callRebootCamera = rpc.declare({
+	object: 'luci',
+	method: 'rebootCamera',
+	params: [ 'section_id' ]	
+});
+
+var getLinkState = rpc.declare({
+	object: 'luci',
+	method: 'getLinkState',
+	params: [ ]
+});
+
+var setCameraConfig = rpc.declare({
+	object: 'luci',
+	method: 'setCameraConfig',
+	params: [ 'section', 'option', 'value']
+});
+
+var callEncryptPassword = rpc.declare({
+	object: 'luci',
+	method: 'encryptPassword',
+	params: [ 'password'],
+	expect: { result: "" } 
+});
+
+// 복호화 함수. 
+// 웹브라우저 개발자모드에서 코드 노출을 막기 위해 주석처리.
+// 터미널에서 복화화 함수 확인. 
+// ubus call luci decryptPassword '{ "password":"U2FsdGVkX1/H+CUTc8Ys+UUmY7fe385mKP0HB7HUY1s=" }'
+//
+// var callDecryptPassword = rpc.declare({
+// 	object: 'luci',
+// 	method: 'decryptPassword',
+// 	params: [ 'password'],
+// 	expect: { result: "" } 
+// });
 
 function render_port_status(type, node, portstate) {
 	if (!node) {
@@ -80,14 +159,14 @@ async function updateCameraInfo(portstate) {
 	consoleLog('[debug] updateCameraInfo %s %s', today, portstate)
 
 	try {
-		// if (typeof uci.unload === 'function') {
-		// 	await uci.unload('camera');
-		// 	consoleLog('[debug] uci.unload(\'camera\') success');
-		// }
-
 		if (typeof uci.load === 'function') {
-			await uci.load('camera');
-			consoleLog('[debug] uci.load(\'camera\') success');
+			_isConfigUpdating = true
+			try {
+				uci.unload('camera');
+				await uci.load('camera');
+			} finally {
+				_isConfigUpdating = false;
+			}
 		}
 
 		var cameraSections = uci.sections('camera');
@@ -97,8 +176,8 @@ async function updateCameraInfo(portstate) {
 			if (isNaN(switchport)) switchport = 0
 			var state = switchport === 0 ? false : portstate[switchport - 1].state
             var ip = state ? (uci.get('camera', section_id, 'ip') || '') : ''
-            var model = state ? (uci.get('camera', section_id, 'model') || '-') : '-'
-            var manufacturer = state ? (uci.get('camera', section_id, 'manufacturer') || '-') : '-'
+            var model = state ? (uci.get('camera', section_id, 'model') || '') : ''
+            var manufacturer = state ? (uci.get('camera', section_id, 'manufacturer') || '') : ''
 			var description = state ? (uci.get('camera', section_id, 'description') || '') : ''
             var rtsp = state ? (uci.get('camera', section_id, 'rtsp') || '') : ''
             var selectedRtsp = uci.get('camera', section_id, 'selectedrtsp')
@@ -122,20 +201,38 @@ async function updateCameraInfo(portstate) {
 				strRtsp = String(rtsp);
 			}
 
-            if (modelElement && modelElement.textContent !== model) {
-                modelElement.textContent = model;
+			// Not used
+			// model
+            // if (modelElement && modelElement.textContent !== model) {
+            //     modelElement.textContent = model;
 
-				// To preserve the changed value, initialize only when the port state changes.
-				// The value of the model, which is of readonly type, changes when the state changes.
-				descriptionElement.value = description;
-            }
-            if (manufacturerElement && manufacturerElement.textContent !== manufacturer) {
-                manufacturerElement.textContent = manufacturer;
-            }
-			// Move descriptionElement handling to modelElement.
-            // if (descriptionElement && descriptionElement.value !== description) {
-            //     descriptionElement.value = description;
+			// 	// To preserve the changed value, initialize only when the port state changes.
+			// 	// The value of the model, which is of readonly type, changes when the state changes.
+			// 	descriptionElement.value = description;
             // }
+
+			// Not used
+			// manafacture
+            // if (manufacturerElement && manufacturerElement.textContent !== manufacturer) {
+            //     manufacturerElement.textContent = manufacturer;
+            // }
+
+			// configure camera account
+			var accountWrapper = document.querySelector(`#cbi-camera-${section_id}-account`);
+			if (accountWrapper) {
+				const setBtn = accountWrapper.querySelector('.cbi-button-set');
+				if (setBtn) {
+					setBtn.disabled = !state;
+				}
+			}
+
+			// description
+			if (_oldDescriptions[section_id] !== description) {
+				descriptionElement.value = description
+				_oldDescriptions[section_id] = description
+			}
+
+			// rtsp list
 			if (hiddenrtspElement && hiddenrtspElement.value !== strRtsp) {
                 hiddenrtspElement.value = rtsp;
 
@@ -151,12 +248,16 @@ async function updateCameraInfo(portstate) {
 					
 					selectElement.innerHTML = '';
 
-					if (!Array.isArray(rtsp)) rtsp = [rtsp];
-					rtsp.forEach(function(item) {						
+					if (!Array.isArray(rtsp)) {
+						rtsp = rtsp ? [rtsp] : [];
+					}
+
+					rtsp.forEach(function(item) {
 						var option = document.createElement('option');
 						option.value = item;
-						option.textContent = port && item
-							? String.format("rtsp://%s:%d/%s", _wanip, port, rtsp.match(/rtsp:\/\/[^\/]+\/(.+)/)[1])
+						var match = item.match(/rtsp:\/\/[^\/]+\/(.+)/);
+						option.textContent = port && item && match
+							? String.format("rtsp://%s:%d/%s", _wanip, port, match[1])
 							: item;
 						if (item === selectedRtsp) {
 							option.selected = true;
@@ -165,7 +266,8 @@ async function updateCameraInfo(portstate) {
 					});
 				
 					selectElement.addEventListener('change', function() {
-						saveSelectedRtspProfile(section_id, 'selectedrtsp', selectElement.value)
+						uci.set('camera', section_id, 'selectedrtsp', selectElement.value);
+						uci.save()
 					});
 
 					if (!rtspElement.contains(selectElement)) {
@@ -174,21 +276,24 @@ async function updateCameraInfo(portstate) {
 				}
             }
 
+			// buttons
 			if (rowElement) {
+				var isIpValid = ip && ip.trim() !== '';
 				var actionCell = rowElement.querySelector('.cbi-section-actions');
 				if (actionCell) {
 					actionCell.innerHTML = '';
-					if (ip) {
-                        ['webpage', 'streaming', 'reboot'].forEach(function(action) {
-                            var button = E('button', {
-                                title: _(action.charAt(0).toUpperCase() + action.slice(1)),
-                                class: `cbi-button cbi-button-${action}`,
-                                click: handleButtonClick.bind(this, section_id, action)
-                            }, [_(action.charAt(0).toUpperCase() + action.slice(1))]);
+					//['webpage', 'streaming', 'reboot', 'set'].forEach(function(action) {
+					['webpage', 'streaming', 'reboot'].forEach(function(action) {
+						var btnOption = {
+							title: _(action.charAt(0).toUpperCase() + action.slice(1)),
+							class: `cbi-button cbi-button-${action}`,
+							click: handleButtonClick.bind(this, section_id, action),
+						}
+						if (!isIpValid) btnOption.disabled = true;	
 
-                            dom.append(actionCell, button);
-                        });
-					}
+						var btn = E('button', btnOption, [_(action.charAt(0).toUpperCase() + action.slice(1))]);	
+						dom.append(actionCell, btn);
+					});
 				}
 			}
 		});
@@ -213,8 +318,15 @@ async function handleButtonClick(section_id, type) {
 	consoleLog("[debug] handleButtonClick section_id[%s] type[%s]", section_id, type)
 
 	if (type === 'reboot') {
-		console.log('reboot ', section_id)
-		rebootCamera(section_id)
+		if (!confirm(_('Do you want to reboot the camera?')))
+			return;
+
+		callRebootCamera(section_id)
+		return
+	}
+
+	if (type == 'set') {
+		handleSetCameraLoginInfo(section_id)
 		return
 	}
 
@@ -239,78 +351,164 @@ async function handleButtonClick(section_id, type) {
 	window.open(url, '_blank');
 }
 
-async function saveSelectedRtspProfile(section_id, option, value) {
-	uci.set('camera', section_id, option, value);
+async function saveCameraUserAccount(section_id, username, password, flag) {
+	//console.log(String.format("saveCameraUserAccount section_id[%s] username[%s] password[%s] flag[%s]", section_id, username, password, flag))
 
-	// Not used
-	// Immediately save selectedrtsp to config.
-	//setCameraConfig(section_id, option, value)
+	let encrypted = password
+	if (flag && password) {
+		encrypted = await callEncryptPassword(password)
+		if (!encrypted) {
+			console.error("Encryption failed or returned empty value");
+			return;
+		}
+	}
+
+	uci.set('camera', section_id, 'set_user', flag ? '1' : '0');
+	uci.set('camera', section_id, 'username', flag ? username : '');
+	uci.set('camera', section_id, 'password', flag ? encrypted : '');
+	uci.save()
 }
 
-var initCameraConfig = rpc.declare({
-	object: 'luci',
-	method: 'initCameraConfig',
-	expect: { '': {} }
-});
+async function handleSetCameraLoginInfo(section_id) {
+	let index = uci.get('camera', section_id, 'switchPort')
+	let hasUser = uci.get('camera', section_id, 'username') && uci.get('camera', section_id, 'password');
+	const setUserFlag = uci.get('camera', section_id, 'set_user') === '1';
 
-var cameraRedirect = rpc.declare({
-	object: 'luci',
-	method: 'cameraRedirect',
-	params: [ 'ip', 'port' ],
-	expect: { '': {} }
-});
+	let msgStyle = setUserFlag
+		? `font-weight: bold; color: ${hasUser ? 'green' : 'red'}`
+		: 'display: none;';
 
-var rtspRedirect = rpc.declare({
-	object: 'luci',
-	method: 'rtspRedirect',
-	params: [ 'url', 'port' ],
-	expect: { '': {} }
-});
+	// debug
+	// if (_debug) {
+	// 	let username = uci.get('camera', section_id, 'username') ? uci.get('camera', section_id, 'username') : ''
+	// 	let password = uci.get('camera', section_id, 'password') ? uci.get('camera', section_id, 'password') : ''
+	// 	let decrypted = ''
+	// 	if (password) {
+	// 		decrypted = await callDecryptPassword(password)
+	// 	}
+	// 	console.log("===== debug =====")
+	// 	console.log("section_id: " + section_id)
+	// 	console.log("username: " + username)
+	// 	console.log("password: " + password)
+	// 	console.log("decrypted password: " + decrypted)
+	// }
 
-var callSwconfigFeatures = rpc.declare({
-	object: 'luci',
-	method: 'getSwconfigFeatures',
-	params: [ 'switch' ],
-	expect: { '': {} }
-});
+    ui.showModal(`${_('Camera')} ${index}`, [
+		E('div', { 'class': 'cbi-section' }, [
+			E('div', { 'class': 'cbi-section-node' }, [
+				E('p', _('Enter the username and password for Camera %d.').replace('%d', index)),
+				E('div', { 'class': 'cbi-value' }, [
+					E('label', { 'class': 'cbi-value-title', 'for': 'set-user-flag' }, _('Set Login Info')),
+					E('div', { 'class': 'cbi-value-field' }, [
+						E('input', {
+							'type': 'checkbox',
+							'id': 'set-user-flag',
+							//'checked': uci.get('camera', section_id, 'set_user') === '1',
+							'click': function () {
+								// 체크 상태에 따라 관련 필드 show/hide
+								const checked = this.checked;
+								document.querySelectorAll('.user-info-field').forEach(el => {
+									el.style.display = checked ? '' : 'none';
+								});
+							}
+						})
+					])
+				]),
 
-var callSwconfigPortState = rpc.declare({
-	object: 'luci',
-	method: 'getSwconfigPortState',
-	params: [ 'switch' ],
-	expect: { result: [] }
-});
+				E('p', {
+					'class': 'user-info-field',
+					'style': msgStyle + ' font-size: 14px; font-style: italic;'
+				}, 
+					hasUser
+						? _('Saved credentials exist.') 
+						: _('No saved credentials.')
+				),
 
-var getCameraInfo = rpc.declare({
-    object: 'luci',
-    method: 'getCameraInfo',
-    params: [ 'section_id', 'type' ]
-});
+				E('div', { 'class': 'cbi-value user-info-field', 'style': uci.get('camera', section_id, 'set_user') === '1' ? '' : 'display: none;' }, [
+					E('label', { 'class': 'cbi-value-title', 'for': 'camera-id' }, _('Username')),
+					E('div', { 'class': 'cbi-value-field' }, [
+						E('input', { 
+							'class': 'cbi-input-text', 
+							'id': 'camera-id', 
+							'type': 'password', 
+							'placeholder': _('Enter Camera Username'),
+							//'value': uci.get('camera', section_id, 'username') || ''
+							'value': ''
+						})
+					])
+				]),
 
-var rebootCamera = rpc.declare({
-	object: 'luci',
-	method: 'rebootCamera',
-	params: [ 'section_id' ]	
-});
+				E('div', { 'class': 'cbi-value user-info-field', 'style': uci.get('camera', section_id, 'set_user') === '1' ? '' : 'display: none;' }, [
+					E('label', { 'class': 'cbi-value-title', 'for': 'camera-pw' }, _('Password')),
+					E('div', { 'class': 'cbi-value-field' }, [
+						E('input', { 
+							'class': 'cbi-input-text', 
+							'id': 'camera-pw', 
+							'type': 'password', 
+							'placeholder': _('Enter Camera Password'),
+							//'value': uci.get('camera', section_id, 'password') || ''
+							'value': ''
+						})
+					])
+				]),
 
-var getLinkState = rpc.declare({
-	object: 'luci',
-	method: 'getLinkState',
-	params: [ ]
-});
+				E('div', { 'class': 'right' }, [
+					E('button', {
+						'class': 'btn cbi-button',
+						'click': function() {
+							ui.hideModal();
+						}
+					}, _('Cancel')),
+					E('button', {
+						'class': 'btn cbi-button-action important',
+						'click': function() {
+							var flag = document.getElementById('set-user-flag').checked;
+							var cameraId = '', cameraPw = '';
+							if (flag) {
+								cameraId = document.getElementById('camera-id').value;
+								cameraPw = document.getElementById('camera-pw').value;
+							}
 
-var setCameraConfig = rpc.declare({
-	object: 'luci',
-	method: 'setCameraConfig',
-	params: [ 'section', 'option', 'value']
-});
+							saveCameraUserAccount(section_id, cameraId, cameraPw, flag);
+
+							ui.hideModal();
+						}
+					}, _('Save'))
+				])
+			])
+        ])
+    ]);
+
+	var modal = document.querySelector('.modal');
+	if (modal) {
+		modal.style.width = '600px';
+		modal.style.maxWidth = '60%';
+    }
+
+	const checkbox = document.getElementById('set-user-flag');
+	if (checkbox) checkbox.checked = setUserFlag;
+
+	document.querySelectorAll('.user-info-field').forEach(el => {
+		el.style.display = setUserFlag ? '' : 'none';
+	});
+}
+
+function createButton(section_id, label, cssClass, action, isIpValid) {
+	var opts = {
+		'title': _(label),
+		'class': 'cbi-button ' + cssClass,
+		'click': handleButtonClick.bind(this, section_id, action)
+	};
+	if (!isIpValid) opts.disabled = true;
+
+	return E('button', opts, [_(label)]);
+}
 
 return view.extend({
 	load: function() {
 		var tasks = [];
-
+		tasks.push(uci.load('camera'))
 		tasks.push(network.getWANNetworks())
-
 		if (_useRtkGswForLinkState) {
 			tasks.push(getRtkGswLinkState())
 			return Promise.all(tasks)
@@ -318,7 +516,6 @@ return view.extend({
 		} else {
 			var i = 0
 			return network.getSwitchTopologies().then(function(topologies) {
-				var tasks = [];
 				for (var switch_name in topologies) {
 					tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(ports) {
 						this.portstate = ports;
@@ -334,7 +531,7 @@ return view.extend({
 	// topologies[switch0].legnth: 6 (Port1, Port2, Port3, Port4, Port5, CPU(eth0))	
 	//render: function(topologies) { // org
 	render: function(data) {
-		let wan_nets  = data[0]
+		let wan_nets  = data[1]
 		for (let i = 0; i < wan_nets.length; i++) {
 			if (wan_nets[i].sid === 'wan') {
 				_wanip = wan_nets[i].getIPAddr()
@@ -344,8 +541,8 @@ return view.extend({
 
 		var m, s, o
 
-		let topologies = _useRtkGswForLinkState ? null : data[1]
-		let linkstate = _useRtkGswForLinkState ? data[1] : null
+		let topologies = _useRtkGswForLinkState ? null : data[2]
+		let linkstate = _useRtkGswForLinkState ? data[2] : null
 				
 		consoleLog('linkstate[%s]\ntopologies[%s] ', linkstate, topologies)
 
@@ -383,21 +580,34 @@ return view.extend({
 		o.datatype = "string"
 		o.readonly = true
 
-		o = s.option(form.DummyValue, 'model', _('Model name'))
-		o.datatype = "string"
-		o.readonly = true
-		o.cfgvalue = function(section_id) {
-			var model = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'model') || '-') : '-'
-			return E('div', { 'data-camera-id': section_id, 'class': 'model' }, model);
-		};
+		// Not used
+		// o = s.option(form.DummyValue, 'model', _('Model name'))
+		// o.datatype = "string"
+		// o.readonly = true
+		// o.cfgvalue = function(section_id) {
+		// 	var model = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'model') || '-') : '-'
+		// 	return E('div', { 'data-camera-id': section_id, 'class': 'model' }, model);
+		// };
 
-		o = s.option(form.DummyValue, 'manufacturer', _('Manufacturer'))
-		o.datatype = "string"
-		o.readonly = true
+		// Not used
+		// o = s.option(form.DummyValue, 'manufacturer', _('Manufacturer'))
+		// o.datatype = "string"
+		// o.readonly = true
+		// o.cfgvalue = function(section_id) {
+		// 	var manufacturer = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'manufacturer') || '-') : '-'
+		// 	return E('div', { 'data-camera-id': section_id, 'class': 'manufacturer' }, manufacturer);
+		// };
+
+		o = s.option(form.DummyValue, 'account', _('Camera Account'))
+		o.rawhtml = true
 		o.cfgvalue = function(section_id) {
-			var manufacturer = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'manufacturer') || '-') : '-'
-			return E('div', { 'data-camera-id': section_id, 'class': 'manufacturer' }, manufacturer);
-		};
+			var ip = uci.get('camera', section_id, 'ip');
+			var isIpValid = ip && ip.trim() !== '';		
+			return createButton.call(this, section_id, 'Set', 'cbi-button-set', 'set', isIpValid)
+		}
+		o.write = function(section_id, value) {
+
+		}
 
 		o = s.option(form.Value, 'desc', _('Description'))
 		o.datatype = "string"
@@ -419,6 +629,7 @@ return view.extend({
 		
 			var description = uci.get('camera', section_id, 'ip') ? (uci.get('camera', section_id, 'description') || '') : '';
 			descriptionElement.value = description;
+			_oldDescriptions[section_id] = description
 
 			descriptionElement.addEventListener('change', function() {
 				uci.set('camera', section_id, 'description', descriptionElement.value);
@@ -435,7 +646,6 @@ return view.extend({
 			return container;
 		}
 
-		//>> Profiles dropdown.
 		o = s.option(form.ListValue, 'rtsplist', 'RTSP');
 		o.renderWidget = function(section_id, option_id, cfgvalue) {
 			consoleLog("[debug]Rendering for section_id: %s", section_id);
@@ -457,7 +667,7 @@ return view.extend({
 			var port = uci.get('camera', section_id, 'rtspForwardingPort');
 		
 			if (!Array.isArray(rtsp)) {
-				rtsp = [rtsp];
+				rtsp = rtsp ? [rtsp] : [];
 			}
 		
 			if (!selectedrtsp || !rtsp.includes(selectedrtsp)) {
@@ -483,19 +693,30 @@ return view.extend({
 			var copyButton = E('button', {
 				'style': 'background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 16px; height: 16px;',				
 				'click': function() {
-					var selectedText = selectElement.options[selectElement.selectedIndex].textContent;
-					navigator.clipboard.writeText(selectedText).then(function() {
-						alert('Copied: ' + selectedText);
-					}).catch(function(err) {
-						console.error('Failed to copy:', err);
-					});
+					try {
+						if (!selectElement || !selectElement.options || selectElement.selectedIndex < 0) {
+							return;
+						}
+						
+						var selectedText = selectElement.options[selectElement.selectedIndex].textContent;
+						if (selectedText) {
+							navigator.clipboard.writeText(selectedText).then(function() {
+								alert('Copied: ' + selectedText);
+							}).catch(function(err) {
+								console.error('Failed to copy:', err);
+							});
+						}
+					} catch (err) {
+						console.error('Unexpected error:', err);
+					}					
 				}
 			}, [
 				E('img', { 'src': L.resource('icons/copy.png'), 'style': 'width:16px; height:16px;' })
 			]);
 
 			selectElement.addEventListener('change', function() {
-				saveSelectedRtspProfile(section_id, 'selectedrtsp', selectElement.value)
+				uci.set('camera', section_id, 'selectedrtsp', selectElement.value);
+				uci.save()
 			});
 
 			var strRtsp;
@@ -560,39 +781,15 @@ return view.extend({
 
 		s.renderRowActions = function(section_id) {
 			var ip = uci.get('camera', section_id, 'ip');
-
 			var tdEl = E('td', {
 				'class': 'td cbi-section-table-cell nowrap cbi-section-actions'
 			}, E('div'));
-
 			var isIpValid = ip && ip.trim() !== '';
-			if (isIpValid) {
-				dom.append(tdEl.lastElementChild,
-					E('button', {
-						'title': _('Webpage'),
-						'class': 'cbi-button cbi-button-webpage',
-						'click': handleButtonClick.bind(this, section_id, 'webpage')
-					}, [ _('Webpage') ])
-				)
-				
-				dom.append(tdEl.lastElementChild,
-					E('button', {
-						'title': _('Streaming'),
-						'class': 'cbi-button cbi-button-streaming',
-						'click': handleButtonClick.bind(this, section_id, 'streaming')
-					}, [ _('Streaming') ])
-				)
 
-				dom.append(tdEl.lastElementChild,
-					E('button', {
-						'title': _('Reboot'),
-						'class': 'cbi-button cbi-button-reboot',
-						'click': function() {
-							handleButtonClick.bind(this, section_id, 'reboot')
-						}
-					}, [ _('Reboot') ])
-				)
-			}
+			dom.append(tdEl.lastElementChild, createButton.call(this, section_id, 'Webpage', 'cbi-button-webpage', 'webpage', isIpValid));
+			dom.append(tdEl.lastElementChild, createButton.call(this, section_id, 'Streaming', 'cbi-button-streaming', 'streaming', isIpValid));
+			dom.append(tdEl.lastElementChild, createButton.call(this, section_id, 'Reboot', 'cbi-button-reboot', 'reboot', isIpValid));
+			//dom.append(tdEl.lastElementChild, createButton.call(this, section_id, 'Set', 'cbi-button-set', 'set', isIpValid));
 
 			return tdEl;
 		};
@@ -609,7 +806,30 @@ return view.extend({
 		return initialUI;
 	},
 
-	//handleSaveApply: null,
-	//handleSave: null,
-	handleReset: null
+	handleReset: null,
+	handleSave: function(ev) {
+		if (_isConfigUpdating) {
+			console.warn('Configuration is being updated. Save operation is temporarily disabled.');
+			return Promise.resolve();
+		}
+
+		var tasks = [];
+
+		document.getElementById('maincontent')
+			.querySelectorAll('.cbi-map').forEach(function(map) {
+				tasks.push(DOM.callClassMethod(map, 'save'));
+			});
+
+		return Promise.all(tasks);
+	},
+	handleSaveApply: function(ev, mode) {
+		if (_isConfigUpdating) {
+			console.warn('Configuration is being updated. Save/Apply operations are temporarily disabled.');
+			return Promise.resolve();
+		}
+
+		return this.handleSave(ev).then(function() {
+			classes.ui.changes.apply(mode == '0');
+		});
+	}
 });

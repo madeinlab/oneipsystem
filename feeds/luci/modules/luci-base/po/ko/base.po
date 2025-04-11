@@ -8883,8 +8883,21 @@ msgstr "카메라의 사용자계정을 입력하세요."
 msgid "Enter Camera Password"
 msgstr "카메라의 비밀번호를 입력하세요."
 
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:285
 msgid "Enter the username and password for Camera %d."
-msgstr "카메라 %d의 사용자계정과 비밀번호를 입력하세요."
+msgstr "'카메라 %d'의 사용자계정과 비밀번호를 입력하세요."
+
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
+msgid "Set Login Info"
+msgstr "카메라 사용자정보 설정"
+
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:294
+msgid "Saved credentials exist."
+msgstr "설정된 정보가 있습니다."
+
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:295
+msgid "No saved credentials."
+msgstr "현재 설정된 정보가 없습니다"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/login_rule.js:23
 #: modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json:100
@@ -9064,3 +9077,11 @@ msgstr "로그아웃 후 로그인 페이지로 리다이렉션됩니다."
 #: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:633
 msgid "Webpage"
 msgstr "웹페이지"
+
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
+msgid "Set"
+msgstr "설정"
+
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
+msgid "Camera Account"
+msgstr "카메라 계정"

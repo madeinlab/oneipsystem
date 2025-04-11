@@ -122,7 +122,7 @@ function get_password_rules()
     return
 end
 
--- https://192.168.1.100/cgi-bin/luci/admin/system/set/model?model_name="modelname"
+-- https://192.168.1.100/cgi-bin/luci/admin/system/set/model?model_name=modelname
 function set_model_name()
     nixio.syslog("debug", "set_model_name()")
 
