@@ -28,7 +28,7 @@ return view.extend({
             if (!sid) {
                 sid = uci.add('openssh', 'openssh', 'sshd');
                 uci.set('openssh', sid, 'enabled', '0');
-                uci.set('openssh', sid, 'Port', '22');
+                uci.set('openssh', sid, 'Port', '2022');
                 uci.set('openssh', sid, 'PermitRootLogin', 'yes');
                 uci.set('openssh', sid, 'PasswordAuthentication', 'yes');
                 uci.save();
