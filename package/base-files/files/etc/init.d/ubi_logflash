@@ -34,13 +34,13 @@ start_service() {
 	fi
 	echo "Detected UBI device: $UBI_DEV"
 
-	if ! ubinfo /dev/$UBI_DEV | grep -q "Name:.*$VOL_NAME"; then
+	if ! ubinfo /dev/$UBI_DEV -a | grep -q "Name:.*$VOL_NAME"; then
 		echo "Creating volume $VOL_NAME on $UBI_DEV..."
 		ubimkvol /dev/$UBI_DEV -N $VOL_NAME -s $VOL_SIZE
 	fi
 
 	# Build Directory by package/base-files/Makefile
-	#mkdir -p $MOUNT_POINT
+	mkdir -p $MOUNT_POINT
 
     if ! grep -q "$UBI_DEV:$VOL_NAME" /etc/config/fstab; then
         uci add fstab mount
