@@ -2,6 +2,7 @@
 'require baseclass';
 'require fs';
 'require rpc';
+'require uci';
 
 var callSystemBoard = rpc.declare({
 	object: 'system',
@@ -20,7 +21,8 @@ return baseclass.extend({
 		return Promise.all([
 			L.resolveDefault(callSystemBoard(), {}),
 			L.resolveDefault(callSystemInfo(), {}),
-			fs.lines('/usr/lib/lua/luci/version.lua')
+			fs.lines('/usr/lib/lua/luci/version.lua'),
+			uci.load('system')
 		]);
 	},
 
@@ -58,8 +60,11 @@ return baseclass.extend({
 			);
 		}
 
+		var modelname = uci.get('system', '@system[0]', 'model') ? uci.get('system', '@system[0]', 'model') : boardinfo.model
+
 		var fields = [
-			_('Model'),            boardinfo.model,
+			//_('Model'),            boardinfo.model,
+			_('Model'),            modelname,
 			_('CPU'),              boardinfo.system,
 			_('Firmware Version'), distversion,
 			_('Kernel Version'),   boardinfo.kernel,

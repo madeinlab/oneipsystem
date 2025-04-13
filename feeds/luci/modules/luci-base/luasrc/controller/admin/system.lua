@@ -135,7 +135,7 @@ function set_model_name()
         return  -- 400 에러 후 함수 종료
     end
 
-    uci:set("system", "@system[0]", "hostname", model_name)
+    uci:set("system", "@system[0]", "model", model_name)
     uci:commit("system")
     luci.sys.exec("/etc/init.d/system reload")  -- 모델명 변경 적용
 
