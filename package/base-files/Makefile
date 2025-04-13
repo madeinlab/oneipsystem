@@ -166,6 +166,7 @@ define Package/base-files/install
 	mkdir -p $(1)/mnt
 	mkdir -p $(1)/proc
 	mkdir -p $(1)/tmp
+	mkdir -p $(1)/tmp/oneip_log
 	mkdir -p $(1)/usr/lib
 	$(if $(LIB_SUFFIX),-$(LN) lib $(1)/usr/lib$(LIB_SUFFIX))
 	mkdir -p $(1)/usr/bin
