@@ -1,20 +1,19 @@
 #!/bin/sh /etc/rc.common
-START=10	# After fstab(40)
+START=10
 USE_PROCD=1
 
 MTD_NUM="7"
 MTD_DEV="mtd${MTD_NUM}"
 UBI_DEV=""		# Dynamic assign
-VOL_NAME="oneip_log"
-MOUNT_POINT="/mnt/${VOL_NAME}"
 VOL_SIZE="12MiB"
+VOL_NAME=""
+MOUNT_POINT=""
 
 start_service() {
     if ! ubiattach /dev/ubi_ctrl -m $MTD_NUM 2>/dev/null; then
         echo "UBI not formatted on $MTD_DEV, formatting..."
         ubiformat /dev/$MTD_DEV -y
         ubiattach /dev/ubi_ctrl -m $MTD_NUM
-        ubimkvol /dev/$UBI_DEV -N $VOL_NAME -s $VOL_SIZE
     else
         echo "$MTD_DEV is already UBI formatted"
     fi
@@ -34,32 +33,13 @@ start_service() {
 	fi
 	echo "Detected UBI device: $UBI_DEV"
 
+	VOL_NAME="${UBI_DEV}"
+	MOUNT_POINT="/mnt/${VOL_NAME}"
+
 	if ! ubinfo /dev/$UBI_DEV -a | grep -q "Name:.*$VOL_NAME"; then
 		echo "Creating volume $VOL_NAME on $UBI_DEV..."
 		ubimkvol /dev/$UBI_DEV -N $VOL_NAME -s $VOL_SIZE
 	fi
-
-	# Build Directory by package/base-files/Makefile
-	mkdir -p $MOUNT_POINT
-
-	FOUND=0
-	for i in $(seq 0 $(uci -q show fstab | grep -c "fstab.@mount")); do
-		if uci -q get fstab.@mount[$i].ubi | grep -q "$UBI_DEV:$VOL_NAME"; then
-			uci set fstab.@mount[$i].target="$MOUNT_POINT"
-			uci set fstab.@mount[$i].enabled='1'
-			FOUND=1
-		fi
-	done
-
-	if [ $FOUND -eq 0 ]; then
-        uci add fstab mount
-        uci set fstab.@mount[-1].target="$MOUNT_POINT"
-        uci set fstab.@mount[-1].ubi="$UBI_DEV:$VOL_NAME"
-        uci set fstab.@mount[-1].enabled='1'
-    fi
-	uci commit fstab
-
-	/sbin/block mount
 }
 
 stop_service() {
