@@ -1,13 +1,14 @@
 #!/bin/sh /etc/rc.common
-START=10
+START=41
 USE_PROCD=1
 
 MTD_NUM="7"
+VOL_SIZE="12MiB"
+VOL_NAME="oneip_log"
+
 MTD_DEV="mtd${MTD_NUM}"
 UBI_DEV=""		# Dynamic assign
-VOL_SIZE="12MiB"
-VOL_NAME=""
-MOUNT_POINT=""
+MOUNT_POINT="/mnt/${VOL_NAME}"
 
 start_service() {
     if ! ubiattach /dev/ubi_ctrl -m $MTD_NUM 2>/dev/null; then
@@ -33,13 +34,14 @@ start_service() {
 	fi
 	echo "Detected UBI device: $UBI_DEV"
 
-	VOL_NAME="${UBI_DEV}"
-	MOUNT_POINT="/mnt/${VOL_NAME}"
-
-	if ! ubinfo /dev/$UBI_DEV -a | grep -q "Name:.*$VOL_NAME"; then
+	if ! ubinfo /dev/$UBI_DEV -a 2>/dev/null | grep -q "Name:.*$VOL_NAME"; then
 		echo "Creating volume $VOL_NAME on $UBI_DEV..."
+		ubirmvol /dev/$UBI_DEV -n 0
 		ubimkvol /dev/$UBI_DEV -N $VOL_NAME -s $VOL_SIZE
 	fi
+
+	mkdir -p $MOUNT_POINT
+	mount -t ubifs ${UBI_DEV}_0 $MOUNT_POINT
 }
 
 stop_service() {
