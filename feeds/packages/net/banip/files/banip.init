@@ -247,7 +247,7 @@ report() {
 timer() {
 	local cron_file cron_content cron_lineno action="${1:-"list"}" cron_tasks="${2}" hour="${3}" minute="${4:-0}" weekday="${5:-"*"}"
 
-	cron_file="/etc/crontabs/root"
+	cron_file="/etc/crontabs/doowon"
 
 	if [ -s "${cron_file}" ] && [ "${action}" = "list" ]; then
 		awk '{print NR ">  " $0}' "${cron_file}"

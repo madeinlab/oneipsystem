@@ -26,8 +26,8 @@ USER_CLEANUP=
 
 check_cron()
 {
-	[ -f "/etc/crontabs/root" ] && grep -q '/etc/init.d/acme' /etc/crontabs/root && return
-	echo "0 0 * * * /etc/init.d/acme start" >> /etc/crontabs/root
+	[ -f "/etc/crontabs/doowon" ] && grep -q '/etc/init.d/acme' /etc/crontabs/doowon && return
+	echo "0 0 * * * /etc/init.d/acme start" >> /etc/crontabs/doowon
 	/etc/init.d/cron start
 }
 

@@ -693,7 +693,7 @@ inline auto add_ssl_to_config(const std::string& name,
 
 void install_cron_job(const Line& CRON_LINE, const std::string& name)
 {
-    static const char* filename = "/etc/crontabs/root";
+    static const char* filename = "/etc/crontabs/doowon";
 
     std::string conf{};
     try {
@@ -807,7 +807,7 @@ void add_ssl_if_needed(const std::string& name,
 
 void remove_cron_job(const Line& CRON_LINE, const std::string& name)
 {
-    static const char* filename = "/etc/crontabs/root";
+    static const char* filename = "/etc/crontabs/doowon";
 
     const auto const_conf = read_file(filename);
 
@@ -1109,7 +1109,7 @@ auto check_ssl(const uci::package& pkg, bool is_enabled) -> bool
         }
     }
 
-    else if (access("/etc/crontabs/root", R_OK) == 0) {
+    else if (access("/etc/crontabs/doowon", R_OK) == 0) {
         try {
             remove_cron_job(CRON_CHECK);
         }

@@ -7,13 +7,13 @@ var isReadonlyView = !L.hasViewPermission() || null;
 
 return view.extend({
 	load: function() {
-		return L.resolveDefault(fs.read('/etc/crontabs/root'), '');
+		return L.resolveDefault(fs.read('/etc/crontabs/doowon'), '');
 	},
 
 	handleSave: function(ev) {
 		var value = (document.querySelector('textarea').value || '').trim().replace(/\r\n/g, '\n') + '\n';
 
-		return fs.write('/etc/crontabs/root', value).then(function(rc) {
+		return fs.write('/etc/crontabs/doowon', value).then(function(rc) {
 			document.querySelector('textarea').value = value;
 			ui.addNotification(null, E('p', _('Contents have been saved.')), 'info');
 

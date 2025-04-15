@@ -89,7 +89,7 @@
 		"description": "Grant access to crontab configuration",
 		"read": {
 			"file": {
-				"/etc/crontabs/root": [ "read" ]
+				"/etc/crontabs/doowon": [ "read" ]
 			},
 			"ubus": {
 				"file": [ "read" ]
@@ -97,7 +97,7 @@
 		},
 		"write": {
 			"file": {
-				"/etc/crontabs/root": [ "write" ],
+				"/etc/crontabs/doowon": [ "write" ],
 				"/etc/init.d/cron reload": [ "exec" ]
 			},
 			"ubus": {
@@ -126,7 +126,7 @@
 		},
 		"write": {
 			"file": {
-				"/etc/crontabs/root": [ "write" ],
+				"/etc/crontabs/doowon": [ "write" ],
 				"/bin/umount": [ "exec" ],
 				"/sbin/block": [ "exec" ]
 			},

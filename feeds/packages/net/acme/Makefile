@@ -59,7 +59,7 @@ endef
 
 define Package/acme/prerm
 #!/bin/sh
-sed -i '/\/etc\/init\.d\/acme start/d' /etc/crontabs/root
+sed -i '/\/etc\/init\.d\/acme start/d' /etc/crontabs/doowon
 endef
 
 define Package/acme-dnsapi

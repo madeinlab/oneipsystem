@@ -93,7 +93,7 @@ endef
 
 define Package/uacme/prerm
 #!/bin/sh
-sed -i '/\/etc\/init\.d\/acme start/d' /etc/crontabs/root
+sed -i '/\/etc\/init\.d\/acme start/d' /etc/crontabs/doowon
 endef
 
 $(eval $(call BuildPackage,uacme))
