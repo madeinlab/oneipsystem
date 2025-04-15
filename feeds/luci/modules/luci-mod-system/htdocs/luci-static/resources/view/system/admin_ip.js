@@ -48,7 +48,8 @@ return view.extend({
 
     render: function() {
         var m = new form.Map('admin_manage', _('Admin IP Configuration'),
-            _('Configure allowed admin IP addresses.'));
+            _('Configure allowed admin IP addresses.') + ' ' +
+			_('This function allows web access for specific IPs and is disabled by default.'));
 
         // IP 목록 테이블
         var s2 = m.section(form.TableSection, 'admin_ip');
