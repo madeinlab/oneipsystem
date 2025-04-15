@@ -24,9 +24,9 @@ function action_change_password()
 
 	if dispatcher.context and dispatcher.context.authuser then
 		username = dispatcher.context.authuser
-		nixio.syslog("info", "Found authenticated user [MASKED]")
-	else
-		nixio.syslog("info", "No username found in template context")
+	-- 	nixio.syslog("info", "Found authenticated user [MASKED]")
+	-- else
+	-- 	nixio.syslog("info", "No username found in template context")
 	end
     if http.getenv("REQUEST_METHOD") == "POST" then
         local current = http.formvalue("current_password")
@@ -35,15 +35,15 @@ function action_change_password()
         
         if current and new and confirm then
             if new == confirm then
-                nixio.syslog("info", "Password confirmation matches")
+                -- nixio.syslog("info", "Password confirmation matches")
 
                 if username then
-                    nixio.syslog("info", "Verifying current password")
+                    -- nixio.syslog("info", "Verifying current password")
                     if sys.user.checkpasswd(username, current) then
-                        nixio.syslog("info", "Current password verification successful")
+                        -- nixio.syslog("info", "Current password verification successful")
 
                         if sys.user.setpasswd(username, new) then
-                            nixio.syslog("info", "Password changed successfully")
+                            -- nixio.syslog("info", "Password changed successfully")
 
                             template.render("admin/changepassword", {
                                 success = true,
@@ -54,19 +54,19 @@ function action_change_password()
                             })
                             return
                         else
-                            nixio.syslog("err", "Failed to set new password")
+                            -- nixio.syslog("err", "Failed to set new password")
                         end
                     else
-                        nixio.syslog("warning", "Password verification failed")
+                        -- nixio.syslog("warning", "Password verification failed")
                     end
                 else
-                    nixio.syslog("err", "Authentication required")
+                    -- nixio.syslog("err", "Authentication required")
                 end
             else
-                nixio.syslog("warning", "Password confirmation mismatch")
+                -- nixio.syslog("warning", "Password confirmation mismatch")
             end
         else
-            nixio.syslog("warning", "Missing required fields")
+            -- nixio.syslog("warning", "Missing required fields")
         end
         
         -- 실패 시 에러 메시지와 함께 폼 다시 표시
@@ -118,19 +118,19 @@ function get_password_rules()
         }))
     end
 
-    nixio.syslog("err", "No password_rule section found in uci")
+    -- nixio.syslog("err", "No password_rule section found in uci")
     return
 end
 
 -- https://192.168.1.100/cgi-bin/luci/admin/system/set/model?model_name=modelname
 function set_model_name()
-    nixio.syslog("debug", "set_model_name()")
+    -- nixio.syslog("debug", "set_model_name()")
 
     -- URL 파라미터에서 모델명 가져오기
     local model_name = luci.http.formvalue("model_name")
 
     if not model_name or model_name == "" then
-        nixio.syslog("debug", "set_model_name() failed: No model name provided")
+        -- nixio.syslog("debug", "set_model_name() failed: No model name provided")
         luci.http.status(400, "Model name not provided")
         return  -- 400 에러 후 함수 종료
     end

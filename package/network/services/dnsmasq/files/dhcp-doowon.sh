@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Running... dhcp-doowon.sh ARGS[$@]"
+# echo "Running... dhcp-doowon.sh ARGS[$@]"
 # Running... dhcp-doowon.sh ARGS[old a4:58:0f:e0:42:d4 209.142.67.127 N2M-6S385A4580FE042D4]
 
 # action: add, old, del
@@ -13,7 +13,7 @@ DUMP_FILE_PATH="/etc/cameras/cam"
 
 # Validate IP format and range: Only accept 209.142.67.xx
 if ! echo "$ip_addr" | grep -Eo '^209\.142\.67\.[0-9]+$' > /dev/null; then
-    echo "Invalid IP format or out of range: $ip_addr"
+    # echo "Invalid IP format or out of range: $ip_addr"
     exit 1
 fi
 
@@ -22,10 +22,10 @@ if [ "$((last_octet % 10))" -ne 0 ] || [ "$((last_octet / 10))" -lt 1 ] || [ "$(
     if [ "$action" = "add" ] || [ "$action" = "old" ]; then
         ping -c 3 -W 2 "$ip_addr" > /dev/null 2>&1
         if [ $? -eq 0 ]; then
-            echo "Invalid IP address, rebooting camera..."
+            # echo "Invalid IP address, rebooting camera..."
             . /usr/lib/dnsmasq/reboot-camera.sh "$ip_addr"
-        else
-            echo "Camera IP is unreachable."
+        # else
+        #     echo "Camera IP is unreachable."
         fi
         exit 1
     fi
@@ -35,7 +35,7 @@ fi
 
 # Load JSON utilities
 if ! [ -f "./usr/share/libubox/jshn.sh" ]; then
-    echo "JSON utility not found!"
+    # echo "JSON utility not found!"
     exit 1
 fi
 

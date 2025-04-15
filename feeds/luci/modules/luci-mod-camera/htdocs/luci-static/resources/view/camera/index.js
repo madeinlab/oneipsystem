@@ -218,13 +218,22 @@ async function updateCameraInfo(portstate) {
             // }
 
 			// configure camera account
-			var accountWrapper = document.querySelector(`#cbi-camera-${section_id}-account`);
-			if (accountWrapper) {
-				const setBtn = accountWrapper.querySelector('.cbi-button-set');
-				if (setBtn) {
-					setBtn.disabled = !state;
-				}
-			}
+			// var accountWrapper = document.querySelector(`#cbi-camera-${section_id}-account`);
+			// if (accountWrapper) {
+			// 	const setBtn = accountWrapper.querySelector('.cbi-button-set');
+			// 	if (setBtn) {
+			// 		setBtn.disabled = !state;
+			// 	}
+			// }
+			
+			const wrapper = document.querySelector(`#cbi-camera-${section_id}-account`);
+			if (!wrapper) return;
+		
+			const oldBtn = wrapper.querySelector('.cbi-button-set');
+			if (oldBtn) oldBtn.remove();
+		
+			const newBtn = createButton(section_id, 'Set', 'cbi-button-set', 'set', ip != '' ? true : false);
+			wrapper.appendChild(newBtn);
 
 			// description
 			if (_oldDescriptions[section_id] !== description) {

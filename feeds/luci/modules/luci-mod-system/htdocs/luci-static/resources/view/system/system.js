@@ -199,10 +199,10 @@ return view.extend({
 
 		o = s.taboption('logging', form.ListValue, 'conloglevel', _('Log output level'))
 		o.default = 4
-		o.value(4, _('Error'))
-		o.value(3, _('Critical'))
-		o.value(2, _('Alert'))
-		o.value(1, _('Emergency'))
+		o.value(4, ('Error'))
+		o.value(3, ('Critical'))
+		o.value(2, ('Alert'))
+		o.value(1, ('Emergency'))
 
 		/*
 		 * Zram Properties

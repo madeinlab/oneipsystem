@@ -649,7 +649,7 @@ local methods = {
 		call = function(args)
 			local camera = require "luci.camera"
 			camera.addCamera(args.ip);
-			nixio.syslog("debug", "addCamera called with IP: " .. args.ip)
+			-- nixio.syslog("debug", "addCamera called with IP: " .. args.ip)
 
 			return { result = true }
 		end		
@@ -660,7 +660,7 @@ local methods = {
 		call = function(args)
 			local camera = require "luci.camera"
 			camera.removeCamera(args.ip);
-			nixio.syslog("debug", "removeCamera called with IP: " .. args.ip)
+			-- nixio.syslog("debug", "removeCamera called with IP: " .. args.ip)
 
 			return { result = true }
 		end		

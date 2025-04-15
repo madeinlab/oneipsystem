@@ -360,28 +360,28 @@ return view.extend({
 		o.rmempty = false;
 		o.readonly = function(section_id) {
 			// 디버그 로그 추가
-			console.log('[DEBUG] readonly 함수 호출됨');
-			console.log('[DEBUG] section_id:', section_id);
+			//console.log('[DEBUG] readonly 함수 호출됨');
+			//console.log('[DEBUG] section_id:', section_id);
 			
 			var username = uci.get('rpcd', section_id, 'username');
-			console.log('[DEBUG] username:', username);
-			console.log('[DEBUG] isRootUser 호출 전');
+			//console.log('[DEBUG] username:', username);
+			//console.log('[DEBUG] isRootUser 호출 전');
 			
 			// 새 계정 생성 시에는 username이 없으므로 false 반환 (편집 가능)
 			if (!username) {
-				console.log('[DEBUG] username이 없음, 편집 가능');
+				//console.log('[DEBUG] username이 없음, 편집 가능');
 				return false;
 			}
 			
 			var isRoot = isRootUser(username);
-			console.log('[DEBUG] isRootUser 결과:', isRoot);
+			//console.log('[DEBUG] isRootUser 결과:', isRoot);
 			
 			if (isRoot) {
-				console.log('[DEBUG] 루트 사용자, 읽기 전용');
+				//console.log('[DEBUG] 루트 사용자, 읽기 전용');
 				return true;
 			}
 			else {
-				console.log('[DEBUG] 일반 사용자, 편집 가능');
+				//console.log('[DEBUG] 일반 사용자, 편집 가능');
 				return false;
 			}
 		};
@@ -711,25 +711,25 @@ return view.extend({
 
 		s.handleAdd = function() {
 			// 새 계정 생성 시 호출되는 함수
-			console.log('[DEBUG] handleAdd 함수 호출됨');
+			//console.log('[DEBUG] handleAdd 함수 호출됨');
 			
 			// 모달 창이 열리기 전에 실행되는 코드
 			var result = form.GridSection.prototype.handleAdd.apply(this);
 			
 			// 모달 창이 열린 후 실행할 코드 - 타이밍을 1초로 늘림
 			setTimeout(function() {
-				console.log('[DEBUG] 모달 창이 열린 후 실행');
+				//console.log('[DEBUG] 모달 창이 열린 후 실행');
 				
 				// 모달 창 자체를 찾아서 로깅
 				var modal = document.querySelector('.modal');
 				if (modal) {
-					console.log('[DEBUG] 모달 창 찾음');
+					//console.log('[DEBUG] 모달 창 찾음');
 					
 					// 모달 내부의 모든 입력 필드 로깅
 					var allInputs = modal.querySelectorAll('input');
-					console.log('[DEBUG] 모달 내 입력 필드 수:', allInputs.length);
+					//console.log('[DEBUG] 모달 내 입력 필드 수:', allInputs.length);
 					allInputs.forEach(function(input, index) {
-						console.log('[DEBUG] 입력 필드 #' + index + ':', input.name, input);
+						//console.log('[DEBUG] 입력 필드 #' + index + ':', input.name, input);
 					});
 					
 					// 다양한 셀렉터로 시도
@@ -738,25 +738,25 @@ return view.extend({
 										modal.querySelector('.cbi-value-field input');
 					
 					if (usernameField) {
-						console.log('[DEBUG] 사용자 이름 필드 찾음:', usernameField);
-						console.log('[DEBUG] readonly 속성:', usernameField.readOnly);
+						//console.log('[DEBUG] 사용자 이름 필드 찾음:', usernameField);
+						//console.log('[DEBUG] readonly 속성:', usernameField.readOnly);
 						
 						// 강제로 readonly 속성 제거
 						if (usernameField.readOnly) {
-							console.log('[DEBUG] readonly 속성 제거');
+							//console.log('[DEBUG] readonly 속성 제거');
 							usernameField.readOnly = false;
 						}
 						
 						// 추가로 disabled 속성도 제거
 						if (usernameField.disabled) {
-							console.log('[DEBUG] disabled 속성 제거');
+							//console.log('[DEBUG] disabled 속성 제거');
 							usernameField.disabled = false;
 						}
 					} else {
-						console.log('[DEBUG] 사용자 이름 필드를 찾을 수 없음');
+						//console.log('[DEBUG] 사용자 이름 필드를 찾을 수 없음');
 					}
 				} else {
-					console.log('[DEBUG] 모달 창을 찾을 수 없음');
+					//console.log('[DEBUG] 모달 창을 찾을 수 없음');
 				}
 			}, 1000); // 1초로 타이밍 늘림
 			

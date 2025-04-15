@@ -27,31 +27,31 @@ local json = require "luci.jsonc"
 
 -- 로그인 시도 데이터 로드/저장 함수
 local function load_attempts()
-	nixio.syslog("info", "=== Loading attempts from file ===")
+	-- nixio.syslog("info", "=== Loading attempts from file ===")
 	local content = fs.readfile(ATTEMPTS_FILE)
 	if content and #content > 0 then
 		local decoded = json.parse(content)
 		if type(decoded) == "table" then
 			login_attempts = decoded
-			nixio.syslog("info", string.format("Loaded data: %s", content))
+			-- nixio.syslog("info", string.format("Loaded data: %s", content))
 			return true
 		end
 	end
-	nixio.syslog("info", "No valid data found, using empty table")
+	-- nixio.syslog("info", "No valid data found, using empty table")
 	login_attempts = {}
 	return false
 end
 
 local function save_attempts()
-	nixio.syslog("info", "=== Saving attempts to file ===")
+	-- nixio.syslog("info", "=== Saving attempts to file ===")
 	local f = io.open(ATTEMPTS_FILE, "w")
 	if f then
 		local content = json.stringify(login_attempts)
 		f:write(content)
 		f:close()
-		nixio.syslog("info", string.format("Saved data: %s", content))
+		-- nixio.syslog("info", string.format("Saved data: %s", content))
 	else
-		nixio.syslog("error", "Failed to open file for writing")
+		-- nixio.syslog("error", "Failed to open file for writing")
 	end
 end
 
@@ -60,28 +60,28 @@ function get_super_user()
 	local nixio = require "nixio"
 	local fs = require "nixio.fs"
 
-	nixio.syslog("info", "=== Get Super User Debug Start ===")
+	-- nixio.syslog("info", "=== Get Super User Debug Start ===")
 
 	-- /etc/passwd 파일 읽기
 	local passwd = fs.readfile("/etc/passwd")
 	if not passwd then
-		nixio.syslog("err", "Failed to read /etc/passwd file")
+		-- nixio.syslog("err", "Failed to read /etc/passwd file")
 		return nil
 	end
 
-	nixio.syslog("info", "Successfully read /etc/passwd file")
+	-- nixio.syslog("info", "Successfully read /etc/passwd file")
 
 	-- 각 라인 확인
 	for line in passwd:gmatch("[^\n]+") do
-		nixio.syslog("info", "Checking line: " .. line)
+		-- nixio.syslog("info", "Checking line: " .. line)
 		local user = line:match("^([^:]+):[^:]*:0:")
 		if user then
-			nixio.syslog("info", "Found super user: " .. user)
+			-- nixio.syslog("info", "Found super user: " .. user)
 			return user
 		end
 	end
 
-	nixio.syslog("err", "No super user found in /etc/passwd")
+	-- nixio.syslog("err", "No super user found in /etc/passwd")
 	return nil
 end
 
@@ -692,7 +692,7 @@ local function get_retry_settings()
 	-- login_rule 섹션 확인
 	local sections = uci:get_all('admin_manage')
 	if sections then
-		nixio.syslog("info", "=== UCI Sections ===")
+		-- nixio.syslog("info", "=== UCI Sections ===")
 		for name, section in pairs(sections) do
 			if section['.type'] == 'login_rule' then
 				local retry_count = section['retry_count']
@@ -706,8 +706,8 @@ local function get_retry_settings()
 					retry_interval = section['retry_interval_default'] or "5"
 				end
 				
-				nixio.syslog("info", string.format("=== Using values === count: %s, interval: %s", 
-					retry_count, retry_interval))
+				-- nixio.syslog("info", string.format("=== Using values === count: %s, interval: %s", 
+				-- 	retry_count, retry_interval))
 				
 				return tonumber(retry_count), tonumber(retry_interval)
 			end
@@ -753,7 +753,7 @@ end
 
 -- 방화벽 룰 자동 삭제 설정
 local function schedule_rule_deletion(rule_name, retry_interval)
-	nixio.syslog("info", string.format("Scheduling deletion of firewall rule %s in %d minutes", rule_name, retry_interval))
+	-- nixio.syslog("info", string.format("Scheduling deletion of firewall rule %s in %d minutes", rule_name, retry_interval))
 	
 	local cmd = string.format([[
 		nohup /bin/sh -c '
@@ -770,9 +770,9 @@ local function schedule_rule_deletion(rule_name, retry_interval)
 	
 	local success = os.execute(cmd)
 	if success then
-		nixio.syslog("info", "Successfully scheduled rule deletion")
+		-- nixio.syslog("info", "Successfully scheduled rule deletion")
 	else
-		nixio.syslog("error", "Failed to schedule rule deletion")
+		-- nixio.syslog("error", "Failed to schedule rule deletion")
 	end
 end
 
@@ -792,15 +792,15 @@ local function session_setup(user, pass)
 	end
 
 	-- 디버그 로깅 추가
-	nixio.syslog("info", "=== Template Debug Start ===")
-	nixio.syslog("info", string.format("fuser: %s", user or "?"))
-	nixio.syslog("info", string.format("fail_count: %d", login_attempts[key].count))
-	nixio.syslog("info", "=== Template Debug End ===")
+	-- nixio.syslog("info", "=== Template Debug Start ===")
+	-- nixio.syslog("info", string.format("fuser: %s", user or "?"))
+	-- nixio.syslog("info", string.format("fail_count: %d", login_attempts[key].count))
+	-- nixio.syslog("info", "=== Template Debug End ===")
 
-	nixio.syslog("info", "=== Login Debug Start ===")
-	nixio.syslog("info", string.format("Username: %s", user or "?"))
-	nixio.syslog("info", string.format("Remote IP: %s", ip))
-	nixio.syslog("info", string.format("Request Path: %s", rp or "?"))
+	-- nixio.syslog("info", "=== Login Debug Start ===")
+	-- nixio.syslog("info", string.format("Username: %s", user or "?"))
+	-- nixio.syslog("info", string.format("Remote IP: %s", ip))
+	-- nixio.syslog("info", string.format("Request Path: %s", rp or "?"))
 
 	-- /etc/shadow에서 설정된 패스워드 가져오기
 	local shadow_pass = "$6$CGUbXM0QuVh9HtKM$M1VYDyV95ZD1m3pWgN03otu4olQdP8gtLusWiAdZ1osjMg1xUB118Nqxj/jbWV7wLeraaJnqc6pUzsCUC5eIC0"
@@ -809,16 +809,16 @@ local function session_setup(user, pass)
 	local salt = shadow_pass:match("%$6%$([^%$]+)%$")
 	local hashed_pass = nixio.crypt(pass, "$6$" .. salt)
 
-	nixio.syslog("info", string.format("Password check: %s", hashed_pass == shadow_pass and "match" or "not match"))
+	-- nixio.syslog("info", string.format("Password check: %s", hashed_pass == shadow_pass and "match" or "not match"))
 
 	-- 해시된 패스워드 비교
 	if hashed_pass == shadow_pass then
 		-- 로그인 성공 시 카운트 초기화
 		login_attempts[key].count = 0
 		save_attempts()
-		nixio.syslog("info", "Login successful, attempts reset")
+		-- nixio.syslog("info", "Login successful, attempts reset")
 
-		nixio.syslog("info", "Attempting to create session for shadow password")
+		-- nixio.syslog("info", "Attempting to create session for shadow password")
 
 		-- ubus 세션 파라미터 로깅
 		local session_params = {
@@ -826,37 +826,37 @@ local function session_setup(user, pass)
 			password = pass,
 			timeout  = tonumber(luci.config.sauth.sessiontime)
 		}
-		nixio.syslog("info", string.format("Session params - username: %s, timeout: %s",
-			session_params.username,
-			tostring(session_params.timeout)))
+		-- nixio.syslog("info", string.format("Session params - username: %s, timeout: %s",
+		-- 	session_params.username,
+		-- 	tostring(session_params.timeout)))
 
 		-- rpcd 상태 확인
 		local rpcd_status = nixio.fs.stat("/var/run/rpcd.sock")
-		nixio.syslog("info", string.format("RPCD socket status: %s",
-			rpcd_status and "exists" or "missing"))
+		-- nixio.syslog("info", string.format("RPCD socket status: %s",
+		-- 	rpcd_status and "exists" or "missing"))
 
 		-- 임시 세션 생성 시도
 		local ok, login = pcall(util.ubus, "session", "login", session_params)
 
-		nixio.syslog("info", string.format("Session creation pcall result - ok: %s, response type: %s",
-			tostring(ok),
-			type(login)))
+		-- nixio.syslog("info", string.format("Session creation pcall result - ok: %s, response type: %s",
+		-- 	tostring(ok),
+		-- 	type(login)))
 
 		if ok and type(login) == "table" and type(login.ubus_rpc_session) == "string" then
-			nixio.syslog("info", "Session created successfully")
+			-- nixio.syslog("info", "Session created successfully")
 
 			-- 세션 설정 시도
 			local set_ok, set_result = pcall(util.ubus, "session", "set", {
 				ubus_rpc_session = login.ubus_rpc_session,
 				values = { token = sys.uniqueid(16) }
 			})
-			nixio.syslog("info", string.format("Session set result - ok: %s, type: %s",
-				tostring(set_ok),
-				type(set_result)))
+			-- nixio.syslog("info", string.format("Session set result - ok: %s, type: %s",
+			-- 	tostring(set_ok),
+			-- 	type(set_result)))
 
 			if set_ok then
 				-- 세션 쿠키 설정
-				nixio.syslog("info", "Setting cookie and redirecting to password change page")
+				-- nixio.syslog("info", "Setting cookie and redirecting to password change page")
 				http.header("Set-Cookie", 'sysauth=%s; path=%s; SameSite=Strict; HttpOnly%s' %{
 					login.ubus_rpc_session, build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
 				})
@@ -866,7 +866,7 @@ local function session_setup(user, pass)
 				if sdata then
 					-- 리다이렉션 수행
 					http.redirect(build_url("admin/changepassword"))
-					nixio.syslog("info", "Redirect initiated")
+					-- nixio.syslog("info", "Redirect initiated")
 					return sdata
 				end
 			end
@@ -877,7 +877,7 @@ local function session_setup(user, pass)
 	login_attempts[key].count = login_attempts[key].count + 1
 	save_attempts()
 
-	nixio.syslog("info", "Proceeding with normal login")
+	-- nixio.syslog("info", "Proceeding with normal login")
 	-- 일반 로그인 처리
 	local login = util.ubus("session", "login", {
 		username = user,
@@ -890,7 +890,7 @@ local function session_setup(user, pass)
 		login_attempts[key].count = 0
 		save_attempts()
 
-		nixio.syslog("info", "Normal login successful")
+		-- nixio.syslog("info", "Normal login successful")
 		util.ubus("session", "set", {
 			ubus_rpc_session = login.ubus_rpc_session,
 			values = { token = sys.uniqueid(16) }
@@ -901,9 +901,9 @@ local function session_setup(user, pass)
 	return session_retrieve(login.ubus_rpc_session)
 	end
 
-	nixio.syslog("err", string.format("Login failed (attempt: %d)", login_attempts[key].count))
-	nixio.syslog("info", string.format("luci: failed login on /%s for %s from %s\n",
-		rp, user or "?", ip))
+	-- nixio.syslog("err", string.format("Login failed (attempt: %d)", login_attempts[key].count))
+	-- nixio.syslog("info", string.format("luci: failed login on /%s for %s from %s\n",
+	-- 	rp, user or "?", ip))
 
 	-- 로그인 실패 처리
 	local retry_count, retry_interval = get_retry_settings()

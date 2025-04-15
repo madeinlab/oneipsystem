@@ -159,9 +159,9 @@ function etc2_redirect()
 end
 
 function cameraRedirect(ip, port)
-	nixio.syslog("debug", "cameraRedirect() " .. ip .. " " .. port)
+	-- nixio.syslog("debug", "cameraRedirect() " .. ip .. " " .. port)
     if ip == "" or ip == nil or port == "" or port == nil then
-        nixio.syslog("debug", "cameraRedirect: ip or port is empty or nil.")
+        -- nixio.syslog("debug", "cameraRedirect: ip or port is empty or nil.")
         return false
     end
 
@@ -172,7 +172,7 @@ function cameraRedirect(ip, port)
 	rv = util.split(res, "\n")
 	if(rv[1] ~= "0") then
 		local cmd = "socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip .. ":443 & > /dev/null"
-		nixio.syslog("debug", "cameraRedirect() " .. cmd)
+		-- nixio.syslog("debug", "cameraRedirect() " .. cmd)
 		sys.exec(cmd)		
 	end
 
@@ -182,9 +182,9 @@ function cameraRedirect(ip, port)
 end
 
 function rtspRedirect(url, port)
-	nixio.syslog("debug", "rtspRedirect() " .. url .. " " .. port)
+	-- nixio.syslog("debug", "rtspRedirect() " .. url .. " " .. port)
 	if url == "" or url == nil or port == "" or port == nil then
-        nixio.syslog("debug", "rtspRedirect: url or port is empty or nil.")
+        -- nixio.syslog("debug", "rtspRedirect: url or port is empty or nil.")
         return false
     end
 
@@ -196,7 +196,7 @@ function rtspRedirect(url, port)
 	rv = util.split(res, "\n")
 	if(rv[1] ~= "0") then
 		local cmd = "socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. removedUrl .. " & > /dev/null"
-		nixio.syslog("debug", "rtspRedirect() " .. cmd)
+		-- nixio.syslog("debug", "rtspRedirect() " .. cmd)
 		sys.exec(cmd)
 	end
 	
@@ -206,7 +206,7 @@ function rtspRedirect(url, port)
 end
 
 function getCameraInfo(section_id, type)
-	nixio.syslog("debug", "getCameraInfo() " .. section_id .. " " .. type)
+	-- nixio.syslog("debug", "getCameraInfo() " .. section_id .. " " .. type)
 	
 	local wanip = uci:get('network', 'wan', 'ipaddr')
 	local portKey = (type == 'webpage') and 'httpForwardingPort' or 'rtspForwardingPort'
@@ -299,7 +299,7 @@ function createCameraDumpFile(ip, filename)
 	local result = sys.exec(cmd)
 
 	if result:find("%s*successfully connected to host") then
-		nixio.syslog("info", "[createCameraDumpFile] Successfully connected to host: " .. ip)
+		-- nixio.syslog("info", "[createCameraDumpFile] Successfully connected to host: " .. ip)
 
     	-- Create the directory if it doesn't exist
     	sys.exec("mkdir -p " .. camera_dump_path)
@@ -311,11 +311,11 @@ function createCameraDumpFile(ip, filename)
 			file:close()
 			return true
 		else
-			nixio.syslog("err", "[createCameraDumpFile] Failed to open file for writing")
+			-- nixio.syslog("err", "[createCameraDumpFile] Failed to open file for writing")
 			return false
 		end
 	else
-		nixio.syslog("err", "[createCameraDumpFile] Failed to connect to host: " .. ip)
+		-- nixio.syslog("err", "[createCameraDumpFile] Failed to connect to host: " .. ip)
 		return false
 	end
 end
@@ -347,10 +347,9 @@ function createCameraConfigFile(dumpFilename)
 		local filepath = camera_dump_path  .. "/" .. dumpFilename
 		local camera_info = parseCameraFile(filepath)
 		if camera_info and camera_info.ip ~= "" and camera_info.selectedrtsp ~= "" then
-			-- clear_uci_config(config_file, config_section_type, dumpFilename) -- yjyoon. 20240807 디바이스 부팅 시 기존 덤프파일과 camera config 파일을 삭제. 해당 코드가 있을 경우 config을 재설정해도 정보가 유지되지 못함.
 			write_to_uci_config(config_file, config_section_type, camera_info, dumpFilename)
 		else
-			nixio.syslog("debug", string.format("createCameraConfigFile: Camera information is not yet prepared."))
+			-- nixio.syslog("debug", string.format("createCameraConfigFile: Camera information is not yet prepared."))
 		end
 	end
 
@@ -366,9 +365,9 @@ function addCamera(cameraIP)
 
 	if findFile(camera_dump_path, filename) then
 		-- Dump file exists
-		nixio.syslog("debug", string.format("addCamera ip[%s] portN[%d] filename[%s]. Dump file exsits.", cameraIP, portN, filename))
+		-- nixio.syslog("debug", string.format("addCamera ip[%s] portN[%d] filename[%s]. Dump file exsits.", cameraIP, portN, filename))
 	else
-		nixio.syslog("debug", string.format("addCamera ip[%s] portN[%d] filename[%s]. Generate Dump file.", cameraIP, portN, filename))
+		-- nixio.syslog("debug", string.format("addCamera ip[%s] portN[%d] filename[%s]. Generate Dump file.", cameraIP, portN, filename))
 		-- Generate dump file
 		local result = createCameraDumpFile(cameraIP, filename)
 		if not result then
@@ -390,7 +389,7 @@ function addCamera(cameraIP)
 end
 
 function removeCamera(cameraIP)
-	nixio.syslog("debug", string.format("removeCamera %s", cameraIP))
+	-- nixio.syslog("debug", string.format("removeCamera %s", cameraIP))
 
 	local portN = getChannel(cameraIP)
 	if portN == nil then
@@ -492,9 +491,9 @@ function delete_uci_config_options(config_file, config_section_type, config_sect
         -- Commit the changes
 		uci:save(config_file)
         uci:commit(config_file)
-        nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
+        -- nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
     else
-		nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
+		-- nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
     end
 
 	return;
@@ -532,9 +531,9 @@ function clear_uci_config(config_file, config_section_type, config_section_name)
         -- Commit the changes
 		uci:save(config_file)
         uci:commit(config_file)
-        nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
+        -- nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
     else
-		nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
+		-- nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
     end
 
 	return;
@@ -662,7 +661,7 @@ function findFile(path, filename)
 end
 
 function rebootCamera(section_id)
-	nixio.syslog("debug", string.format("rebootCamera section_id[%s]", section_id))
+	-- nixio.syslog("debug", string.format("rebootCamera section_id[%s]", section_id))
 	local cameraip = uci:get('camera', section_id, 'ip')
 	if cameraip then
 		--nixio.syslog("debug", string.format("rebootCamera section_id[%s]  001", section_id))
