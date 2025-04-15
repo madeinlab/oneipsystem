@@ -306,8 +306,9 @@ generate_static_system() {
 		set system.@system[-1].timezone='UTC'
 		set system.@system[-1].ttylogin='1'
 		set system.@system[-1].log_size='512'
-		set system.@system[-1].log_file '/tmp/system.log'
 		set system.@system[-1].urandom_seed='0'
+		set system.@system[-1].log_file='/tmp/system.log'
+		set system.@system[-1].conloglevel='2'
 
 		delete system.ntp
 		set system.ntp='timeserver'
