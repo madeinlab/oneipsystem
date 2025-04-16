@@ -8930,7 +8930,7 @@ msgstr "접속 가능한 관리자 IP 주소를 설정합니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:51
 msgid "This function allows web access for specific IPs and is disabled by default."
-msgstr "특정 IP의 Web 접근 허용을 설정하는 기능으로 Default는 Disable입니다."
+msgstr "특정 IP의 Web 접근 허용을 설정하는 기능으로 기본값은 비활성화입니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/admin_ip.js:70
 msgid "Allowed IP Address"
