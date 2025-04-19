@@ -13,26 +13,31 @@
 		"read": {
 			"file": {
 				"/": [ "list" ],
-				"/*": [ "list" ]
+				"/*": [ "list" ],
+				"/etc/passwd": [ "read" ],
+				"/etc/config/rpcd": [ "read" ],
+				"/etc/shadow": [ "read" ]
 			},
 			"ubus": {
 				"file": [ "list" ],
 				"uci": [ "changes", "get", "state" ],
 				"luci": [ "getProcessList" ]
 			},
-			"uci": [ "admin_manage" ]
+			"uci": [ "admin_manage", "rpcd" ]
 		},
 		"write": {
 			"cgi-io": [ "upload" ],
 			"file": {
-				"/etc/luci-uploads/*": [ "write" ]
+				"/etc/luci-uploads/*": [ "write" ],
+				"/etc/config/rpcd": [ "write" ],
+				"/etc/shadow": [ "write" ]
 			},
 			"ubus": {
 				"file": [ "remove" ],
 				"uci": [ "add", "apply", "confirm", "commit", "delete", "order", "rename", "set", "changes" ],
 				"luci": [ "addCamera", "removeCamera" ]
 			},
-			"uci": [ "admin_manage" ]
+			"uci": [ "admin_manage", "rpcd" ]
 		}
 	},
 

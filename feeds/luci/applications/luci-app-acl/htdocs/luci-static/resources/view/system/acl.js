@@ -322,7 +322,8 @@ return view.extend({
 		s.anonymous = true;
 		s.filter = function(section_id) {
 			var username = uci.get('rpcd', section_id, 'username');
-			return username !== 'doowon';
+			var superuser = getUserNameUID0();
+			return username !== superuser;
 		};
 		s.addremove = function(section_id) {
 			var username = uci.get('rpcd', section_id, 'username');
@@ -340,9 +341,10 @@ return view.extend({
 				});
 			}
 			
-			// doowon 계정은 표시하지 않음
+			// 루트 계정은 표시하지 않음
 			if (section_id) {
-				if (username === 'doowon') {
+				var superuser = getUserNameUID0();
+				if (username === superuser) {
 					return E([]);
 				}
 			}

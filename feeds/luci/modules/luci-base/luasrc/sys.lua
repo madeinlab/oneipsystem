@@ -619,3 +619,19 @@ end
 function init.reload(name)
 	return (init_action("reload", name) == 0)
 end
+
+function get_super_user()
+	local passwd = fs.readfile("/etc/passwd")
+	if not passwd then
+		return nil
+	end
+
+	for line in passwd:gmatch("[^\n]+") do
+		local user = line:match("^([^:]+):[^:]*:0:")
+		if user then
+			return user
+		end
+	end
+
+	return nil
+end

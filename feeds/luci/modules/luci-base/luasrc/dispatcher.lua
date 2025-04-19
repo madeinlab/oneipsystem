@@ -19,7 +19,7 @@ _M.fs = fs
 local index = nil
 
 -- Global variable for super user
-local super_user = nil
+local super_user = sys.get_super_user()
 
 -- 상단에 추가
 local ATTEMPTS_FILE = "/tmp/login_attempts.json"
@@ -53,36 +53,6 @@ local function save_attempts()
 	else
 		-- nixio.syslog("error", "Failed to open file for writing")
 	end
-end
-
--- Function to get super user from /etc/passwd
-function get_super_user()
-	local nixio = require "nixio"
-	local fs = require "nixio.fs"
-
-	-- nixio.syslog("info", "=== Get Super User Debug Start ===")
-
-	-- /etc/passwd 파일 읽기
-	local passwd = fs.readfile("/etc/passwd")
-	if not passwd then
-		-- nixio.syslog("err", "Failed to read /etc/passwd file")
-		return nil
-	end
-
-	-- nixio.syslog("info", "Successfully read /etc/passwd file")
-
-	-- 각 라인 확인
-	for line in passwd:gmatch("[^\n]+") do
-		-- nixio.syslog("info", "Checking line: " .. line)
-		local user = line:match("^([^:]+):[^:]*:0:")
-		if user then
-			-- nixio.syslog("info", "Found super user: " .. user)
-			return user
-		end
-	end
-
-	-- nixio.syslog("err", "No super user found in /etc/passwd")
-	return nil
 end
 
 local function check_fs_depends(spec)
@@ -791,31 +761,64 @@ local function session_setup(user, pass)
 		login_attempts[key] = { count = 0 }
 	end
 
-	-- 디버그 로깅 추가
-	-- nixio.syslog("info", "=== Template Debug Start ===")
-	-- nixio.syslog("info", string.format("fuser: %s", user or "?"))
-	-- nixio.syslog("info", string.format("fail_count: %d", login_attempts[key].count))
-	-- nixio.syslog("info", "=== Template Debug End ===")
+	-- /etc/config/rpcd에서 사용자 패스워드 가져오기
+	local uci = require "luci.model.uci".cursor()
+	local shadow_pass = nil
 
-	-- nixio.syslog("info", "=== Login Debug Start ===")
-	-- nixio.syslog("info", string.format("Username: %s", user or "?"))
-	-- nixio.syslog("info", string.format("Remote IP: %s", ip))
-	-- nixio.syslog("info", string.format("Request Path: %s", rp or "?"))
+	uci:foreach("rpcd", "login", function(s)
+		if s.username == user then
+			local stored_pass = s.password
+			if stored_pass:sub(1, 3) == "$p$" then
+				-- /etc/shadow에서 패스워드 가져오기
+				local shadow_user = stored_pass:sub(4) -- $p$ 뒤의 사용자 이름
+				local shadow = nixio.fs.readfile("/etc/shadow")
+				if shadow then
+					for line in shadow:gmatch("[^\n]+") do
+						local username, hash = line:match("^([^:]+):([^:]+)")
+						if username == shadow_user then
+							shadow_pass = hash
+							break
+						end
+					end
+				end
+			elseif stored_pass:sub(1, 3) == "$6$" then
+				-- SHA-512 해시인 경우 그대로 사용
+				shadow_pass = stored_pass
+			end
+			return false -- 루프 중단
+		end
+	end)
 
-	-- /etc/shadow에서 설정된 패스워드 가져오기
-	local shadow_pass = "$6$CGUbXM0QuVh9HtKM$M1VYDyV95ZD1m3pWgN03otu4olQdP8gtLusWiAdZ1osjMg1xUB118Nqxj/jbWV7wLeraaJnqc6pUzsCUC5eIC0"
+	if not shadow_pass then
+		-- 패스워드를 찾을 수 없는 경우
+		context.auth_failed = {
+			fuser = user,
+			fail_count = login_attempts[key].count,
+			message = "Invalid username and/or password! Please try again.",
+			retry_count = get_retry_settings()
+		}
+		return nil
+	end
 
 	-- 입력받은 패스워드를 SHA-512로 해시
 	local salt = shadow_pass:match("%$6%$([^%$]+)%$")
 	local hashed_pass = nixio.crypt(pass, "$6$" .. salt)
 
-	-- nixio.syslog("info", string.format("Password check: %s", hashed_pass == shadow_pass and "match" or "not match"))
+	-- default_password 가져오기
+	local default_password = nil
+	uci:foreach("rpcd", "login", function(s)
+		if s.username == user then
+			default_password = s.default_password
+			return false
+		end
+	end)
 
 	-- 해시된 패스워드 비교
-	if hashed_pass == shadow_pass then
+	if hashed_pass == shadow_pass and shadow_pass == default_password then
 		-- 로그인 성공 시 카운트 초기화
 		login_attempts[key].count = 0
 		save_attempts()
+
 		-- nixio.syslog("info", "Login successful, attempts reset")
 
 		-- nixio.syslog("info", "Attempting to create session for shadow password")
@@ -898,7 +901,7 @@ local function session_setup(user, pass)
 		nixio.syslog("info", string.format("luci: accepted login on /%s for %s from %s\n",
 			rp, user or "?", http.getenv("REMOTE_ADDR") or "?"))
 
-	return session_retrieve(login.ubus_rpc_session)
+		return session_retrieve(login.ubus_rpc_session)
 	end
 
 	-- nixio.syslog("err", string.format("Login failed (attempt: %d)", login_attempts[key].count))
@@ -1239,7 +1242,7 @@ function dispatch(request)
 				local retry_count, _ = get_retry_settings()
 				-- 실패 정보가 있으면 사용
 				local scope = context.auth_failed or {
-					duser = get_super_user(),
+					duser = sys.get_super_user(),
 					fuser = user,
 					retry_count = retry_count
 				}
