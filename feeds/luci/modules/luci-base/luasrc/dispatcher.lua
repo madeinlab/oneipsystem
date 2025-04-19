@@ -763,33 +763,33 @@ local function session_setup(user, pass)
 
 	-- /etc/config/rpcd에서 사용자 패스워드 가져오기
 	local uci = require "luci.model.uci".cursor()
-	local shadow_pass = nil
+	local current_password = nil
 
 	uci:foreach("rpcd", "login", function(s)
 		if s.username == user then
-			local stored_pass = s.password
-			if stored_pass:sub(1, 3) == "$p$" then
+			local password_type = s.password
+			if password_type:sub(1, 3) == "$p$" then
 				-- /etc/shadow에서 패스워드 가져오기
-				local shadow_user = stored_pass:sub(4) -- $p$ 뒤의 사용자 이름
+				local shadow_user = password_type:sub(4) -- $p$ 뒤의 사용자 이름
 				local shadow = nixio.fs.readfile("/etc/shadow")
 				if shadow then
 					for line in shadow:gmatch("[^\n]+") do
 						local username, hash = line:match("^([^:]+):([^:]+)")
 						if username == shadow_user then
-							shadow_pass = hash
+							current_password = hash
 							break
 						end
 					end
 				end
-			elseif stored_pass:sub(1, 3) == "$6$" then
+			elseif password_type:sub(1, 3) == "$6$" then
 				-- SHA-512 해시인 경우 그대로 사용
-				shadow_pass = stored_pass
+				current_password = password_type
 			end
 			return false -- 루프 중단
 		end
 	end)
 
-	if not shadow_pass then
+	if not current_password then
 		-- 패스워드를 찾을 수 없는 경우
 		context.auth_failed = {
 			fuser = user,
@@ -801,8 +801,8 @@ local function session_setup(user, pass)
 	end
 
 	-- 입력받은 패스워드를 SHA-512로 해시
-	local salt = shadow_pass:match("%$6%$([^%$]+)%$")
-	local hashed_pass = nixio.crypt(pass, "$6$" .. salt)
+	local salt = current_password:match("%$6%$([^%$]+)%$")
+	local hashed_input_password = nixio.crypt(pass, "$6$" .. salt)
 
 	-- default_password 가져오기
 	local default_password = nil
@@ -814,7 +814,7 @@ local function session_setup(user, pass)
 	end)
 
 	-- 해시된 패스워드 비교
-	if hashed_pass == shadow_pass and shadow_pass == default_password then
+	if hashed_input_password == current_password and current_password == default_password then
 		-- 로그인 성공 시 카운트 초기화
 		login_attempts[key].count = 0
 		save_attempts()
@@ -829,21 +829,12 @@ local function session_setup(user, pass)
 			password = pass,
 			timeout  = tonumber(luci.config.sauth.sessiontime)
 		}
-		-- nixio.syslog("info", string.format("Session params - username: %s, timeout: %s",
-		-- 	session_params.username,
-		-- 	tostring(session_params.timeout)))
 
 		-- rpcd 상태 확인
 		local rpcd_status = nixio.fs.stat("/var/run/rpcd.sock")
-		-- nixio.syslog("info", string.format("RPCD socket status: %s",
-		-- 	rpcd_status and "exists" or "missing"))
 
 		-- 임시 세션 생성 시도
 		local ok, login = pcall(util.ubus, "session", "login", session_params)
-
-		-- nixio.syslog("info", string.format("Session creation pcall result - ok: %s, response type: %s",
-		-- 	tostring(ok),
-		-- 	type(login)))
 
 		if ok and type(login) == "table" and type(login.ubus_rpc_session) == "string" then
 			-- nixio.syslog("info", "Session created successfully")
@@ -851,15 +842,14 @@ local function session_setup(user, pass)
 			-- 세션 설정 시도
 			local set_ok, set_result = pcall(util.ubus, "session", "set", {
 				ubus_rpc_session = login.ubus_rpc_session,
-				values = { token = sys.uniqueid(16) }
+				values = {
+					token = sys.uniqueid(16),
+					default_login_flag = true
+				}
 			})
-			-- nixio.syslog("info", string.format("Session set result - ok: %s, type: %s",
-			-- 	tostring(set_ok),
-			-- 	type(set_result)))
 
 			if set_ok then
 				-- 세션 쿠키 설정
-				-- nixio.syslog("info", "Setting cookie and redirecting to password change page")
 				http.header("Set-Cookie", 'sysauth=%s; path=%s; SameSite=Strict; HttpOnly%s' %{
 					login.ubus_rpc_session, build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
 				})
@@ -869,7 +859,6 @@ local function session_setup(user, pass)
 				if sdata then
 					-- 리다이렉션 수행
 					http.redirect(build_url("admin/changepassword"))
-					-- nixio.syslog("info", "Redirect initiated")
 					return sdata
 				end
 			end
@@ -880,7 +869,6 @@ local function session_setup(user, pass)
 	login_attempts[key].count = login_attempts[key].count + 1
 	save_attempts()
 
-	-- nixio.syslog("info", "Proceeding with normal login")
 	-- 일반 로그인 처리
 	local login = util.ubus("session", "login", {
 		username = user,
@@ -893,20 +881,18 @@ local function session_setup(user, pass)
 		login_attempts[key].count = 0
 		save_attempts()
 
-		-- nixio.syslog("info", "Normal login successful")
 		util.ubus("session", "set", {
 			ubus_rpc_session = login.ubus_rpc_session,
-			values = { token = sys.uniqueid(16) }
+			values = {
+				token = sys.uniqueid(16),
+				default_login_flag = false
+			}
 		})
 		nixio.syslog("info", string.format("luci: accepted login on /%s for %s from %s\n",
 			rp, user or "?", http.getenv("REMOTE_ADDR") or "?"))
 
 		return session_retrieve(login.ubus_rpc_session)
 	end
-
-	-- nixio.syslog("err", string.format("Login failed (attempt: %d)", login_attempts[key].count))
-	-- nixio.syslog("info", string.format("luci: failed login on /%s for %s from %s\n",
-	-- 	rp, user or "?", ip))
 
 	-- 로그인 실패 처리
 	local retry_count, retry_interval = get_retry_settings()
@@ -1272,6 +1258,16 @@ function dispatch(request)
 		ctx.authtoken = sdat.token
 		ctx.authuser = sdat.username
 		ctx.authacl = sacl
+
+		-- default_login_flag 체크 및 리다이렉션
+		if sdat.default_login_flag == true then
+			local current_path = table.concat(ctx.path, "/")
+			-- 패스워드 변경 페이지나 로그인 페이지가 아닌 경우에만 리다이렉트
+			if current_path ~= "admin/changepassword" and current_path ~= "admin/login" then
+				http.redirect(build_url("admin/changepassword"))
+				return
+			end
+		end
 	end
 
 	if #required_path_acls > 0 then

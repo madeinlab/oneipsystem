@@ -5,8 +5,12 @@ fs = require "nixio.fs"
 uci = require("luci.model.uci").cursor()
 nixio = require "nixio", require "nixio.util"
 json = require "luci.jsonc"
+dispatcher = require "luci.dispatcher"
 
 module("luci.controller.admin.system", package.seeall)
+
+-- build_url 함수 로컬 복사
+local build_url = dispatcher.build_url
 
 function verify_password(username, password, current_format, user_section)
     if current_format == "$p$" then
@@ -151,12 +155,31 @@ function action_change_password()
                             if current_password:sub(1, 3) == "$6$" then
                                 sys.exec("/etc/init.d/rpcd reload")
                             end
-                            template.render("admin/changepassword", {
-                                success = true,
-                                error = false,
-                                message = i18n.translate("Password changed successfully. Please log in with your new password."),
-                                redirect = true
-                            })
+
+                            -- 세션의 default_login_flag를 false로 업데이트
+                            if dispatcher.context.authsession then
+                                -- 세션 업데이트
+                                util.ubus("session", "set", {
+                                    ubus_rpc_session = dispatcher.context.authsession,
+                                    values = {
+                                        token = dispatcher.context.authtoken,
+                                        default_login_flag = false
+                                    }
+                                })
+
+                                -- 세션 종료
+                                util.ubus("session", "destroy", {
+                                    ubus_rpc_session = dispatcher.context.authsession
+                                })
+
+                                -- 쿠키 제거
+                                http.header("Set-Cookie", "sysauth=; path=%s; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; HttpOnly%s" %{
+                                    build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
+                                })
+                            end
+
+                            -- 로그인 페이지로 리다이렉트
+                            http.redirect(build_url("admin/login"))
                             return
                         else
                             nixio.syslog("err", "Failed to set new password")
