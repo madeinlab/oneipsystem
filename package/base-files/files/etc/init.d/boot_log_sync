@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+START=42  # ubi_logflash(41) 이후
+start() {
+	SRC="/tmp/system.log"
+	DEST="/mnt/oneip_log/systemLOG_temp.log"
+	MOUNT_POINT="/mnt/oneip_log"
+	if ! mountpoint -q "$MOUNT_POINT"; then
+		logger -t boot_log_sync "Mount point $MOUNT_POINT not ready"
+		exit 1
+	fi
+	sleep 30
+	if [ -f "$SRC" ]; then
+		cp "$SRC" "$DEST"
+		sync
+		logger -t boot_log_sync "Boot log synced at $(date)"
+	fi
+}

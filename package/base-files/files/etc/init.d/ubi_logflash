@@ -11,13 +11,13 @@ UBI_DEV=""		# Dynamic assign
 MOUNT_POINT="/mnt/${VOL_NAME}"
 
 start_service() {
-    if ! ubiattach /dev/ubi_ctrl -m $MTD_NUM 2>/dev/null; then
-        echo "UBI not formatted on $MTD_DEV, formatting..."
-        ubiformat /dev/$MTD_DEV -y
-        ubiattach /dev/ubi_ctrl -m $MTD_NUM
-    else
-        echo "$MTD_DEV is already UBI formatted"
-    fi
+	if ! ubiattach /dev/ubi_ctrl -m $MTD_NUM 2>/dev/null; then
+		echo "UBI not formatted on $MTD_DEV, formatting..."
+		ubiformat /dev/$MTD_DEV -y
+		ubiattach /dev/ubi_ctrl -m $MTD_NUM
+	else
+		echo "$MTD_DEV is already UBI formatted"
+	fi
 
 	for ubi in /sys/class/ubi/ubi*; do
 		if [ -d "$ubi" ]; then
@@ -45,7 +45,15 @@ start_service() {
 }
 
 stop_service() {
-    umount $MOUNT_POINT 2>/dev/null
-    ubidetach -m $MTD_NUM 2>/dev/null
+	SRC="/tmp/system.log"
+	DEST="/mnt/oneip_log/systemLOG_temp.log"
+
+	if [ -f "$SRC" ] && mountpoint -q "$MOUNT_POINT"; then
+		cp "$SRC" "$DEST"
+		sync
+		logger -t ubi_logflash "Log synced before UBI detach at $(date)"
+	fi
+	umount $MOUNT_POINT 2>/dev/null
+	ubidetach -m $MTD_NUM 2>/dev/null
 }
 

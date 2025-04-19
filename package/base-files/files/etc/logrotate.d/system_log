@@ -1,0 +1,25 @@
+/tmp/system.log {
+	size 512k
+	rotate 10
+	copytruncate
+	dateext
+	dateformat _%Y%m%d_%H%M%S
+	missingok
+	notifempty
+	olddir /mnt/oneip_log
+	create 0644 root root
+	postrotate
+		# 파일명 변경
+		for file in /mnt/oneip_log/system.log_*; do
+			if [ -f "$file" ]; then
+				newname=$(echo "$file" | sed 's/system\.log_/systemLOG_/')
+				mv "$file" "$newname"
+			fi
+		done
+		# 임시 로그 동기화
+		if [ -f /tmp/system.log ]; then
+			cp /tmp/system.log /mnt/oneip_log/systemLOG_temp.log
+			sync
+		fi
+	endscript
+}
