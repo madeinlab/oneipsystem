@@ -22,10 +22,18 @@ usage()
 
 factory_name="Factory"
 factory_mtd=/dev/$(grep -i ''${factory_name}'' /proc/mtd | cut -c 1-4)
+ERASE_SIZE=$((0x$(grep -i ''${factory_name}'' /proc/mtd | cut -d' ' -f3)))
+DEFAULT_BS=512
+DD_COUNT=$(( ${ERASE_SIZE} / ${DEFAULT_BS} ))
+
+MODEL_NAME_OFFSET=0
+MODEL_NAME_MAX_SIZE=32
+SERIAL_NO_OFFSET=64
+SERIAL_NO_MAX_SIZE=16
 
 #default:7622
-lan_mac_offset=0x2A
 wan_mac_offset=0x24
+lan_mac_offset=0x2A
 
 case `cat /tmp/sysinfo/board_name` in
 	*7621*ax*)
@@ -93,7 +101,7 @@ Set_offset_data()
 		data=${data}"\x${temp}"
 	done
 
-	dd if=${factory_mtd} of=/tmp/Factory.backup
+	dd if=${factory_mtd} of=/tmp/Factory.backup bs=${DEFAULT_BS} count=${DD_COUNT}
 	printf "${data}" | dd conv=notrunc of=/tmp/Factory.backup bs=1 seek=$((${offset}))
 	mtd write /tmp/Factory.backup ${factory_name}
 	rm -rf /tmp/Factory.backup
@@ -117,6 +125,27 @@ GetMac()
 	fi
 }
 
+GetSerial()
+{
+	if [ "$1" == "serial_no" ]; then
+		#read Serial Number
+		Get_offset_data ${SERIAL_NO_MAX_SIZE} ${SERIAL_NO_OFFSET}
+	else
+		usage
+		exit 1
+	fi
+}
+
+GetModel()
+{
+	if [ "$1" == "model" ]; then
+		#read Model Name
+		Get_offset_data ${MODEL_NAME_MAX_SIZE} ${MODEL_NAME_OFFSET}
+	else
+		usage
+		exit 1
+	fi
+}
 
 #4.write Factory lan/wan mac address
 SetMac()
@@ -143,13 +172,48 @@ SetMac()
 	fi
 }
 
+SetSerial()
+{
+	if [ "$#" != "4" ]; then
+		echo "Invalid parameter. only need one string"
+		exit 1
+	fi
+
+	if [ "$1" == "serial_no" ]; then
+		#write Serial Number
+		Set_offset_data ${SERIAL_NO_MAX_SIZE} ${SERIAL_NO_OFFSET} $@
+	else
+		usage
+		exit 1
+	fi
+}
+
+SetModel()
+{
+	if [ "$#" != "4" ]; then
+		echo "Invalid parameter. only need one string"
+		exit 1
+	fi
+
+	if [ "$1" == "model" ]; then
+		#write Model Name
+		Set_offset_data ${MODEL_NAME_MAX_SIZE} ${MODEL_NAME_OFFSET} $@
+	else
+		usage
+		exit 1
+	fi
+}
 #usage:
 # 1. Set/Get the mac_address: mtk_factory -r/-w lan/wan /data
 # 2. Set/Get the offset data: mtk_factory -r/-w length offset /data
 # 3. Overwrite from offset1 to offset2 by length byte : mtk_factory -o length from to
 if [ "$1" == "-r" ]; then
-	if [ "$2" == "lan" -o "$2" == "lan2" -o "$2" == "wan" ]; then
+	if [ "$2" == "lan" -o "$2" == "lan2" -o "$2" == "wan" -o "$2" == "serial_no" -o "$2" == "model" ]; then
 		GetMac $2
+	elif [ "$2" == "serial_no" ]; then
+		GetSerial $2
+	elif [ "$2" == "model" ]; then
+		GetModel $2
 	elif [ "$2" -eq "$2" ]; then
 		Get_offset_data $2 $3
 	else
@@ -160,6 +224,10 @@ if [ "$1" == "-r" ]; then
 elif [ "$1" == "-w" ]; then
 	if [ "$2" == "lan"  -o "$2" == "lan2" -o "$2" == "wan" ]; then
 		SetMac $2 $@
+	elif [ "$2" == "serial_no" ]; then
+		SetSerial $2 $@
+	elif [ "$2" == "model" ]; then
+		SetModel $2 $@
 	else
 		Set_offset_data $2 $3 $@
 	fi
