@@ -1,0 +1,46 @@
+diff -urN a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c	2025-04-16 19:48:43.226868052 +0900
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c	2025-04-21 15:02:53.542600518 +0900
+@@ -3817,6 +3817,13 @@
+ 	return 0;
+ }
+ 
++
++#define	PROBE_DEFER_MAX_CNT		(5)
++atomic_t probe_defer_count[MTK_MAX_DEVS] = {
++	[0 ... (MTK_MAX_DEVS - 1)] = ATOMIC_INIT(0)
++};
++atomic_t useRandomMACtoo = ATOMIC_INIT(0);
++
+ static int __init mtk_init(struct net_device *dev)
+ {
+ 	struct mtk_mac *mac = netdev_priv(dev);
+@@ -3824,12 +3831,27 @@
+ 	const char *mac_addr;
+ 
+ 	mac_addr = of_get_mac_address(mac->of_node);
+-	if (!IS_ERR(mac_addr))
++	if (!IS_ERR(mac_addr)) {
+ 		ether_addr_copy(dev->dev_addr, mac_addr);
++	}
++	else {
++		if (atomic_read(&useRandomMACtoo) == 0) {
++			atomic_inc(&probe_defer_count[mac->id]);
++			dev_info(eth->dev, "%s : MTD not ready, deferring probe\n", dev->name);
++			if(atomic_read(&probe_defer_count[mac->id]) < PROBE_DEFER_MAX_CNT) {
++				return -EPROBE_DEFER;
++			}
++			else {
++				dev_err(eth->dev, "%s : The maximum number(%d) of deferring probe"
++						"has been exceeded\n", dev->name, PROBE_DEFER_MAX_CNT);
++			}
++		}
++	}
+ 
+ 	/* If the mac address is invalid, use random mac address  */
+ 	if (!is_valid_ether_addr(dev->dev_addr)) {
+ 		eth_hw_addr_random(dev);
++		atomic_set(&useRandomMACtoo, 1);
+ 		dev_err(eth->dev, "generated random MAC address %pM\n",
+ 			dev->dev_addr);
+ 	}

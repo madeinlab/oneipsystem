@@ -4,7 +4,7 @@
 	model = "DooWon OneIPSystem";
 	compatible = "mediatek,mt7981-spim-snand-gsw-rfb";
 	chosen {
-		bootargs = "console=ttyS0,115200n1 loglevel=1  \
+		bootargs = "console=ttyS0,115200n1 loglevel=8  \
 				earlycon=uart8250,mmio32,0x11002000";
 	};
 
