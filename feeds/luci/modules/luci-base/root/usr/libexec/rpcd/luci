@@ -649,7 +649,6 @@ local methods = {
 		call = function(args)
 			local camera = require "luci.camera"
 			camera.addCamera(args.ip);
-			-- nixio.syslog("debug", "addCamera called with IP: " .. args.ip)
 
 			return { result = true }
 		end		
@@ -660,7 +659,6 @@ local methods = {
 		call = function(args)
 			local camera = require "luci.camera"
 			camera.removeCamera(args.ip);
-			-- nixio.syslog("debug", "removeCamera called with IP: " .. args.ip)
 
 			return { result = true }
 		end		
@@ -708,103 +706,157 @@ local methods = {
 	encryptPassword = {
 		args = { password = "string" },
 		call = function(args)
-			if args.password == "" then
-				return ""
-			end
-
-			local encryption_key = getEncryptKey("encrypt")
-			local cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s', args.password, encryption_key)
+			if args.password == "" then return "" end
+	
+			local key = getEncryptKey("encrypt")
+			local cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s', args.password, key)
 			local handle = io.popen(cmd)
 			local res = handle:read("*a")
 			handle:close()
-			res = res:match("^%s*(.-)%s*$") -- 앞뒤 공백 제거
-			return { result = res }
+			return { result = res:match("^%s*(.-)%s*$") }
 		end
 	}, 	
 
 	decryptPassword = {
 		args = { password = "string" },
 		call = function(args)
-			if args.password == "" then
-				return ""
-			end
-
-			local encryption_key = getEncryptKey("encrypt")
+			if args.password == "" then return "" end
+	
+			local key = getEncryptKey("encrypt")
 			local tmpFile = "/tmp/tmpEncrypted.txt"
-			if encryption_key == "" then
-				return ""
+	
+			local cmd = string.format('printf "%%s\\n" "%s" > %s', args.password, tmpFile)
+			os.execute(cmd)
+	
+			cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', tmpFile, key)
+			local handle = io.popen(cmd)
+			local res = handle:read("*a")
+			handle:close()
+	
+			os.execute("rm -f " .. tmpFile)
+	
+			return { result = res:match("^%s*(.-)%s*$") }
+		end
+	},
+
+	destroyKeys = {
+		call = function()
+			local success = pcall(destroy_keys)
+			if success then
+				return { result = "Keys destroyed successfully" }
 			else
-				local cmd = string.format('printf "%%s\\n" "%s" > %s', args.password, tmpFile) -- 개행 문자를 포함시키지 않으면 복호화 시 파일을 읽어오지 못함.
-				local handle = io.popen(cmd)
-				handle:close()
-
-				cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', tmpFile, encryption_key)
-				handle = io.popen(cmd)
-				local res = handle:read("*a")
-				handle:close()
-
-				cmd = string.format('rm -f %s', tmpFile)
-				os.execute(cmd)
-
-				res = res:match("^%s*(.-)%s*$") -- 앞뒤 공백 제거
-				return { result = res }
+				return { error = "Key destruction failed" }
 			end
 		end
 	}
 }
 
-function getEncryptKey(action)
-	local file_path = "/etc/encrypt_key"
-	local encryption_key = ""
+local KEK_PATH = "/etc/.kek"
+local DEK_PATH = "/etc/.dek"
 
-	if file_exists(file_path) then
-		-- 파일이 존재하면 키를 읽어옴
-		local file = io.open(file_path, "r")
-		if file then
-			encryption_key = file:read("*a")
-			file:close()
-		else
-			error("Unable to open the key file: " .. file_path)
-		end
+-- 파일 존재 여부 확인
+function file_exists(path)
+	local f = io.open(path, "r")
+	if f then f:close() return true else return false end
+end
+
+-- 랜덤 키 생성
+function generate_key()
+	local handle = io.popen("openssl rand -base64 32")
+	local key = handle:read("*a")
+	handle:close()
+	return key:gsub("\n", "")
+end
+
+-- 키 파일 저장 (권한 600)
+function save_key(path, key)
+	local file = io.open(path, "w")
+	if file then
+		file:write(key)
+		file:close()
+		os.execute("chmod 600 " .. path)
 	else
-		if action  == "encrypt" then
-			-- 파일이 존재하지 않으면 키를 생성하고 저장
-			encryption_key = generate_and_store_key(file_path)
+		error("Unable to write key file: " .. path)
+	end
+end
+
+-- KEK 생성 및 저장
+function generate_kek()
+	local kek = generate_key()
+	save_key(KEK_PATH, kek)
+	return kek
+end
+
+-- DEK 생성, KEK로 암호화해서 저장
+function generate_and_store_dek(kek)
+	local dek = generate_key()
+	local enc_cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s > %s', dek, kek, DEK_PATH)
+	os.execute(enc_cmd)
+	os.execute("chmod 600 " .. DEK_PATH)
+	return dek
+end
+
+-- KEK로 DEK 복호화
+function decrypt_dek(kek)
+	local cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', DEK_PATH, kek)
+	local handle = io.popen(cmd)
+	local dek = handle:read("*a")
+	handle:close()
+	return dek:gsub("\n", "")
+end
+
+-- DEK 가져오기 (없으면 생성)
+function getEncryptKey(action)
+	local kek, dek
+
+	if file_exists(KEK_PATH) then
+		local f = io.open(KEK_PATH, "r")
+		kek = f:read("*a"):gsub("\n", "")
+		f:close()
+	else
+		kek = generate_kek()
+	end
+
+	if file_exists(DEK_PATH) then
+		dek = decrypt_dek(kek)
+	elseif action == "encrypt" then
+		dek = generate_and_store_dek(kek)
+	else
+		dek = ""
+	end
+
+	return dek
+end
+
+function overwrite_and_delete(path)
+	local size = 0
+
+	-- 먼저 파일 크기 확인
+	local f = io.open(path, "rb")
+	if not f then return end
+	local content = f:read("*a")
+	f:close()
+	size = #content
+
+	-- 3회 덮어쓰기: 0x00, 0xFF, 0x00 (0, 1, 0)
+	local patterns = { string.char(0x00), string.char(0xFF), string.char(0x00) }
+
+	for _, pattern in ipairs(patterns) do
+		local f = io.open(path, "wb")
+		if f then
+			f:write(string.rep(pattern, size))
+			f:close()
 		end
 	end
 
-	return encryption_key
+	-- 마지막으로 삭제
+	os.remove(path)
 end
 
-function file_exists(path)
-    local file = io.open(path, "r")
-    if file then
-        file:close()
-        return true
-    else
-        return false
-    end
-end
-
-function generate_and_store_key(path)
-    -- OpenSSL을 사용하여 32바이트(256비트) 길이의 랜덤 키를 생성합니다.
-    local handle = io.popen("openssl rand -base64 32")
-    local key = handle:read("*a")
-    handle:close()
-
-    -- 개행 문자 제거
-    key = key:gsub("\n", "")
-
-    -- 생성된 키를 파일에 저장
-    local file = io.open(path, "w")
-    if file then
-        file:write(key)
-        file:close()
-    else
-        error("Unable to create the key file: " .. path)
-    end
-
-    return key
+-- 키 파기 함수
+function destroy_keys()
+	overwrite_and_delete("/etc/.kek")
+	overwrite_and_delete("/etc/.dek")
 end
 
 local function parseInput()
