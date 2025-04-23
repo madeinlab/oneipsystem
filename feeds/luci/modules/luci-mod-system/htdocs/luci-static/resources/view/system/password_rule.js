@@ -41,8 +41,12 @@ return view.extend({
         o.rmempty = false;
         o.validate = function(section_id, value) {
             var max = this.map.lookupOption('max_length', section_id)[0].formvalue(section_id);
-            if (value > max)
+            var numValue = Number(value);
+            var numMax = Number(max);
+
+            if (max && (numValue > numMax)) {
                 return _('Minimum length must be less than maximum length');
+            }
             return true;
         };
 
@@ -52,8 +56,12 @@ return view.extend({
         o.rmempty = false;
         o.validate = function(section_id, value) {
             var min = this.map.lookupOption('min_length', section_id)[0].formvalue(section_id);
-            if (value < min)
+            var numValue = Number(value);
+            var numMin = Number(min);
+
+            if (min && (numValue < numMin)) {
                 return _('Maximum length must be greater than minimum length');
+            }
             return true;
         };
 
