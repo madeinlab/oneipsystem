@@ -706,43 +706,39 @@ local methods = {
 	encryptPassword = {
 		args = { password = "string" },
 		call = function(args)
-			if args.password == "" then return "" end
+			if args.password == "" then return { result = "" } end
 	
-			local key = getEncryptKey("encrypt")
-			local cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s', args.password, key)
+			local cmd = string.format('/usr/bin/env luajit /usr/lib/key_manager.lua encrypt "%s"', args.password)
 			local handle = io.popen(cmd)
 			local res = handle:read("*a")
 			handle:close()
-			return { result = res:match("^%s*(.-)%s*$") }
-		end
-	}, 	
-
-	decryptPassword = {
-		args = { password = "string" },
-		call = function(args)
-			if args.password == "" then return "" end
-	
-			local key = getEncryptKey("encrypt")
-			local tmpFile = "/tmp/tmpEncrypted.txt"
-	
-			local cmd = string.format('printf "%%s\\n" "%s" > %s', args.password, tmpFile)
-			os.execute(cmd)
-	
-			cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', tmpFile, key)
-			local handle = io.popen(cmd)
-			local res = handle:read("*a")
-			handle:close()
-	
-			os.execute("rm -f " .. tmpFile)
 	
 			return { result = res:match("^%s*(.-)%s*$") }
 		end
 	},
-
+	
+	decryptPassword = {
+		args = { password = "string" },
+		call = function(args)
+			if args.password == "" then return { result = "" } end
+	
+			-- 여기서만 암호문을 전달하고, test.lua 내부에서 복호화 + DEK 파기 처리
+			local cmd = string.format('/usr/bin/env luajit /usr/lib/key_manager.lua decrypt "%s"', args.password)
+			local handle = io.popen(cmd)
+			local res = handle:read("*a")
+			handle:close()
+	
+			return { result = res:match("^%s*(.-)%s*$") }
+		end
+	},
+	
 	destroyKeys = {
 		call = function()
-			local success = pcall(destroy_keys)
-			if success then
+			local handle = io.popen("/usr/bin/env luajit /usr/lib/key_manager.lua destroy_keys")
+			local result = handle:read("*a")
+			handle:close()
+	
+			if result:match("OK") then
 				return { result = "Keys destroyed successfully" }
 			else
 				return { error = "Key destruction failed" }
@@ -751,113 +747,122 @@ local methods = {
 	}
 }
 
-local KEK_PATH = "/etc/.kek"
-local DEK_PATH = "/etc/.dek"
+-- local KEK_PATH = "/etc/.kek"
+-- local DEK_PATH = "/etc/.dek"
 
--- 파일 존재 여부 확인
-function file_exists(path)
-	local f = io.open(path, "r")
-	if f then f:close() return true else return false end
-end
+-- -- 파일 존재 여부 확인
+-- function file_exists(path)
+-- 	local f = io.open(path, "r")
+-- 	if f then f:close() return true else return false end
+-- end
 
--- 랜덤 키 생성
-function generate_key()
-	local handle = io.popen("openssl rand -base64 32")
-	local key = handle:read("*a")
-	handle:close()
-	return key:gsub("\n", "")
-end
+-- -- 랜덤 키 생성
+-- function generate_key()
+-- 	local handle = io.popen("openssl rand -base64 32")
+-- 	local key = handle:read("*a")
+-- 	handle:close()
+-- 	return key:gsub("\n", "")
+-- end
 
--- 키 파일 저장 (권한 600)
-function save_key(path, key)
-	local file = io.open(path, "w")
-	if file then
-		file:write(key)
-		file:close()
-		os.execute("chmod 600 " .. path)
-	else
-		error("Unable to write key file: " .. path)
-	end
-end
+-- -- 키 파일 저장 (권한 600)
+-- function save_key(path, key)
+-- 	local file = io.open(path, "w")
+-- 	if file then
+-- 		file:write(key)
+-- 		file:close()
+-- 		os.execute("chmod 600 " .. path)
+-- 	else
+-- 		error("Unable to write key file: " .. path)
+-- 	end
+-- end
 
--- KEK 생성 및 저장
-function generate_kek()
-	local kek = generate_key()
-	save_key(KEK_PATH, kek)
-	return kek
-end
+-- -- KEK 생성 및 저장
+-- function generate_kek()
+-- 	local kek = generate_key()
+-- 	save_key(KEK_PATH, kek)
+-- 	return kek
+-- end
 
--- DEK 생성, KEK로 암호화해서 저장
-function generate_and_store_dek(kek)
-	local dek = generate_key()
-	local enc_cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s > %s', dek, kek, DEK_PATH)
-	os.execute(enc_cmd)
-	os.execute("chmod 600 " .. DEK_PATH)
-	return dek
-end
+-- -- DEK 생성, KEK로 암호화해서 저장
+-- function generate_and_store_dek(kek)
+-- 	local dek = generate_key()
+-- 	local enc_cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s > %s', dek, kek, DEK_PATH)
+-- 	os.execute(enc_cmd)
+-- 	os.execute("chmod 600 " .. DEK_PATH)
+-- 	return dek
+-- end
 
--- KEK로 DEK 복호화
-function decrypt_dek(kek)
-	local cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', DEK_PATH, kek)
-	local handle = io.popen(cmd)
-	local dek = handle:read("*a")
-	handle:close()
-	return dek:gsub("\n", "")
-end
+-- -- KEK로 DEK 복호화
+-- function decrypt_dek(kek)
+-- 	local cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', DEK_PATH, kek)
+-- 	local handle = io.popen(cmd)
+-- 	local dek = handle:read("*a")
+-- 	handle:close()
+-- 	return dek:gsub("\n", "")
+-- end
 
--- DEK 가져오기 (없으면 생성)
-function getEncryptKey(action)
-	local kek, dek
+-- -- DEK 가져오기 (없으면 생성)
+-- function getEncryptKey(action)
+-- 	local kek, dek
 
-	if file_exists(KEK_PATH) then
-		local f = io.open(KEK_PATH, "r")
-		kek = f:read("*a"):gsub("\n", "")
-		f:close()
-	else
-		kek = generate_kek()
-	end
+-- 	if file_exists(KEK_PATH) then
+-- 		local f = io.open(KEK_PATH, "r")
+-- 		kek = f:read("*a"):gsub("\n", "")
+-- 		f:close()
+-- 	else
+-- 		kek = generate_kek()
+-- 	end
 
-	if file_exists(DEK_PATH) then
-		dek = decrypt_dek(kek)
-	elseif action == "encrypt" then
-		dek = generate_and_store_dek(kek)
-	else
-		dek = ""
-	end
+-- 	if file_exists(DEK_PATH) then
+-- 		dek = decrypt_dek(kek)
+-- 	elseif action == "encrypt" then
+-- 		dek = generate_and_store_dek(kek)
+-- 	else
+-- 		dek = ""
+-- 	end
 
-	return dek
-end
+-- 	local dek_buf, dek_len = copy_to_cbuf(dek)
+-- 	destroy_string(dek)
+-- 	return dek_buf, dek_len
+-- end
 
-function overwrite_and_delete(path)
-	local size = 0
+-- function destroy_string(str)
+-- 	if type(str) ~= "string" then return end
+-- 	local dummy = string.rep("X", #str)
+-- 	str = nil  -- 기존 문자열 참조 해제
+-- 	dummy = nil  -- 덮어쓴 더미도 해제
+-- 	collectgarbage("collect")  -- 즉시 GC 유도
+-- end
 
-	-- 먼저 파일 크기 확인
-	local f = io.open(path, "rb")
-	if not f then return end
-	local content = f:read("*a")
-	f:close()
-	size = #content
+-- function overwrite_and_delete(path)
+-- 	local size = 0
 
-	-- 3회 덮어쓰기: 0x00, 0xFF, 0x00 (0, 1, 0)
-	local patterns = { string.char(0x00), string.char(0xFF), string.char(0x00) }
+-- 	-- 먼저 파일 크기 확인
+-- 	local f = io.open(path, "rb")
+-- 	if not f then return end
+-- 	local content = f:read("*a")
+-- 	f:close()
+-- 	size = #content
 
-	for _, pattern in ipairs(patterns) do
-		local f = io.open(path, "wb")
-		if f then
-			f:write(string.rep(pattern, size))
-			f:close()
-		end
-	end
+-- 	-- 3회 덮어쓰기: 0x00, 0xFF, 0x00 (0, 1, 0)
+-- 	local patterns = { string.char(0x00), string.char(0xFF), string.char(0x00) }
+-- 	for _, pattern in ipairs(patterns) do
+-- 		local f = io.open(path, "wb")
+-- 		if f then
+-- 			f:write(string.rep(pattern, size))
+-- 			f:close()
+-- 		end
+-- 	end
 
-	-- 마지막으로 삭제
-	os.remove(path)
-end
+-- 	-- 마지막으로 삭제
+-- 	os.remove(path)
+-- end
 
--- 키 파기 함수
-function destroy_keys()
-	overwrite_and_delete("/etc/.kek")
-	overwrite_and_delete("/etc/.dek")
-end
+-- -- 키 파기 함수
+-- function destroy_keys()
+-- 	overwrite_and_delete("/etc/.kek")
+-- 	overwrite_and_delete("/etc/.dek")
+-- end
 
 local function parseInput()
 	local parse = json.new()

@@ -203,7 +203,10 @@ define Package/$(PKG_NAME)/install
 	  cp -pR $(PKG_BUILD_DIR)/root/* $(1)/; \
 	  if [ -e $(1)/usr/libexec/rpcd/luci ]; then \
 	    chmod +x $(1)/usr/libexec/rpcd/luci; \
-	  fi \
+	  fi; \
+	  if [ -e $(1)/usr/lib/key_manager.lua ]; then \
+	    chmod +x $(1)/usr/lib/key_manager.lua; \
+	  fi; \
 	else true; fi
 	if [ -d $(PKG_BUILD_DIR)/src ]; then \
 	  $(call Build/Install/Default) \
