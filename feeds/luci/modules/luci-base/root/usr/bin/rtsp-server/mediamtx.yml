@@ -1,0 +1,8 @@
+rtsp: yes
+rtspTransports: [udp, multicast, tcp]
+rtspEncryption: "no"
+rtspAddress: :10554
+
+paths:
+  camera1:
+    source: "rtsp://admin:admin1357@209.142.67.10:554/media/1/2/Profile2"
