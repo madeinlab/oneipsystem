@@ -18,7 +18,7 @@ function verify_password(username, password, current_format, user_section)
     elseif current_format == "$6$" then
         -- 1. 저장된 해시값 가져오기
         local stored_hash = user_section.password:trim()
-        nixio.syslog("debug", string.format("Stored hash from rpcd: %s", stored_hash))
+        -- nixio.syslog("debug", string.format("Stored hash from rpcd: %s", stored_hash))
 
         -- 2. 저장된 해시에서 salt 추출 ($6$salt$hash 형식)
         local salt = stored_hash:match("^%$6%$([^%$]+)%$")
@@ -26,7 +26,7 @@ function verify_password(username, password, current_format, user_section)
             nixio.syslog("err", "Failed to extract salt from stored hash")
             return false
         end
-        nixio.syslog("debug", string.format("Extracted salt: %s", salt))
+        -- nixio.syslog("debug", string.format("Extracted salt: %s", salt))
 
         -- 3. 추출한 salt로 현재 비밀번호의 해시값 생성
         local cmd = string.format('echo "%s" | openssl passwd -6 -salt "%s" -stdin', password, salt)
@@ -36,7 +36,7 @@ function verify_password(username, password, current_format, user_section)
             nixio.syslog("err", "Failed to generate hash for current password")
             return false
         end
-        nixio.syslog("debug", string.format("Generated hash for verification: %s", current_hash:trim()))
+        -- nixio.syslog("debug", string.format("Generated hash for verification: %s", current_hash:trim()))
 
         -- 4. 해시값 비교
         local result = (stored_hash == current_hash:trim())
@@ -60,6 +60,15 @@ function action_change_password()
     local nixio = require "nixio"
     local util = require "luci.util"
     local i18n = require "luci.i18n"
+
+    -- 최초 로그인 시에만 changepassword.htm 으로 이동. 그 외는 접근 금지.
+    local first_login = uci:get("system", "@system[0]", "first_login") or "0"
+    if first_login ~= "1" then
+        http.status(403, "Forbidden")
+        http.prepare_content("text/plain")
+        http.write("Access denied")
+        return
+    end
 
     nixio.syslog("debug", "Password change attempt started")
 
@@ -131,7 +140,7 @@ function action_change_password()
                                 local new_hash = sys.exec(cmd)
 
                                 if new_hash and new_hash:match("^%$6%$") then
-                                    nixio.syslog("debug", string.format("Generated new hash: %s", new_hash:trim()))
+                                    -- nixio.syslog("debug", string.format("Generated new hash: %s", new_hash:trim()))
                                     -- 새 해시값을 UCI에 저장
                                     local section_name = user_section[".name"]
                                     nixio.syslog("debug", string.format("Updating UCI section: %s", section_name))
@@ -152,9 +161,23 @@ function action_change_password()
                         end
 
                         if success then
-                            if current_password:sub(1, 3) == "$6$" then
-                                sys.exec("/etc/init.d/rpcd reload")
+                            -- 최초 로그인 플래그 설정 (false)
+                            local ok = uci:set("system", "@system[0]", "first_login", "0")
+                            if ok then
+                                local committed = uci:commit("system")
+                                if committed then
+                                    if current_password:sub(1, 3) == "$6$" then
+                                        sys.exec("/etc/init.d/rpcd reload")
+                                    end
+                                else
+                                    nixio.syslog("err", "UCI commit to system failed")
+                                end
+                            else
+                                nixio.syslog("err", "UCI set first_login failed")
                             end
+                            -- if current_password:sub(1, 3) == "$6$" then
+                            --     sys.exec("/etc/init.d/rpcd reload")
+                            -- end
 
                             -- 세션의 default_login_flag를 false로 업데이트
                             if dispatcher.context.authsession then

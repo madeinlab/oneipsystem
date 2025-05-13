@@ -857,6 +857,10 @@ local function session_setup(user, pass)
 				-- 세션 검색 먼저 수행
 				local sdata = session_retrieve(login.ubus_rpc_session)
 				if sdata then
+					-- 최초 로그인 플래그 설정 (true)
+					uci:set("system", "@system[0]", "first_login", "1")
+					uci:commit("system")
+
 					-- 리다이렉션 수행
 					http.redirect(build_url("admin/changepassword"))
 					return sdata
@@ -877,6 +881,14 @@ local function session_setup(user, pass)
 	})
 
 	if type(login) == "table" and type(login.ubus_rpc_session) == "string" then
+		-- 방어코드: first_login 값이 여전히 "1"인 경우에만 "0"으로 변경
+		local current = uci:get("system", "@system[0]", "first_login")
+		if current == "1" then
+			uci:set("system", "@system[0]", "first_login", "0")
+			uci:commit("system")
+			nixio.syslog("debug", "first_login flag forcibly cleared on general login")
+		end
+		
 		-- 로그인 성공 시 카운트 초기화
 		login_attempts[key].count = 0
 		save_attempts()
