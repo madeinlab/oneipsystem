@@ -3,27 +3,46 @@
 . /lib/functions.sh
 
 OVERLAY="$( grep ' /overlay ' /proc/mounts )"
+TEST_MODE_FILE="/tmp/button_test_mode"
 
 case "$ACTION" in
 pressed)
 	[ -z "$OVERLAY" ] && return 0
 
+	if [ -f "$TEST_MODE_FILE" ]; then
+		echo "[TEST MODE] Button pressed event" > /dev/console
+	fi
+
 	return 5
 ;;
 timeout)
-	. /etc/diag.sh
-	set_state failsafe
+	if [ -f "$TEST_MODE_FILE" ]; then
+		echo "[TEST MODE] Button pressed more 5secs" > /dev/console
+	else
+		. /etc/diag.sh
+		set_state failsafe
+	fi
 ;;
 released)
 	if [ "$SEEN" -lt 1 ]
 	then
 		echo "REBOOT" > /dev/console
 		sync
-		reboot
+		if [ -f "$TEST_MODE_FILE" ]; then
+			echo "[TEST MODE] Button released event" > /dev/console
+			echo "[TEST MODE] Button pressed for less than 1 second" > /dev/console
+		else
+			reboot
+		fi
 	elif [ "$SEEN" -ge 5 -a -n "$OVERLAY" ]
 	then
 		echo "FACTORY RESET" > /dev/console
-		jffs2reset -y && reboot &
+		if [ -f "$TEST_MODE_FILE" ]; then
+			echo "[TEST MODE] Button released event" > /dev/console
+			echo "[TEST MODE] Button pressed for 5 or more seconds" > /dev/console
+		else
+			jffs2reset -y && reboot &
+		fi
 	fi
 ;;
 esac

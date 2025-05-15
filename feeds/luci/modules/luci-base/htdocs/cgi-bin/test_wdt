@@ -1,0 +1,101 @@
+#!/usr/bin/lua
+require "uci"
+
+-- HTTP header
+print("Content-type: text/plain; charset=UTF-8\n\n")
+
+-- Query string parser
+local function parse_query_string()
+    local qs = os.getenv("QUERY_STRING") or ""
+    local params = {}
+    for k, v in qs:gmatch("([^&=?]+)=([^&=?]+)") do
+        params[k] = v
+    end
+    return params
+end
+
+-- URL decode function
+local function urldecode(str)
+    str = str:gsub('+', ' ')
+    str = str:gsub('%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end)
+    return str
+end
+
+-- Execute command and get output
+local function execute_command(cmd)
+    local handle = io.popen(cmd)
+    if handle then
+        local result = handle:read("*a")
+        handle:close()
+        return result
+    end
+    return nil
+end
+
+-- Watchdog test control function
+local function control_watchdog_test(mode)
+    if mode == "start" then
+        -- Start watchdog with magicclose
+        local ret = execute_command("ubus call system watchdog '{\"magicclose\":true}'")
+        local rv = execute_command("ubus call system watchdog '{\"stop\":true}'")
+        if rv then
+            print("Watchdog status: " .. rv)
+            -- Write to watchdog device
+            local wdt_ret = os.execute("echo 1 > /dev/watchdog")
+            if wdt_ret == 0 then
+                return true, "Watchdog started successfully"
+            else
+                return false, "Failed to write to /dev/watchdog"
+            end
+        end
+        return false, "Failed to start watchdog via ubus"
+    elseif mode == "stop" then
+        -- Stop watchdog
+        local ret = execute_command("ubus call system watchdog '{\"magicclose\":true}'")
+        local rv = execute_command("ubus call system watchdog '{\"stop\":true}'")
+        if rv then
+            print("Watchdog status: " .. rv)
+            -- Close watchdog device
+            local wdt_ret = os.execute("echo V > /dev/watchdog")
+            if wdt_ret == 0 then
+                return true, "Watchdog stopped successfully"
+            else
+                return false, "Failed to close watchdog device"
+            end
+        end
+        return false, "Failed to stop watchdog via ubus"
+    end
+    return false, "Invalid mode"
+end
+
+-- Get query parameters
+local params = parse_query_string()
+local mode = params["mode"]
+
+if mode then
+    mode = urldecode(mode)
+    
+    -- Validate mode
+    if mode ~= "start" and mode ~= "stop" then
+        print("Invalid mode. Use 'start' or 'stop'")
+        return
+    end
+    
+    -- Control watchdog test
+    local success, message = control_watchdog_test(mode)
+    if success then
+        print(message)
+        if mode == "start" then
+            print("\nWatchdog is now running.")
+            print("The system will reboot after 30 seconds.")
+        end
+    else
+        print("Error: " .. message)
+    end
+else
+    print("Please provide test mode.")
+    print("Example: ?mode=start")
+    print("Modes:")
+    print("  start: Start watchdog with magicclose")
+    print("  stop:  Stop watchdog")
+end 

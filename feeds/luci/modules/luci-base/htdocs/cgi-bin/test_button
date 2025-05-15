@@ -1,0 +1,92 @@
+#!/usr/bin/lua
+require "uci"
+
+-- HTTP header
+print("Content-type: text/plain; charset=UTF-8\n\n")
+
+-- Query string parser
+local function parse_query_string()
+    local qs = os.getenv("QUERY_STRING") or ""
+    local params = {}
+    for k, v in qs:gmatch("([^&=?]+)=([^&=?]+)") do
+        params[k] = v
+    end
+    return params
+end
+
+-- URL decode function
+local function urldecode(str)
+    str = str:gsub('+', ' ')
+    str = str:gsub('%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end)
+    return str
+end
+
+-- Button test control function
+local function control_button_test(mode, test_type)
+    local test_mode_file = "/tmp/button_test_mode"
+    
+    if mode == "on" then
+        -- Create test mode file
+        local file = io.open(test_mode_file, "w")
+        if file then
+            file:write(test_type or "normal")
+            file:close()
+            return true
+        end
+    elseif mode == "off" then
+        -- Remove test mode file
+        os.remove(test_mode_file)
+        return true
+    end
+    
+    return false
+end
+
+-- Get query parameters
+local params = parse_query_string()
+local mode = params["mode"]
+local test_type = params["type"]
+
+if mode then
+    mode = urldecode(mode)
+    
+    -- Validate mode
+    if mode ~= "on" and mode ~= "off" then
+        print("Invalid mode. Use 'on' or 'off'")
+        return
+    end
+    
+    -- Validate test type if provided
+    if test_type then
+        test_type = urldecode(test_type)
+        if test_type ~= "normal" and test_type ~= "1sec" and test_type ~= "5sec" then
+            print("Invalid test type. Use 'normal', '1sec', or '5sec'")
+            return
+        end
+    end
+    
+    -- Control button test mode
+    if control_button_test(mode, test_type) then
+        if mode == "on" then
+            print("Button test mode has been enabled.")
+            if test_type then
+                print("Test type: " .. test_type)
+            end
+            print("Press the reset button to test.")
+            print("Available events: pressed, timeout, released")
+            print("Test types:")
+            print("  normal: Default behavior")
+            print("  1sec: Simulate 1 second press")
+            print("  5sec: Simulate 5 second press")
+        else
+            print("Button test mode has been disabled.")
+        end
+    else
+        print("Failed to control button test mode.")
+    end
+else
+    print("Please provide test mode.")
+    print("Example: ?mode=on&type=1sec")
+    print("Modes: on, off")
+    print("Types: normal, 1sec, 5sec")
+end 

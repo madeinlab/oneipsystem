@@ -1,0 +1,91 @@
+#!/usr/bin/lua
+require "uci"
+
+-- HTTP header
+print("Content-type: text/plain; charset=UTF-8\n\n")
+
+-- Query string parser
+local function parse_query_string()
+    local qs = os.getenv("QUERY_STRING") or ""
+    local params = {}
+    for k, v in qs:gmatch("([^&=?]+)=([^&=?]+)") do
+        params[k] = v
+    end
+    return params
+end
+
+-- URL decode function
+local function urldecode(str)
+    str = str:gsub('+', ' ')
+    str = str:gsub('%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end)
+    return str
+end
+
+-- LED control function
+local function control_led(led_name, state)
+    local led_path = "/sys/class/leds/" .. led_name .. "/brightness"
+    local value = (state == "on") and "1" or "0"
+    
+    local file = io.open(led_path, "w")
+    if file then
+        file:write(value)
+        file:close()
+        return true
+    end
+    return false
+end
+
+-- Get query parameters
+local params = parse_query_string()
+local led = params["led"]
+local state = params["state"]
+
+-- Available LEDs
+local available_leds = {
+    ["lan"] = "green:lan",
+    ["wall"] = "green:wan"
+}
+
+if led and state then
+    led = urldecode(led)
+    state = urldecode(state)
+    
+    -- Validate state
+    if state ~= "on" and state ~= "off" then
+        print("Invalid state. Use 'on' or 'off'")
+        return
+    end
+    
+    -- Handle 'all' option
+    if led == "all" then
+        local success = true
+        for name, path in pairs(available_leds) do
+            if not control_led(path, state) then
+                success = false
+                print("Failed to control LED " .. name)
+            end
+        end
+        if success then
+            print("All LEDs have been turned " .. state)
+        end
+        return
+    end
+    
+    -- Validate LED name
+    if not available_leds[led] then
+        print("Invalid LED name. Available LEDs: lan, wall, all")
+        return
+    end
+    
+    -- Control LED
+    if control_led(available_leds[led], state) then
+        print("LED " .. led .. " has been turned " .. state)
+    else
+        print("Failed to control LED " .. led)
+    end
+else
+    print("Please provide LED name and state.")
+    print("Example: ?led=lan&state=on")
+    print("Available LEDs: lan, wall, all")
+    print("States: on, off")
+end 

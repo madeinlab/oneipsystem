@@ -28,7 +28,7 @@ DD_COUNT=$(( ${ERASE_SIZE} / ${DEFAULT_BS} ))
 
 MODEL_NAME_OFFSET=0
 MODEL_NAME_MAX_SIZE=32
-SERIAL_NO_OFFSET=64
+SERIAL_NO_OFFSET=48
 SERIAL_NO_MAX_SIZE=16
 
 #default:7622
@@ -54,7 +54,11 @@ case `cat /tmp/sysinfo/board_name` in
 		lan_mac_offset=0x1F800
 		wan_mac_offset=0x1F806
 		;;
-	*7988*)
+	*7628*)
+		lan_mac_offset=0x4
+		wan_mac_offset=0x4
+		;;
+	*7987*|*7988*)
 		#1024k - 18 byte
 		lan2_mac_offset=0xFFFEE
 		lan_mac_offset=0xFFFF4
@@ -174,7 +178,7 @@ SetMac()
 
 SetSerial()
 {
-	if [ "$#" != "4" ]; then
+	if [ "$#" != "19" ]; then
 		echo "Invalid parameter. only need one string"
 		exit 1
 	fi
@@ -190,7 +194,7 @@ SetSerial()
 
 SetModel()
 {
-	if [ "$#" != "4" ]; then
+	if [ "$#" != "35" ]; then
 		echo "Invalid parameter. only need one string"
 		exit 1
 	fi
@@ -208,7 +212,7 @@ SetModel()
 # 2. Set/Get the offset data: mtk_factory -r/-w length offset /data
 # 3. Overwrite from offset1 to offset2 by length byte : mtk_factory -o length from to
 if [ "$1" == "-r" ]; then
-	if [ "$2" == "lan" -o "$2" == "lan2" -o "$2" == "wan" -o "$2" == "serial_no" -o "$2" == "model" ]; then
+	if [ "$2" == "lan" -o "$2" == "lan2" -o "$2" == "wan" ]; then
 		GetMac $2
 	elif [ "$2" == "serial_no" ]; then
 		GetSerial $2

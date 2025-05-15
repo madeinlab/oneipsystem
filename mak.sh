@@ -83,5 +83,13 @@ awk -v d="$DAYS" -v h="$HOURS" -v m="$MINUTES" -v sec="$SECONDS" \
 				else if(m) printf "%dmin %dsec\n", m, sec;
 				else       printf "%d seconds\n", sec}'
 
+IMG_POS=`pwd`
+IMG_NAME=one_${IMG_POS##*/}.bin
+DEST_DIR="~/images"
+if [ -d $DEST_DIR ]; then
+	echo "cp bin/targets/mediatek/mt7981-glibc/*sysupgrade.bin ~/images/${IMG_NAME}"
+	cp bin/targets/mediatek/mt7981-glibc/*sysupgrade.bin ~/images/${IMG_NAME}
+fi
+
 export SCRIPT_PROGESS=0
 

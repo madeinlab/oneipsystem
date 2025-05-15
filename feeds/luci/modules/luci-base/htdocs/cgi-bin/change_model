@@ -1,0 +1,110 @@
+#!/usr/bin/lua
+require "uci"
+
+-- HTTP header
+print("Content-type: text/plain; charset=UTF-8\n\n")
+
+-- Query string parser
+local function parse_query_string()
+    local qs = os.getenv("QUERY_STRING") or ""
+    local params = {}
+    for k, v in qs:gmatch("([^&=?]+)=([^&=?]+)") do
+        params[k] = v
+    end
+    return params
+end
+
+-- URL decode function
+local function urldecode(str)
+    str = str:gsub('+', ' ')
+    str = str:gsub('%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end)
+    return str
+end
+
+-- Check for meaningless hex pattern
+local function is_meaningless_hex(str)
+    if not str then return true end
+    local parts = {}
+    for part in str:gmatch("[^-]+") do
+        table.insert(parts, part)
+    end
+    if #parts <= 1 then return false end
+    local first = parts[1]
+    for _, part in ipairs(parts) do
+        if part ~= first then return false end
+    end
+    return true
+end
+
+-- Check if string contains only printable ASCII characters
+local function is_printable_ascii(str)
+    for i = 1, #str do
+        local byte = str:byte(i)
+        if byte < 32 or byte > 126 then
+            print("Non-printable character found at position " .. i .. ": " .. byte)
+            return false
+        end
+    end
+    return true
+end
+
+-- Model string validation
+local function is_valid_model(model)
+    if not model or model == "" then
+        return false, "Model value is empty."
+    end
+    
+    -- Debug: Print the model being validated
+    print("Validating model: " .. model)
+    
+    if #model > 32 then
+        return false, "Model value exceeds 32 characters."
+    end
+    
+    if not is_printable_ascii(model) then
+        return false, "Model value contains non-printable ASCII characters."
+    end
+    
+    if is_meaningless_hex(model) then
+        return false, "Invalid model value."
+    end
+    
+    return true
+end
+
+-- Convert model to space-separated hex bytes
+local function model_to_bytes(model)
+    local bytes = {}
+    for i = 1, #model do
+        table.insert(bytes, string.format("%02X", model:byte(i)))
+    end
+    -- Pad to 32 bytes with 0x00
+    for i = #model+1, 32 do
+        table.insert(bytes, "00")
+    end
+    return table.concat(bytes, " ")
+end
+
+-- Get query parameters
+local params = parse_query_string()
+local new_model = params["model"]
+
+if new_model then
+    new_model = urldecode(new_model)
+    local is_valid, error_msg = is_valid_model(new_model)
+    
+    if is_valid then
+        -- Save model to factory flash
+        local model_bytes = model_to_bytes(new_model)
+        local ret = os.execute("/sbin/mtk_factory_rw.sh -w model " .. model_bytes)
+        if ret == 0 then
+            print("Model has been successfully changed: " .. new_model)
+        else
+            print("Failed to change model.")
+        end
+    else
+        print("Invalid model format: " .. error_msg)
+    end
+else
+    print("Please provide a model value. Example: ?model=UI-2PV")
+end 

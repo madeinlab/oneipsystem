@@ -1,0 +1,101 @@
+#!/usr/bin/lua
+require "uci"
+
+-- HTTP header
+print("Content-type: text/plain; charset=UTF-8\n\n")
+
+-- Query string parser
+local function parse_query_string()
+    local qs = os.getenv("QUERY_STRING") or ""
+    local params = {}
+    for k, v in qs:gmatch("([^&=?]+)=([^&=?]+)") do
+        params[k] = v
+    end
+    return params
+end
+
+-- Serial number validation: UIyyMMnnnnn (UI + 2 digits year + 2 digits month + 5 digits number)
+local function is_valid_serial(serial)
+    if not serial then return false end
+    
+    -- Debug: Print the serial number being validated
+    print("Validating serial number: " .. serial)
+    
+    -- Check length
+    if #serial ~= 11 then
+        print("Failed: Length must be 11 characters")
+        return false
+    end
+    
+    -- Check prefix
+    if serial:sub(1, 2) ~= "UI" then
+        print("Failed: Must start with 'UI'")
+        return false
+    end
+    
+    -- Extract parts
+    local year = serial:sub(3, 4)
+    local month = serial:sub(5, 6)
+    local number = serial:sub(7, 11)
+    
+    print("Year: " .. year)
+    print("Month: " .. month)
+    print("Number: " .. number)
+    
+    -- Validate month (01-12)
+    local month_num = tonumber(month)
+    if not month_num or month_num < 1 or month_num > 12 then
+        print("Failed: Month must be between 01 and 12")
+        return false
+    end
+    
+    -- Validate number (5 digits)
+    if not number:match("^%d%d%d%d%d$") then
+        print("Failed: Number must be 5 digits")
+        return false
+    end
+    
+    print("All validations passed")
+    return true
+end
+
+-- Convert serial to space-separated hex bytes
+local function serial_to_bytes(serial)
+    local bytes = {}
+    for i = 1, #serial do
+        table.insert(bytes, string.format("%02X", serial:byte(i)))
+    end
+    -- Pad to 16 bytes with 0x00
+    for i = #serial+1, 16 do
+        table.insert(bytes, "00")
+    end
+    return table.concat(bytes, " ")
+end
+
+-- URL decode function
+local function urldecode(str)
+    str = str:gsub('+', ' ')
+    str = str:gsub('%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end)
+    return str
+end
+
+-- Get query parameters
+local params = parse_query_string()
+local new_serial = params["serial"]
+
+if new_serial then
+    new_serial = urldecode(new_serial)
+    if is_valid_serial(new_serial) then
+        local serial_bytes = serial_to_bytes(new_serial)
+        local ret = os.execute("/sbin/mtk_factory_rw.sh -w serial_no " .. serial_bytes)
+        if ret == 0 then
+            print("Serial number has been successfully changed: " .. new_serial)
+        else
+            print("Failed to change serial number.")
+        end
+    else
+        print("Invalid serial number format. (UIyyMMnnnnn, e.g. UI250500001)")
+    end
+else
+    print("Please provide a serial value. Example: ?serial=UI250500001")
+end 
