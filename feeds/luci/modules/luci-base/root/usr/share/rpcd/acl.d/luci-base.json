@@ -21,7 +21,8 @@
 			"ubus": {
 				"file": [ "list" ],
 				"uci": [ "changes", "get", "state" ],
-				"luci": [ "getProcessList" ]
+				"luci": [ "getProcessList" ],
+				"system": [ "watchdog" ]
 			},
 			"uci": [ "admin_manage", "rpcd" ]
 		},
@@ -30,12 +31,14 @@
 			"file": {
 				"/etc/luci-uploads/*": [ "write" ],
 				"/etc/config/rpcd": [ "write" ],
-				"/etc/shadow": [ "write" ]
+				"/etc/shadow": [ "write" ],
+				"/dev/watchdog": [ "write" ]
 			},
 			"ubus": {
 				"file": [ "remove" ],
 				"uci": [ "add", "apply", "confirm", "commit", "delete", "order", "rename", "set", "changes" ],
-				"luci": [ "addCamera", "removeCamera" ]
+				"luci": [ "addCamera", "removeCamera" ],
+				"system": [ "watchdog" ]
 			},
 			"uci": [ "admin_manage", "rpcd" ]
 		}
