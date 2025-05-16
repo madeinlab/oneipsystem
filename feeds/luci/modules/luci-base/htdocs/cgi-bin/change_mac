@@ -19,18 +19,6 @@ local function is_valid_mac(mac)
     return mac and mac:match("^%x%x:%x%x:%x%x:%x%x:%x%x:%x%x$")
 end
 
--- MAC 주소에 +1 계산
-local function increment_mac(mac)
-    local parts = {}
-    for part in mac:gmatch("%x%x") do
-        table.insert(parts, part)
-    end
-    local last_byte = tonumber(parts[6], 16) -- 마지막 바이트를 10진수로 변환
-    last_byte = (last_byte + 1) % 256        -- +1 후 255 초과 시 0으로
-    parts[6] = string.format("%02X", last_byte) -- 다시 16진수로 변환
-    return table.concat(parts, ":")
-end
-
 -- MAC 주소를 공백으로 구분된 바이트로 변환
 local function mac_to_bytes(mac)
     local parts = {}
@@ -42,38 +30,33 @@ end
 
 -- 쿼리 파라미터 가져오기
 local params = parse_query_string()
-local interface = params["interface"] or "wan"
+local interface = params["interface"]
 local new_mac = params["mac"]
 
 -- MAC 주소 처리
-if new_mac then
+if interface and new_mac then
     if is_valid_mac(new_mac) then
-        -- UCI 객체 생성
         local uci = uci.cursor()
-
-        -- wan 인터페이스 (eth0.2)의 MAC 주소 설정
-        uci:set("network", "@device[2]", "macaddr", new_mac)
-
-        -- eth0.1의 MAC 주소를 계산 (+1)
-        local incremented_mac = increment_mac(new_mac)
-        uci:set("network", "@device[1]", "macaddr", incremented_mac)
-
-        -- 변경 사항 저장
-        uci:commit("network")
-
-        -- Factory flash에 wan MAC 주소 저장
-        local mac_bytes = mac_to_bytes(new_mac)
-        os.execute("/sbin/mtk_factory_rw.sh -w wan " .. mac_bytes)
-
-        -- 네트워크 재시작
-        os.execute("ifdown " .. interface .. " && ifup " .. interface)
-
-        -- 결과 메시지 출력
-        print("MAC address has been successfully changed: " .. new_mac .. " (eth0.2), " .. incremented_mac .. " (eth0.1)")
+        if interface == "lan" then
+            uci:set("network", "br-lan", "macaddr", new_mac)
+            uci:commit("network")
+            os.execute("/etc/init.d/network restart")
+            print("LAN (br-lan) MAC address has been successfully changed: " .. new_mac)
+        elseif interface == "wan" then
+            uci:set("network", "wan", "macaddr", new_mac)
+            uci:commit("network")
+            -- Factory flash에 wan MAC 주소 저장
+            local mac_bytes = mac_to_bytes(new_mac)
+            os.execute("/sbin/mtk_factory_rw.sh -w wan " .. mac_bytes)
+            os.execute("/etc/init.d/network restart")
+            print("WAN (eth1) MAC address has been successfully changed: " .. new_mac)
+        else
+            print("Unknown interface: " .. tostring(interface))
+        end
     else
         print("Invalid MAC address format.")
     end
 else
-    print("Please provide a MAC address.")
+    print("Please provide both interface and mac parameters.")
 end
 

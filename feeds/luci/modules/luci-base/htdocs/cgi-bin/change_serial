@@ -14,7 +14,7 @@ local function parse_query_string()
     return params
 end
 
--- Serial number validation: UIyyMMnnnnn (UI + 2 digits year + 2 digits month + 5 digits number)
+-- Serial number validation: DWyyMMnnnnn (DW + 2 digits year + 2 digits month + 5 digits number)
 local function is_valid_serial(serial)
     if not serial then return false end
     
@@ -28,8 +28,8 @@ local function is_valid_serial(serial)
     end
     
     -- Check prefix
-    if serial:sub(1, 2) ~= "UI" then
-        print("Failed: Must start with 'UI'")
+    if serial:sub(1, 2) ~= "DW" then
+        print("Failed: Must start with 'DW'")
         return false
     end
     
@@ -94,8 +94,8 @@ if new_serial then
             print("Failed to change serial number.")
         end
     else
-        print("Invalid serial number format. (UIyyMMnnnnn, e.g. UI250500001)")
+        print("Invalid serial number format. (DWyyMMnnnnn, e.g. DW250500001)")
     end
 else
-    print("Please provide a serial value. Example: ?serial=UI250500001")
+    print("Please provide a serial value. Example: ?serial=DW250500001")
 end 
