@@ -1,0 +1,23 @@
+
+. /lib/functions/leds.sh
+. /lib/functions/uci-defaults.sh
+
+board=$(board_name)
+
+board_config_update
+
+case $board in
+
+mediatek,mt7981-spim-snand-gsw-rfb)
+	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth1" "link tx rx"
+	ucidef_set_led_timer "status" "STATUS" "green:status" "500" "500"
+	;;
+*)
+	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth1" "link tx rx"
+	ucidef_set_led_heartbeat "sts" "STS" "green:status"
+	;;
+esac
+
+board_config_flush
+
+exit 0

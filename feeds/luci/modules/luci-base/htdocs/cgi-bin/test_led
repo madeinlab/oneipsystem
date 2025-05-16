@@ -42,8 +42,8 @@ local state = params["state"]
 
 -- Available LEDs
 local available_leds = {
-    ["lan"] = "green:lan",
-    ["wall"] = "green:wan"
+    ["wan"] = "green:wan",
+    ["sts"] = "green:status"
 }
 
 if led and state then
@@ -73,7 +73,7 @@ if led and state then
     
     -- Validate LED name
     if not available_leds[led] then
-        print("Invalid LED name. Available LEDs: lan, wall, all")
+        print("Invalid LED name. Available LEDs: wan, status, all")
         return
     end
     
@@ -85,7 +85,7 @@ if led and state then
     end
 else
     print("Please provide LED name and state.")
-    print("Example: ?led=lan&state=on")
-    print("Available LEDs: lan, wall, all")
+    print("Example: ?led=wan&state=on")
+    print("Available LEDs: wan, status, all")
     print("States: on, off")
 end 

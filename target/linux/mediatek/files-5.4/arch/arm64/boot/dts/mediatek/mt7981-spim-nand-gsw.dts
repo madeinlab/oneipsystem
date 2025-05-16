@@ -1,5 +1,6 @@
 /dts-v1/;
 #include "mt7981.dtsi"
+
 / {
 	model = "DooWon OneIPSystem";
 	compatible = "mediatek,mt7981-spim-snand-gsw-rfb";
@@ -14,18 +15,33 @@
 	};
 
 	gpio-keys {
-			compatible = "gpio-keys";
-				reset {
-					label = "reset";
-					linux,code = <KEY_RESTART>;
-					gpios = <&pio 1 GPIO_ACTIVE_LOW>;
-				};
+		compatible = "gpio-keys";
 
-				wps {
-					label = "wps";
-					linux,code = <KEY_WPS_BUTTON>;
-					gpios = <&pio 0 GPIO_ACTIVE_HIGH>;
-				};
+		reset {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		power {
+			function = LED_FUNCTION_POWER;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+		};
+		status {
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 15 GPIO_ACTIVE_HIGH>;
+		};
+		wan {
+			function = LED_FUNCTION_WAN;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 8 GPIO_ACTIVE_LOW>;
+		};
 	};
 
 	nmbm_spim_nand {
@@ -53,7 +69,7 @@
 				reg = <0x0100000 0x0080000>;
 			};
 
-			partition@180000 {
+			factory_part: partition@180000 {
 				label = "Factory";
 				reg = <0x180000 0x0200000>;
 			};
@@ -64,8 +80,18 @@
 			};
 
 			partition@580000 {
+				label = "reserved";
+				reg = <0x580000 0x0080000>;
+			};
+
+			partition@600000 {
 				label = "ubi";
-				reg = <0x580000 0x4000000>;
+				reg = <0x600000 0x5A00000>;
+			};
+
+			partition@7400000 {
+				label = "log";
+				reg = <0x6000000 0x1000000>;
 			};
 		};
 	};
@@ -88,12 +114,12 @@
 		status = "disabled";
 	};
 
-        gsw: gsw@0 {
-                compatible = "mediatek,mt753x";
-                mediatek,ethsys = <&ethsys>;
-                #address-cells = <1>;
-                #size-cells = <0>;
-        };
+	rtkgsw: rtkgsw@0 {
+		compatible = "mediatek,rtk-gsw";
+		mediatek,ethsys = <&ethsys>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
 };
 
 &afe {
@@ -128,7 +154,7 @@
                 compatible = "mediatek,eth-mac";
                 reg = <0>;
                 phy-mode = "2500base-x";
-
+				mtd-mac-address = <&factory_part 0x24>;
                 fixed-link {
                         speed = <2500>;
                         full-duplex;
@@ -141,6 +167,7 @@
                 reg = <1>;
                 phy-mode = "gmii";
                 phy-handle = <&phy0>;
+				mtd-mac-address = <&factory_part 0x2A>;
         };
 
         mdio: mdio-bus {
@@ -154,28 +181,15 @@
                         nvmem-cells = <&phy_calibration>;
                         nvmem-cell-names = "phy-cal-data";
                 };
-
         };
 };
 
-&gsw {
-        mediatek,mdio = <&mdio>;
-        mediatek,portmap = "llllw";
-        mediatek,mdio_master_pinmux = <1>;
-        reset-gpios = <&pio 39 0>;
-        interrupt-parent = <&pio>;
-        interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
-        status = "okay";
-
-        port6: port@6 {
-                compatible = "mediatek,mt753x-port";
-                reg = <6>;
-                phy-mode = "sgmii";
-                fixed-link {
-                        speed = <2500>;
-                        full-duplex;
-                };
-        };
+&rtkgsw {
+	mediatek,mdio = <&mdio>;
+	reset-gpios = <&pio 39 GPIO_ACTIVE_HIGH>;
+	interrupt-parent = <&pio>;
+	interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
+	status = "okay";
 };
 
 &hnat {
