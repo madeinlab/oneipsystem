@@ -38,12 +38,15 @@ if interface and new_mac then
     if is_valid_mac(new_mac) then
         local uci = uci.cursor()
         if interface == "lan" then
-            uci:set("network", "br-lan", "macaddr", new_mac)
+            uci:set("network", "eth0", "macaddr", new_mac)
             uci:commit("network")
+            -- Factory flash에 lan MAC 주소 저장
+            local mac_bytes = mac_to_bytes(new_mac)
+            os.execute("/sbin/mtk_factory_rw.sh -w lan " .. mac_bytes)
             os.execute("/etc/init.d/network restart")
-            print("LAN (br-lan) MAC address has been successfully changed: " .. new_mac)
+            print("LAN (eth0) MAC address has been successfully changed: " .. new_mac)
         elseif interface == "wan" then
-            uci:set("network", "wan", "macaddr", new_mac)
+            uci:set("network", "eth1", "macaddr", new_mac)
             uci:commit("network")
             -- Factory flash에 wan MAC 주소 저장
             local mac_bytes = mac_to_bytes(new_mac)

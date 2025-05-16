@@ -8,6 +8,14 @@ config globals 'globals'
         option ula_prefix 'fda7:0d90:aaa4::/48'
 
 config device
+        option name eth0
+        option macaddr '1C:56:8E:2F:E4:EF'
+
+config device
+        option name eth1
+        option macaddr '1C:56:8E:2F:E4:EE'
+
+config device
         option name 'br-lan'
         option type 'bridge'
         list ports 'eth0'

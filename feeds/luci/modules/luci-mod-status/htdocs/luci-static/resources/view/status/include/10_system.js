@@ -62,6 +62,14 @@ return baseclass.extend({
 			fs.exec('/sbin/mtk_factory_rw.sh', ['-r', 'serial_no']).catch(function(err) {
 				console.error('Failed to read serial:', err);
 				return { stdout: '' };
+			}),
+			fs.exec('/sbin/mtk_factory_rw.sh', ['-r', 'wan']).catch(function(err) {
+				console.error('Failed to read WAN MAC:', err);
+				return { stdout: '' };
+			}),
+			fs.exec('/sbin/mtk_factory_rw.sh', ['-r', 'lan']).catch(function(err) {
+				console.error('Failed to read LAN MAC:', err);
+				return { stdout: '' };
 			})
 		]);
 	},
@@ -71,7 +79,9 @@ return baseclass.extend({
 		    systeminfo  = data[1],
 		    version_info = data[2],
 		    model_hex = data[4] ? data[4].stdout.trim() : '',
-		    serial_hex = data[5] ? data[5].stdout.trim() : '';
+		    serial_hex = data[5] ? data[5].stdout.trim() : '',
+		    wan_mac_hex = data[6] ? data[6].stdout.trim() : '',
+		    lan_mac_hex = data[7] ? data[7].stdout.trim() : '';
 
 		var model_str = hexToString(model_hex);
 		if (!isValidModel(model_str)) {
@@ -82,6 +92,28 @@ return baseclass.extend({
 		// Serial Number가 'DW'로 시작하고 11글자(숫자 9자리)인지 확인
 		if (!/^DW\d{2}(0[1-9]|1[0-2])\d{5}$/.test(serial_str)) {
 			serial_str = 'DW250599999';
+		}
+
+		// MAC address 변환
+		function hexToMac(hexStr) {
+			if (!hexStr) return '';
+			var mac_parts = hexStr.split('-');
+			if (mac_parts.length === 6) {
+				return mac_parts.join(':').toUpperCase();
+			}
+			return '';
+		}
+		var wan_mac = hexToMac(wan_mac_hex);
+		var lan_mac = hexToMac(lan_mac_hex);
+		var mac_display = '';
+		if (wan_mac && lan_mac) {
+			mac_display = wan_mac + '(WAN), ' + lan_mac + '(LAN)';
+		} else if (wan_mac) {
+			mac_display = wan_mac + '(WAN)';
+		} else if (lan_mac) {
+			mac_display = lan_mac + '(LAN)';
+		} else {
+			mac_display = 'N/A';
 		}
 
 		var distversion = version_info.reverse().find(function(l) {
@@ -107,6 +139,7 @@ return baseclass.extend({
 		var fields = [
 			_('Model'),            model_str,
 			_('Serial Number'),    serial_str,
+			_('MAC Address'),      mac_display,
 			_('CPU'),              boardinfo.system,
 			_('Firmware Version'), distversion,
 			_('Kernel Version'),   boardinfo.kernel,
