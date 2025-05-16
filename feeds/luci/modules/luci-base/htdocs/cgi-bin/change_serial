@@ -88,7 +88,6 @@ if new_serial then
     if is_valid_serial(new_serial) then
         local serial_bytes = serial_to_bytes(new_serial)
         local ret = os.execute("/sbin/mtk_factory_rw.sh -w serial_no " .. serial_bytes)
-        os.execute("sleep 1")
         if ret == 0 then
             print("Serial number has been successfully changed: " .. new_serial)
         else

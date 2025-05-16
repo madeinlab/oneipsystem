@@ -43,7 +43,6 @@ if interface and new_mac then
             -- Factory flash에 lan MAC 주소 저장
             local mac_bytes = mac_to_bytes(new_mac)
             os.execute("/sbin/mtk_factory_rw.sh -w lan " .. mac_bytes)
-            os.execute("sleep 1")
             os.execute("/etc/init.d/network restart")
             print("LAN (eth0) MAC address has been successfully changed: " .. new_mac)
         elseif interface == "wan" then
@@ -52,7 +51,6 @@ if interface and new_mac then
             -- Factory flash에 wan MAC 주소 저장
             local mac_bytes = mac_to_bytes(new_mac)
             os.execute("/sbin/mtk_factory_rw.sh -w wan " .. mac_bytes)
-            os.execute("sleep 1")
             os.execute("/etc/init.d/network restart")
             print("WAN (eth1) MAC address has been successfully changed: " .. new_mac)
         else

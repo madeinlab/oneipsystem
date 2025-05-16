@@ -97,7 +97,6 @@ if new_model then
         -- Save model to factory flash
         local model_bytes = model_to_bytes(new_model)
         local ret = os.execute("/sbin/mtk_factory_rw.sh -w model " .. model_bytes)
-        os.execute("sleep 1")
         if ret == 0 then
             print("Model has been successfully changed: " .. new_model)
         else
