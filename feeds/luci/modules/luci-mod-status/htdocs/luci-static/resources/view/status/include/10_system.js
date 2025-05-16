@@ -79,8 +79,8 @@ return baseclass.extend({
 		}
 		var serial_str = hexToString(serial_hex);
 
-		// Serial Number가 'UI'로 시작하고 11글자(숫자 9자리)인지 확인
-		if (!/^UI\d{2}(0[1-9]|1[0-2])\d{5}$/.test(serial_str)) {
+		// Serial Number가 'DW'로 시작하고 11글자(숫자 9자리)인지 확인
+		if (!/^DW\d{2}(0[1-9]|1[0-2])\d{5}$/.test(serial_str)) {
 			serial_str = 'DW250599999';
 		}
 
