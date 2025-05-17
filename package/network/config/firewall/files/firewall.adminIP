@@ -1,0 +1,14 @@
+# All traffic permit for wan
+config rule
+	option name		'Allow-All-WAN'
+	option src		'*'
+	option dest		'wan'
+	option target		'ACCEPT'
+
+# All traffic drop for wan
+# config rule
+# 	option name		'Drop-All-WAN'
+# 	option src		'*'
+# 	option dest		'wan'
+# 	option target		'DROP'
+

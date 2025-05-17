@@ -13,3 +13,8 @@ config login_rule
 config admin_ip 'config'
     option enabled '0'
     list allowed_ips ''
+
+config admin_ip 'default_policy'
+    option ipaddr '0.0.0.0/0'
+    option enabled '1'
+
