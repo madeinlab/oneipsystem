@@ -224,5 +224,19 @@
 			},
 			"uci": [ "openssh" ]
 		}
+	},
+
+	"luci-mod-system-adminip": {
+		"description": "Grant access to AdminIP firewall rules",
+		"read": {
+			"file": {
+				"/etc/config/firewall_adminIP": [ "read" ]
+			}
+		},
+		"write": {
+			"file": {
+				"/etc/config/firewall_adminIP": [ "write" ]
+			}
+		}
 	}
 }
