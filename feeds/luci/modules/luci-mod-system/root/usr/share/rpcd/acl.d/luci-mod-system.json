@@ -230,13 +230,24 @@
 		"description": "Grant access to AdminIP firewall rules",
 		"read": {
 			"file": {
-				"/etc/config/firewall_adminIP": [ "read" ]
-			}
+				"/etc/firewall.user": [ "read" ]
+			},
+			"ubus": {
+				"file": [ "exec", "read" ],
+				"luci": [ "getHostHints", "getConntrackHelpers" ],
+				"uci": [ "get", "state" ]
+			},
+			"uci": [ "firewall", "firewall_adminIP" ]
 		},
 		"write": {
 			"file": {
-				"/etc/config/firewall_adminIP": [ "write" ]
-			}
+				"/etc/firewall.user": [ "write" ]
+			},
+			"ubus": {
+				"file": [ "exec", "write" ],
+				"uci": [ "set", "commit", "apply" ]
+			},
+			"uci": [ "firewall", "firewall_adminIP" ]
 		}
 	}
 }

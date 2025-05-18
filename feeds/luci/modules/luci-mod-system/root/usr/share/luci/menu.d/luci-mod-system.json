@@ -116,7 +116,8 @@
 			"path": "system/admin_ip"
 		},
 		"depends": {
-			"acl": [ "luci-mod-system-manage" ]
+			"acl": [ "luci-mod-system-adminip" ],
+			"fs": { "/sbin/fw3": "executable" }
 		}
 	},
 
