@@ -9,27 +9,27 @@
 'require tools.widgets as widgets';
 
 function rule_proto_txt(s, ctHelpers) {
-	var f = (uci.get('firewall_adminIP', s, 'family') || '').toLowerCase().replace(/^(?:any|\*)$/, '');
+	var f = (uci.get('firewall', s, 'family') || '').toLowerCase().replace(/^(?:any|\*)$/, '');
 
-	var proto = L.toArray(uci.get('firewall_adminIP', s, 'proto')).filter(function(p) {
+	var proto = L.toArray(uci.get('firewall', s, 'proto')).filter(function(p) {
 		return (p != '*' && p != 'any' && p != 'all');
 	}).map(function(p) {
 		var pr = fwtool.lookupProto(p);
 		return {
 			num:   pr[0],
 			name:  pr[1],
-			types: (pr[0] == 1 || pr[0] == 58) ? L.toArray(uci.get('firewall_adminIP', s, 'icmp_type')) : null
+			types: (pr[0] == 1 || pr[0] == 58) ? L.toArray(uci.get('firewall', s, 'icmp_type')) : null
 		};
 	});
 
-	m = String(uci.get('firewall_adminIP', s, 'helper') || '').match(/^(!\s*)?(\S+)$/);
+	m = String(uci.get('firewall', s, 'helper') || '').match(/^(!\s*)?(\S+)$/);
 	var h = m ? {
 		val:  m[0].toUpperCase(),
 		inv:  m[1],
 		name: (ctHelpers.filter(function(ctH) { return ctH.name.toLowerCase() == m[2].toLowerCase() })[0] || {}).description
 	} : null;
 
-	m = String(uci.get('firewall_adminIP', s, 'mark')).match(/^(!\s*)?(0x[0-9a-f]{1,8}|[0-9]{1,10})(?:\/(0x[0-9a-f]{1,8}|[0-9]{1,10}))?$/i);
+	m = String(uci.get('firewall', s, 'mark')).match(/^(!\s*)?(0x[0-9a-f]{1,8}|[0-9]{1,10})(?:\/(0x[0-9a-f]{1,8}|[0-9]{1,10}))?$/i);
 	var w = m ? {
 		val:  m[0].toUpperCase().replace(/X/g, 'x'),
 		inv:  m[1],
@@ -37,7 +37,7 @@ function rule_proto_txt(s, ctHelpers) {
 		mask: m[3] ? '0x%02X'.format(+m[3]) : null
 	} : null;
 
-	m = String(uci.get('firewall_adminIP', s, 'dscp')).match(/^(!\s*)?(?:(CS[0-7]|BE|AF[1234][123]|EF)|(0x[0-9a-f]{1,2}|[0-9]{1,2}))$/);
+	m = String(uci.get('firewall', s, 'dscp')).match(/^(!\s*)?(?:(CS[0-7]|BE|AF[1234][123]|EF)|(0x[0-9a-f]{1,2}|[0-9]{1,2}))$/);
 	var d = m ? {
 		val:  m[0],
 		inv:  m[1],
@@ -48,8 +48,8 @@ function rule_proto_txt(s, ctHelpers) {
 	return fwtool.fmt(_('%{src?%{dest?Forwarded:Incoming}:Outgoing} %{ipv6?%{ipv4?<var>IPv4</var> and <var>IPv6</var>:<var>IPv6</var>}:<var>IPv4</var>}%{proto?, protocol %{proto#%{next?, }%{item.types?<var class="cbi-tooltip-container">%{item.name}<span class="cbi-tooltip">ICMP with types %{item.types#%{next?, }<var>%{item}</var>}</span></var>:<var>%{item.name}</var>}}}%{mark?, mark <var%{mark.inv? data-tooltip="Match fwmarks except %{mark.num}%{mark.mask? with mask %{mark.mask}}.":%{mark.mask? data-tooltip="Mask fwmark value with %{mark.mask} before compare."}}>%{mark.val}</var>}%{dscp?, DSCP %{dscp.inv?<var data-tooltip="Match DSCP classifications except %{dscp.num?:%{dscp.name}}">%{dscp.val}</var>:<var>%{dscp.val}</var>}}%{helper?, helper %{helper.inv?<var data-tooltip="Match any helper except &quot;%{helper.name}&quot;">%{helper.val}</var>:<var data-tooltip="%{helper.name}">%{helper.val}</var>}}'), {
 		ipv4: (!f || f == 'ipv4'),
 		ipv6: (!f || f == 'ipv6'),
-		src:  uci.get('firewall_adminIP', s, 'src'),
-		dest: uci.get('firewall_adminIP', s, 'dest'),
+		src:  uci.get('firewall', s, 'src'),
+		dest: uci.get('firewall', s, 'dest'),
 		proto: proto,
 		helper: h,
 		mark:   w,
@@ -58,36 +58,36 @@ function rule_proto_txt(s, ctHelpers) {
 }
 
 function rule_src_txt(s, hosts) {
-	var z = uci.get('firewall_adminIP', s, 'src'),
-	    d = (uci.get('firewall_adminIP', s, 'direction') == 'in') ? uci.get('firewall_adminIP', s, 'device') : null;
+	var z = uci.get('firewall', s, 'src'),
+	    d = (uci.get('firewall', s, 'direction') == 'in') ? uci.get('firewall', s, 'device') : null;
 
 	return fwtool.fmt(_('From %{src}%{src_device?, interface <var>%{src_device}</var>}%{src_ip?, IP %{src_ip#%{next?, }<var%{item.inv? data-tooltip="Match IP addresses except %{item.val}."}>%{item.ival}</var>}}%{src_port?, port %{src_port#%{next?, }<var%{item.inv? data-tooltip="Match ports except %{item.val}."}>%{item.ival}</var>}}%{src_mac?, MAC %{src_mac#%{next?, }<var%{item.inv? data-tooltip="Match MACs except %{item.val}%{item.hint.name? a.k.a. %{item.hint.name}}.":%{item.hint.name? data-tooltip="%{item.hint.name}"}}>%{item.ival}</var>}}'), {
 		src: E('span', { 'class': 'zonebadge', 'style': fwmodel.getZoneColorStyle(z) }, [(z == '*') ? E('em', _('any zone')) : (z ? E('strong', z) : E('em', _('this device')))]),
-		src_ip: fwtool.map_invert(uci.get('firewall_adminIP', s, 'src_ip'), 'toLowerCase'),
-		src_mac: fwtool.map_invert(uci.get('firewall_adminIP', s, 'src_mac'), 'toUpperCase').map(function(v) { return Object.assign(v, { hint: hosts[v.val] }) }),
-		src_port: fwtool.map_invert(uci.get('firewall_adminIP', s, 'src_port')),
+		src_ip: fwtool.map_invert(uci.get('firewall', s, 'src_ip'), 'toLowerCase'),
+		src_mac: fwtool.map_invert(uci.get('firewall', s, 'src_mac'), 'toUpperCase').map(function(v) { return Object.assign(v, { hint: hosts[v.val] }) }),
+		src_port: fwtool.map_invert(uci.get('firewall', s, 'src_port')),
 		src_device: d
 	});
 }
 
 function rule_dest_txt(s) {
-	var z = uci.get('firewall_adminIP', s, 'dest'),
-	    d = (uci.get('firewall_adminIP', s, 'direction') == 'out') ? uci.get('firewall_adminIP', s, 'device') : null;
+	var z = uci.get('firewall', s, 'dest'),
+	    d = (uci.get('firewall', s, 'direction') == 'out') ? uci.get('firewall', s, 'device') : null;
 
 	return fwtool.fmt(_('To %{dest}%{dest_device?, interface <var>%{dest_device}</var>}%{dest_ip?, IP %{dest_ip#%{next?, }<var%{item.inv? data-tooltip="Match IP addresses except %{item.val}."}>%{item.ival}</var>}}%{dest_port?, port %{dest_port#%{next?, }<var%{item.inv? data-tooltip="Match ports except %{item.val}."}>%{item.ival}</var>}}'), {
 		dest: E('span', { 'class': 'zonebadge', 'style': fwmodel.getZoneColorStyle(z) }, [(z == '*') ? E('em', _('any zone')) : (z ? E('strong', z) : E('em', _('this device')))]),
-		dest_ip: fwtool.map_invert(uci.get('firewall_adminIP', s, 'dest_ip'), 'toLowerCase'),
-		dest_port: fwtool.map_invert(uci.get('firewall_adminIP', s, 'dest_port')),
+		dest_ip: fwtool.map_invert(uci.get('firewall', s, 'dest_ip'), 'toLowerCase'),
+		dest_port: fwtool.map_invert(uci.get('firewall', s, 'dest_port')),
 		dest_device: d
 	});
 }
 
 function rule_limit_txt(s) {
-	var m = String(uci.get('firewall_adminIP', s, 'limit')).match(/^(\d+)\/([smhd])\w*$/i),
+	var m = String(uci.get('firewall', s, 'limit')).match(/^(\d+)\/([smhd])\w*$/i),
 	    l = m ? {
 			num:   +m[1],
 			unit:  ({ s: _('second'), m: _('minute'), h: _('hour'), d: _('day') })[m[2]],
-			burst: uci.get('firewall_adminIP', s, 'limit_burst')
+			burst: uci.get('firewall', s, 'limit_burst')
 		} : null;
 
 	if (!l)
@@ -97,16 +97,16 @@ function rule_limit_txt(s) {
 }
 
 function rule_target_txt(s, ctHelpers) {
-	var t = uci.get('firewall_adminIP', s, 'target'),
-	    h = (uci.get('firewall_adminIP', s, 'set_helper') || '').toUpperCase(),
+	var t = uci.get('firewall', s, 'target'),
+	    h = (uci.get('firewall', s, 'set_helper') || '').toUpperCase(),
 	    s = {
 	    	target: t,
-	    	src:    uci.get('firewall_adminIP', s, 'src'),
-	    	dest:   uci.get('firewall_adminIP', s, 'dest'),
+	    	src:    uci.get('firewall', s, 'src'),
+	    	dest:   uci.get('firewall', s, 'dest'),
 	    	set_helper: h,
-	    	set_mark:   uci.get('firewall_adminIP', s, 'set_mark'),
-	    	set_xmark:  uci.get('firewall_adminIP', s, 'set_xmark'),
-	    	set_dscp:   uci.get('firewall_adminIP', s, 'set_dscp'),
+	    	set_mark:   uci.get('firewall', s, 'set_mark'),
+	    	set_xmark:  uci.get('firewall', s, 'set_xmark'),
+	    	set_dscp:   uci.get('firewall', s, 'set_dscp'),
 	    	helper_name: (ctHelpers.filter(function(ctH) { return ctH.name.toUpperCase() == h })[0] || {}).description
 	    };
 
@@ -127,7 +127,7 @@ function rule_target_txt(s, ctHelpers) {
 		return fwtool.fmt(_('<var data-tooltip="HELPER">Assign conntrack</var> helper <var%{helper_name? data-tooltip="%{helper_name}"}>%{set_helper}</var>'), s);
 
 	case 'MARK':
-		return fwtool.fmt(_('<var data-tooltip="MARK">%{set_mark?Assign:XOR}</var> firewall_adminIP mark <var>%{set_mark?:%{set_xmark}}</var>'), s);
+		return fwtool.fmt(_('<var data-tooltip="MARK">%{set_mark?Assign:XOR}</var> firewall mark <var>%{set_mark?:%{set_xmark}}</var>'), s);
 
 	case 'DSCP':
 		return fwtool.fmt(_('<var data-tooltip="DSCP">Assign DSCP</var> classification <var>%{set_dscp}</var>'), s);
@@ -154,7 +154,7 @@ return view.extend({
 		return Promise.all([
 			this.callHostHints(),
 			this.callConntrackHelpers(),
-			uci.load('firewall_adminIP')
+			uci.load('firewall')
 		]);
 	},
 
@@ -170,43 +170,86 @@ return view.extend({
 		    ctHelpers = data[1],
 		    m, s, o;
 
-		m = new form.Map('firewall_adminIP', _('Firewall - Traffic Rules'),
-			_('Traffic rules define policies for packets traveling between different zones, for example to reject traffic between certain hosts or to open WAN ports on the router.'));
+		m = new form.Map('firewall', _('Administrator IP'),
+			_('Administrator IP rules define policies for controlling access from specific IP addresses. For example, you can allow or deny only specific IP addresses to access the router management page.'));
 
-		s = m.section(form.GridSection, 'rule', _('Traffic Rules'));
+		s = m.section(form.GridSection, 'rule', _('Administrator IP Rules'));
 		s.addremove = true;
 		s.anonymous = true;
 		s.sortable  = true;
 
 		s.tab('general', _('General Settings'));
+		s.tab('advanced', _('Advanced Settings'));
+		s.tab('timed', _('Time Restrictions'));
 
 		s.filter = function(section_id) {
-			return (uci.get('firewall_adminIP', section_id, 'target') != 'SNAT');
+			var target = uci.get('firewall', section_id, 'target');
+			var name = uci.get('firewall', section_id, 'name') || '';
+			return (target !== 'SNAT') && (name.startsWith('Admin_IP') || name === 'Default Policy');
 		};
 
 		s.sectiontitle = function(section_id) {
-			return uci.get('firewall_adminIP', section_id, 'name') || _('Unnamed rule');
+			return uci.get('firewall', section_id, 'name') || _('Unnamed rule');
 		};
 
 		s.handleAdd = function(ev) {
-			var config_name = this.uciconfig || this.map.config,
-			    section_id = uci.add(config_name, this.sectiontype),
-			    opt1 = this.getOption('src'),
-			    opt2 = this.getOption('dest');
+			var config_name = this.uciconfig || this.map.config;
+			var existing_rules = uci.sections('firewall', 'rule');
+			var used_admin_ip_indices = new Set();
 
-			opt1.default = 'wan';
-			opt2.default = 'lan';
+			existing_rules.forEach(function(rule_section) {
+				var name = uci.get('firewall', rule_section['.name'], 'name');
+				if (name && name.startsWith('Admin_IP_')) {
+					var num_str = name.substring('Admin_IP_'.length);
+					if (/^\d+$/.test(num_str)) {
+						var num = parseInt(num_str, 10);
+						if (num >= 0 && num <= 9) {
+							used_admin_ip_indices.add(num);
+						}
+					}
+				}
+			});
+
+			var next_admin_ip_index = -1;
+			for (var i = 0; i <= 9; i++) {
+				if (!used_admin_ip_indices.has(i)) {
+					next_admin_ip_index = i;
+					break;
+				}
+			}
+
+			if (next_admin_ip_index === -1) {
+				ui.showModal(_('Error'), E('p', _('All Admin_IP rule slots (0-9) are currently in use.')));
+				return;
+			}
+
+			var new_rule_name = 'Admin_IP_' + next_admin_ip_index;
+			var section_id = uci.add(config_name, this.sectiontype);
+			uci.set('firewall', section_id, 'name', new_rule_name);
+			// Set defaults for new Admin_IP rules
+			uci.set('firewall', section_id, 'src', 'wan');
+			uci.set('firewall', section_id, 'proto', 'any'); // 'any' should be handled by CBIProtocolSelect or saved as appropriate internal value
+			uci.set('firewall', section_id, 'target', 'ACCEPT');
+			// 'dest' is typically not set for input rules to the device itself
 
 			this.addedSection = section_id;
 			this.renderMoreOptionsModal(section_id);
-
-			delete opt1.default;
-			delete opt2.default;
 		};
 
 		o = s.taboption('general', form.Value, 'name', _('Name'));
 		o.placeholder = _('Unnamed rule');
 		o.modalonly = true;
+		o.readonly = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				var num_str = current_name.substring('Admin_IP_'.length);
+				var num = parseInt(num_str, 10);
+				if (num >= 0 && num <= 9) {
+					return true; // Make it read-only
+				}
+			}
+			return false; // Otherwise, editable
+		};
 
 		o = s.option(form.DummyValue, '_match', _('Match'));
 		o.modalonly = false;
@@ -229,17 +272,160 @@ return view.extend({
 		o.modalonly = false;
 		o.default = o.enabled;
 		o.editable = true;
+		o.tooltip = function(section_id) {
+			var weekdays = uci.get('firewall', section_id, 'weekdays');
+			var monthdays = uci.get('firewall', section_id, 'monthdays');
+			var start_time = uci.get('firewall', section_id, 'start_time');
+			var stop_time = uci.get('firewall', section_id, 'stop_time');
+			var start_date = uci.get('firewall', section_id, 'start_date');
+			var stop_date = uci.get('firewall', section_id, 'stop_date');
+
+			if (weekdays || monthdays || start_time || stop_time || start_date || stop_date )
+				return _('Time restrictions are enabled for this rule');
+
+			return null;
+		};
+
+		o = s.taboption('advanced', form.ListValue, 'direction', _('Match device'));
+		o.modalonly = true;
+		o.value('', _('unspecified'));
+		o.value('in', _('Inbound device'));
+		o.value('out', _('Outbound device'));
+		o.cfgvalue = function(section_id) {
+			var val = uci.get('firewall', section_id, 'direction');
+			switch (val) {
+				case 'in':
+				case 'ingress':
+					return 'in';
+
+				case 'out':
+				case 'egress':
+					return 'out';
+			}
+
+			return null;
+		};
+
+		o = s.taboption('advanced', widgets.DeviceSelect, 'device', _('Device name'),
+			_('Specifies whether to tie this traffic rule to a specific inbound or outbound network device.'));
+		o.modalonly = true;
+		o.noaliases = true;
+		o.rmempty = false;
+		o.depends('direction', 'in');
+		o.depends('direction', 'out');
+
+		o = s.taboption('advanced', form.ListValue, 'family', _('Restrict to address family'));
+		o.modalonly = true;
+		o.rmempty = true;
+		o.value('', _('IPv4 and IPv6'));
+		o.value('ipv4', _('IPv4 only'));
+		o.value('ipv6', _('IPv6 only'));
+		o.validate = function(section_id, value) {
+			fwtool.updateHostHints(this.map, section_id, 'src_ip', value, hosts);
+			fwtool.updateHostHints(this.map, section_id, 'dest_ip', value, hosts);
+			return true;
+		};
 
 		o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
 		o.modalonly = true;
-		o.default = 'tcp udp';
+		o.cfgvalue = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return 'any'; // For Admin_IP rules, protocol is always 'any'
+			}
+			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
+		};
+		o.write = function(section_id, value) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return uci.set('firewall', section_id, 'proto', 'any'); // Ensure it's saved as 'any' or appropriate internal value
+			}
+			return this.super('write', [section_id, value]);
+		};
+		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
+			var current_name = uci.get('firewall', section_id, 'name');
+			return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		};
+
+		o = s.taboption('advanced', form.MultiValue, 'icmp_type', _('Match ICMP type'));
+		o.modalonly = true;
+		o.multiple = true;
+		o.custom = true;
+		o.cast = 'table';
+		o.placeholder = _('any');
+		o.value('', 'any');
+		o.value('address-mask-reply');
+		o.value('address-mask-request');
+		o.value('address-unreachable'); /* ipv6 */
+		o.value('bad-header');  /* ipv6 */
+		o.value('communication-prohibited');
+		o.value('destination-unreachable');
+		o.value('echo-reply');
+		o.value('echo-request');
+		o.value('fragmentation-needed');
+		o.value('host-precedence-violation');
+		o.value('host-prohibited');
+		o.value('host-redirect');
+		o.value('host-unknown');
+		o.value('host-unreachable');
+		o.value('ip-header-bad');
+		o.value('neighbour-advertisement');
+		o.value('neighbour-solicitation');
+		o.value('network-prohibited');
+		o.value('network-redirect');
+		o.value('network-unknown');
+		o.value('network-unreachable');
+		o.value('no-route');  /* ipv6 */
+		o.value('packet-too-big');
+		o.value('parameter-problem');
+		o.value('port-unreachable');
+		o.value('precedence-cutoff');
+		o.value('protocol-unreachable');
+		o.value('redirect');
+		o.value('required-option-missing');
+		o.value('router-advertisement');
+		o.value('router-solicitation');
+		o.value('source-quench');
+		o.value('source-route-failed');
+		o.value('time-exceeded');
+		o.value('timestamp-reply');
+		o.value('timestamp-request');
+		o.value('TOS-host-redirect');
+		o.value('TOS-host-unreachable');
+		o.value('TOS-network-redirect');
+		o.value('TOS-network-unreachable');
+		o.value('ttl-zero-during-reassembly');
+		o.value('ttl-zero-during-transit');
+		o.value('unknown-header-type');  /* ipv6 */
+		o.value('unknown-option');  /* ipv6 */
+		o.depends({ proto: 'icmp', '!contains': true });
+		o.depends({ proto: 'icmpv6', '!contains': true });
 
 		o = s.taboption('general', widgets.ZoneSelect, 'src', _('Source zone'));
 		o.modalonly = true;
 		o.nocreate = true;
 		o.allowany = true;
 		o.allowlocal = 'src';
+		o.cfgvalue = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return 'wan'; // For Admin_IP rules, source zone is always 'wan'
+			}
+			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
+		};
+		o.write = function(section_id, value) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return uci.set('firewall', section_id, 'src', 'wan'); // Ensure it's saved as 'wan'
+			}
+			return this.super('write', [section_id, value]);
+		};
+		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
+			var current_name = uci.get('firewall', section_id, 'name');
+			return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		};
 
+		fwtool.addMACOption(s, 'advanced', 'src_mac', _('Source MAC address'), null, hosts);
 		fwtool.addIPOption(s, 'general', 'src_ip', _('Source address'), null, '', hosts, true);
 
 		o = s.taboption('general', form.Value, 'src_port', _('Source port'));
@@ -272,12 +458,12 @@ return view.extend({
 		o.value('REJECT', _('reject'));
 		o.value('NOTRACK', _("don't track"));
 		o.value('HELPER', _('assign conntrack helper'));
-		o.value('MARK_SET', _('apply firewall_adminIP mark'));
-		o.value('MARK_XOR', _('XOR firewall_adminIP mark'));
+		o.value('MARK_SET', _('apply firewall mark'));
+		o.value('MARK_XOR', _('XOR firewall mark'));
 		o.value('DSCP', _('DSCP classification'));
 		o.cfgvalue = function(section_id) {
-			var t = uci.get('firewall_adminIP', section_id, 'target'),
-			    m = uci.get('firewall_adminIP', section_id, 'set_mark');
+			var t = uci.get('firewall', section_id, 'target'),
+			    m = uci.get('firewall', section_id, 'set_mark');
 
 			if (t == 'MARK')
 				return m ? 'MARK_SET' : 'MARK_XOR';
@@ -298,6 +484,80 @@ return view.extend({
 		o.depends('target', 'HELPER');
 		for (var i = 0; i < ctHelpers.length; i++)
 			o.value(ctHelpers[i].name, '%s (%s)'.format(ctHelpers[i].description, ctHelpers[i].name.toUpperCase()));
+
+		o = s.taboption('advanced', form.Value, 'helper', _('Match helper'), _('Match traffic using the specified connection tracking helper.'));
+		o.modalonly = true;
+		o.placeholder = _('any');
+		for (var i = 0; i < ctHelpers.length; i++)
+			o.value(ctHelpers[i].name, '%s (%s)'.format(ctHelpers[i].description, ctHelpers[i].name.toUpperCase()));
+		o.validate = function(section_id, value) {
+			if (value == '' || value == null)
+				return true;
+
+			value = value.replace(/^!\s*/, '');
+
+			for (var i = 0; i < ctHelpers.length; i++)
+				if (value == ctHelpers[i].name)
+					return true;
+
+			return _('Unknown or not installed conntrack helper "%s"').format(value);
+		};
+
+		fwtool.addMarkOption(s, false);
+		fwtool.addDSCPOption(s, false);
+		fwtool.addLimitOption(s);
+		fwtool.addLimitBurstOption(s);
+
+		o = s.taboption('advanced', form.Value, 'extra', _('Extra arguments'),
+			_('Passes additional arguments to iptables. Use with care!'));
+		o.modalonly = true;
+
+		o = s.taboption('timed', form.MultiValue, 'weekdays', _('Week Days'));
+		o.modalonly = true;
+		o.multiple = true;
+		o.display = 5;
+		o.placeholder = _('Any day');
+		o.value('Sun', _('Sunday'));
+		o.value('Mon', _('Monday'));
+		o.value('Tue', _('Tuesday'));
+		o.value('Wed', _('Wednesday'));
+		o.value('Thu', _('Thursday'));
+		o.value('Fri', _('Friday'));
+		o.value('Sat', _('Saturday'));
+		o.write = function(section_id, value) {
+			return this.super('write', [ section_id, L.toArray(value).join(' ') ]);
+		};
+
+		o = s.taboption('timed', form.MultiValue, 'monthdays', _('Month Days'));
+		o.modalonly = true;
+		o.multiple = true;
+		o.display_size = 15;
+		o.placeholder = _('Any day');
+		o.write = function(section_id, value) {
+			return this.super('write', [ section_id, L.toArray(value).join(' ') ]);
+		};
+		for (var i = 1; i <= 31; i++)
+			o.value(i);
+
+		o = s.taboption('timed', form.Value, 'start_time', _('Start Time (hh:mm:ss)'));
+		o.modalonly = true;
+		o.datatype = 'timehhmmss';
+
+		o = s.taboption('timed', form.Value, 'stop_time', _('Stop Time (hh:mm:ss)'));
+		o.modalonly = true;
+		o.datatype = 'timehhmmss';
+
+		o = s.taboption('timed', form.Value, 'start_date', _('Start Date (yyyy-mm-dd)'));
+		o.modalonly = true;
+		o.datatype = 'dateyyyymmdd';
+
+		o = s.taboption('timed', form.Value, 'stop_date', _('Stop Date (yyyy-mm-dd)'));
+		o.modalonly = true;
+		o.datatype = 'dateyyyymmdd';
+
+		o = s.taboption('timed', form.Flag, 'utc_time', _('Time in UTC'));
+		o.modalonly = true;
+		o.default = o.disabled;
 
 		return m.render();
 	}
