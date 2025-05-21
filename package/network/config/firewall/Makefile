@@ -55,7 +55,6 @@ define Package/firewall/install
 	$(INSTALL_CONF) ./files/firewall.config $(1)/etc/config/firewall
 	$(INSTALL_DIR) $(1)/etc/
 	$(INSTALL_CONF) ./files/firewall.user $(1)/etc/firewall.user
-	$(INSTALL_CONF) ./files/firewall.adminIP $(1)/etc/config/firewall_adminIP
 	$(INSTALL_DIR) $(1)/usr/share/fw3
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/helpers.conf $(1)/usr/share/fw3
 endef
