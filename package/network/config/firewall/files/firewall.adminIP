@@ -1,4 +1,5 @@
 config rule
+    option name    'Default Policy'
     option src      wan
     option src_ip   0.0.0.0/0
     option dest     wan
