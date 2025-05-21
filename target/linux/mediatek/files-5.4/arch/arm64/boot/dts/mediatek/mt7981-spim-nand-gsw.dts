@@ -87,12 +87,12 @@
 
 			partition@600000 {
 				label = "ubi";
-				reg = <0x600000 0x5A00000>;
+				reg = <0x600000 0x6000000>;
 			};
 
-			partition@7400000 {
+			partition@6600000 {
 				label = "log";
-				reg = <0x6000000 0x1000000>;
+				reg = <0x6600000 0x1000000>;
 			};
 		};
 	};
