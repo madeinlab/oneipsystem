@@ -170,10 +170,10 @@ return view.extend({
 		    ctHelpers = data[1],
 		    m, s, o;
 
-		m = new form.Map('firewall', _('Administrator IP'),
-			_('Administrator IP rules define policies for controlling access from specific IP addresses. For example, you can allow or deny only specific IP addresses to access the router management page.'));
+		m = new form.Map('firewall', _('Firewall - Traffic Rules'),
+			_('Traffic rules define policies for packets traveling between different zones, for example to reject traffic between certain hosts or to open WAN ports on the router.'));
 
-		s = m.section(form.GridSection, 'rule', _('Administrator IP Rules'));
+		s = m.section(form.GridSection, 'rule', _('Traffic Rules'));
 		s.addremove = true;
 		s.anonymous = true;
 		s.sortable  = true;
@@ -183,9 +183,7 @@ return view.extend({
 		s.tab('timed', _('Time Restrictions'));
 
 		s.filter = function(section_id) {
-			var target = uci.get('firewall', section_id, 'target');
-			var name = uci.get('firewall', section_id, 'name') || '';
-			return (target !== 'SNAT') && (name.startsWith('Admin_IP') || name === 'Default Policy');
+			return (uci.get('firewall', section_id, 'target') != 'SNAT');
 		};
 
 		s.sectiontitle = function(section_id) {
@@ -193,63 +191,24 @@ return view.extend({
 		};
 
 		s.handleAdd = function(ev) {
-			var config_name = this.uciconfig || this.map.config;
-			var existing_rules = uci.sections('firewall', 'rule');
-			var used_admin_ip_indices = new Set();
+			var config_name = this.uciconfig || this.map.config,
+			    section_id = uci.add(config_name, this.sectiontype),
+			    opt1 = this.getOption('src'),
+			    opt2 = this.getOption('dest');
 
-			existing_rules.forEach(function(rule_section) {
-				var name = uci.get('firewall', rule_section['.name'], 'name');
-				if (name && name.startsWith('Admin_IP_')) {
-					var num_str = name.substring('Admin_IP_'.length);
-					if (/^\d+$/.test(num_str)) {
-						var num = parseInt(num_str, 10);
-						if (num >= 0 && num <= 9) {
-							used_admin_ip_indices.add(num);
-						}
-					}
-				}
-			});
-
-			var next_admin_ip_index = -1;
-			for (var i = 0; i <= 9; i++) {
-				if (!used_admin_ip_indices.has(i)) {
-					next_admin_ip_index = i;
-					break;
-				}
-			}
-
-			if (next_admin_ip_index === -1) {
-				ui.showModal(_('Error'), E('p', _('All Admin_IP rule slots (0-9) are currently in use.')));
-				return;
-			}
-
-			var new_rule_name = 'Admin_IP_' + next_admin_ip_index;
-			var section_id = uci.add(config_name, this.sectiontype);
-			uci.set('firewall', section_id, 'name', new_rule_name);
-			// Set defaults for new Admin_IP rules
-			uci.set('firewall', section_id, 'src', 'wan');
-			uci.set('firewall', section_id, 'proto', 'any'); // 'any' should be handled by CBIProtocolSelect or saved as appropriate internal value
-			uci.set('firewall', section_id, 'target', 'ACCEPT');
-			// 'dest' is typically not set for input rules to the device itself
+			opt1.default = 'wan';
+			opt2.default = 'lan';
 
 			this.addedSection = section_id;
 			this.renderMoreOptionsModal(section_id);
+
+			delete opt1.default;
+			delete opt2.default;
 		};
 
 		o = s.taboption('general', form.Value, 'name', _('Name'));
 		o.placeholder = _('Unnamed rule');
 		o.modalonly = true;
-		o.readonly = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				var num_str = current_name.substring('Admin_IP_'.length);
-				var num = parseInt(num_str, 10);
-				if (num >= 0 && num <= 9) {
-					return true; // Make it read-only
-				}
-			}
-			return false; // Otherwise, editable
-		};
 
 		o = s.option(form.DummyValue, '_match', _('Match'));
 		o.modalonly = false;
@@ -328,24 +287,7 @@ return view.extend({
 
 		o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
 		o.modalonly = true;
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return 'any'; // For Admin_IP rules, protocol is always 'any'
-			}
-			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'proto', 'any'); // Ensure it's saved as 'any' or appropriate internal value
-			}
-			return this.super('write', [section_id, value]);
-		};
-		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
+		o.default = 'tcp udp';
 
 		o = s.taboption('advanced', form.MultiValue, 'icmp_type', _('Match ICMP type'));
 		o.modalonly = true;
@@ -406,24 +348,6 @@ return view.extend({
 		o.nocreate = true;
 		o.allowany = true;
 		o.allowlocal = 'src';
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return 'wan'; // For Admin_IP rules, source zone is always 'wan'
-			}
-			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'src', 'wan'); // Ensure it's saved as 'wan'
-			}
-			return this.super('write', [section_id, value]);
-		};
-		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
 
 		fwtool.addMACOption(s, 'advanced', 'src_mac', _('Source MAC address'), null, hosts);
 		fwtool.addIPOption(s, 'general', 'src_ip', _('Source address'), null, '', hosts, true);
