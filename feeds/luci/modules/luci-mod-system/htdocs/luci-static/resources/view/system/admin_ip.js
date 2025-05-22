@@ -170,10 +170,10 @@ return view.extend({
 		    ctHelpers = data[1],
 		    m, s, o;
 
-		m = new form.Map('firewall', _('Firewall - Traffic Rules'),
-			_('Traffic rules define policies for packets traveling between different zones, for example to reject traffic between certain hosts or to open WAN ports on the router.'));
+		m = new form.Map('firewall', _('Administrator IP'),
+			_('Administrator IP rules define policies for controlling access from specific IP addresses. For example, you can allow or deny only specific IP addresses to access the router management page.'));
 
-		s = m.section(form.GridSection, 'rule', _('Traffic Rules'));
+		s = m.section(form.GridSection, 'rule', _('Administrator IP Rules'));
 		s.addremove = true;
 		s.anonymous = true;
 		s.sortable  = true;
@@ -181,7 +181,9 @@ return view.extend({
 		s.tab('general', _('General Settings'));
 
 		s.filter = function(section_id) {
-			return (uci.get('firewall', section_id, 'target') != 'SNAT');
+			var target = uci.get('firewall', section_id, 'target');
+			var name = uci.get('firewall', section_id, 'name') || '';
+			return (target !== 'SNAT') && (name.startsWith('Admin_IP') || name === 'Default Policy');
 		};
 
 		s.sectiontitle = function(section_id) {
@@ -189,24 +191,66 @@ return view.extend({
 		};
 
 		s.handleAdd = function(ev) {
-			var config_name = this.uciconfig || this.map.config,
-			    section_id = uci.add(config_name, this.sectiontype),
-			    opt1 = this.getOption('src'),
-			    opt2 = this.getOption('dest');
+			var config_name = this.uciconfig || this.map.config;
+			
+			// 1. 기존 Admin_IP 규칙 개수 확인
+			var existing_rules = uci.sections('firewall', 'rule');
+			var used_admin_ip_indices = new Set();
 
-			opt1.default = 'wan';
-			opt2.default = 'lan';
+			existing_rules.forEach(function(rule_section) {
+				var name = uci.get('firewall', rule_section['.name'], 'name');
+				if (name && name.startsWith('Admin_IP_')) {
+					var num_str = name.substring('Admin_IP_'.length);
+					if (/^\d+$/.test(num_str)) {
+						var num = parseInt(num_str, 10);
+						if (num >= 0 && num <= 9) {
+							used_admin_ip_indices.add(num);
+						}
+					}
+				}
+			});
+			
+			var next_admin_ip_index = -1;
+			for (var i = 0; i <= 9; i++) {
+				if (!used_admin_ip_indices.has(i)) {
+					next_admin_ip_index = i;
+					break;
+				}
+			}
+
+			if (next_admin_ip_index === -1) {
+				ui.showModal(_('Error'), E('p', _('All Admin_IP rule slots (0-9) are currently in use.')));
+				return;
+			}
+
+			// 표준 LuCI 방식으로 새 섹션 추가
+			var section_id = uci.add(config_name, this.sectiontype);
+			
+			// Admin_IP 관련 속성 설정
+			var new_rule_name = 'Admin_IP_' + next_admin_ip_index;
+			uci.set('firewall', section_id, 'name', new_rule_name);
+			uci.set('firewall', section_id, 'src', 'wan');
+			uci.set('firewall', section_id, 'proto', 'all');
+			uci.set('firewall', section_id, 'target', 'ACCEPT');
 
 			this.addedSection = section_id;
 			this.renderMoreOptionsModal(section_id);
-
-			delete opt1.default;
-			delete opt2.default;
 		};
 
 		o = s.taboption('general', form.Value, 'name', _('Name'));
 		o.placeholder = _('Unnamed rule');
 		o.modalonly = true;
+		o.readonly = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				var num_str = current_name.substring('Admin_IP_'.length);
+				var num = parseInt(num_str, 10);
+				if (num >= 0 && num <= 9) {
+					return true; // Make it read-only
+				}
+			}
+			return false; // Otherwise, editable
+		};
 
 		o = s.option(form.DummyValue, '_match', _('Match'));
 		o.modalonly = false;
@@ -246,15 +290,62 @@ return view.extend({
 
 		o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
 		o.modalonly = true;
-		o.default = 'tcp udp';
+		o.cfgvalue = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return 'all'; // Use 'all' for 'Any' for Admin_IP rules
+			}
+			return uci.get('firewall', section_id, 'proto') || 'tcp udp'; // Raw value for other rules, default to 'tcp udp'
+		};
+		o.write = function(section_id, value) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return uci.set('firewall', section_id, 'proto', 'all'); // Save as 'all'
+			}
+			return this.super('write', [section_id, value]); // Default behavior for other rules
+		};
+		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
+			var current_name = uci.get('firewall', section_id, 'name');
+			return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		};
+		o.default = 'tcp udp'; // Default for general rules if not Admin_IP_X
 
 		o = s.taboption('general', widgets.ZoneSelect, 'src', _('Source zone'));
 		o.modalonly = true;
 		o.nocreate = true;
 		o.allowany = true;
 		o.allowlocal = 'src';
+		o.cfgvalue = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return 'wan'; // For Admin_IP rules, source zone is always 'wan'
+			}
+			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
+		};
+		o.write = function(section_id, value) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return uci.set('firewall', section_id, 'src', 'wan'); // Ensure it's saved as 'wan'
+			}
+			return this.super('write', [section_id, value]);
+		};
+		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
+			var current_name = uci.get('firewall', section_id, 'name');
+			return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		};
 
+		// 출발지 주소 필드
 		fwtool.addIPOption(s, 'general', 'src_ip', _('Source address'), null, '', hosts, true);
+		var src_ip_field = s.children.filter(function(o) { return o.option == 'src_ip' })[0];
+		if (src_ip_field) {
+			src_ip_field.renderWidget = function(section_id, option_index, cfgvalue) {
+				var widget = this.super('renderWidget', [section_id, option_index, cfgvalue]);
+				if (widget) {
+					widget.setAttribute('style', 'border-color: var(--main-bright-color)');
+				}
+				return widget;
+			};
+		}
 
 		o = s.taboption('general', form.Value, 'src_port', _('Source port'));
 		o.modalonly = true;
@@ -268,8 +359,46 @@ return view.extend({
 		o.nocreate = true;
 		o.allowany = true;
 		o.allowlocal = true;
+		o.cfgvalue = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return ''; // Device(input)를 의미
+			}
+			return this.super('cfgvalue', [section_id]);
+		};
+		o.write = function(section_id, value) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return uci.set('firewall', section_id, 'dest', '');
+			}
+			return this.super('write', [section_id, value]);
+		};
+		o.readonly = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		};
 
-		fwtool.addIPOption(s, 'general', 'dest_ip', _('Destination address'), null, '', hosts, true);
+		// 목적지 주소 필드
+		o = s.taboption('general', form.Value, 'dest_ip', _('Destination address'));
+		o.modalonly = true;
+		o.cfgvalue = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return '-';
+			}
+			return this.super('cfgvalue', [section_id]);
+		};
+		o.write = function(section_id, value) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+				return uci.set('firewall', section_id, 'dest_ip', '');
+			}
+			return this.super('write', [section_id, value]);
+		};
+		o.readonly = function(section_id) {
+			var current_name = uci.get('firewall', section_id, 'name');
+			return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		};
 
 		o = s.taboption('general', form.Value, 'dest_port', _('Destination port'));
 		o.modalonly = true;
@@ -289,17 +418,12 @@ return view.extend({
 		o.value('MARK_SET', _('apply firewall mark'));
 		o.value('MARK_XOR', _('XOR firewall mark'));
 		o.value('DSCP', _('DSCP classification'));
-		o.cfgvalue = function(section_id) {
-			var t = uci.get('firewall', section_id, 'target'),
-			    m = uci.get('firewall', section_id, 'set_mark');
-
-			if (t == 'MARK')
-				return m ? 'MARK_SET' : 'MARK_XOR';
-
-			return t;
-		};
-		o.write = function(section_id, value) {
-			return this.super('write', [section_id, (value == 'MARK_SET' || value == 'MARK_XOR') ? 'MARK' : value]);
+		o.renderWidget = function(section_id, option_index, cfgvalue) {
+			var widget = this.super('renderWidget', [section_id, option_index, cfgvalue]);
+			if (widget) {
+				widget.setAttribute('style', 'border-color: var(--main-bright-color)');
+			}
+			return widget;
 		};
 
 		fwtool.addMarkOption(s, 1);
