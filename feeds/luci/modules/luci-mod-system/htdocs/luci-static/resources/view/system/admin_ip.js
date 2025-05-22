@@ -170,103 +170,18 @@ return view.extend({
 		    ctHelpers = data[1],
 		    m, s, o;
 
-		m = new form.Map('firewall', _('Administrator IP'),
-			_('Administrator IP rules define policies for controlling access from specific IP addresses. For example, you can allow or deny only specific IP addresses to access the router management page.'));
+		m = new form.Map('firewall', _('Firewall - Traffic Rules'),
+			_('Traffic rules define policies for packets traveling between different zones, for example to reject traffic between certain hosts or to open WAN ports on the router.'));
 
-		// "저장 & 적용" 시 Admin_IP 규칙들을 파일 상단으로 재배치
-		var originalSave = m.save;
-		m.save = function(cb) {
-			// Admin_IP 규칙들을 위한 처리
-			var sections = uci.sections('firewall', 'rule');
-			var includeSections = uci.sections('firewall', 'include');
-			var adminIpRules = [];
-			var otherRules = [];
-			
-			// Admin_IP 규칙과 기타 규칙 분류
-			sections.forEach(function(section) {
-				if (section.name && section.name.startsWith('Admin_IP_')) {
-					adminIpRules.push(section['.name']);
-				} else {
-					otherRules.push(section['.name']);
-				}
-			});
-			
-			// 이미 섹션 재정렬이 필요없으면 바로 원본 save 호출
-			if (adminIpRules.length === 0) {
-				return originalSave.call(this, cb);
-			}
-			
-			// 모든 규칙 삭제 후 Admin_IP 규칙부터 다시 추가 (인덱스 재설정)
-			var promises = [];
-			
-			// 1. 모든 규칙의 설정 내용 임시 저장
-			var ruleConfigs = {};
-			sections.forEach(function(section) {
-				ruleConfigs[section['.name']] = Object.assign({}, section);
-				delete ruleConfigs[section['.name']]['.name'];
-				delete ruleConfigs[section['.name']]['.type'];
-				delete ruleConfigs[section['.name']]['.index'];
-			});
-
-			var includeConfigs = {};
-			includeSections.forEach(function(section) {
-				if (section.path) {
-					includeConfigs[section.path] = { path: section.path };
-				}
-			});
-			
-			// 2. 기존 규칙 모두 삭제
-			sections.forEach(function(section) {
-				promises.push(uci.remove('firewall', section['.name']));
-			});
-			
-			// 3. Admin_IP 규칙부터 순서대로 다시 추가
-			adminIpRules.forEach(function(sectionName) {
-				var config = ruleConfigs[sectionName];
-				var newSection = uci.add('firewall', 'rule');
-				
-				// 저장해둔 설정 복원
-				Object.keys(config).forEach(function(key) {
-					uci.set('firewall', newSection, key, config[key]);
-				});
-			});
-			
-			// 4. include section 추가 (path만 저장)
-			Object.values(includeConfigs).forEach(function(config) {
-				if (config.path) {
-					var newSection = uci.add('firewall', 'include');
-					uci.set('firewall', newSection, 'path', config.path);
-				}
-			});
-			
-			// 5. 나머지 규칙 추가
-			otherRules.forEach(function(sectionName) {
-				var config = ruleConfigs[sectionName];
-				var newSection = uci.add('firewall', 'rule');
-				
-				// 저장해둔 설정 복원
-				Object.keys(config).forEach(function(key) {
-					uci.set('firewall', newSection, key, config[key]);
-				});
-			});
-			
-			// 5. 원본 save 호출하여 저장 완료
-			return originalSave.call(this, cb);
-		};
-
-		s = m.section(form.GridSection, 'rule', _('Administrator IP Rules'));
+		s = m.section(form.GridSection, 'rule', _('Traffic Rules'));
 		s.addremove = true;
 		s.anonymous = true;
 		s.sortable  = true;
 
 		s.tab('general', _('General Settings'));
-		s.tab('advanced', _('Advanced Settings'));
-		s.tab('timed', _('Time Restrictions'));
 
 		s.filter = function(section_id) {
-			var target = uci.get('firewall', section_id, 'target');
-			var name = uci.get('firewall', section_id, 'name') || '';
-			return (target !== 'SNAT') && (name.startsWith('Admin_IP') || name === 'Default Policy');
+			return (uci.get('firewall', section_id, 'target') != 'SNAT');
 		};
 
 		s.sectiontitle = function(section_id) {
@@ -274,66 +189,24 @@ return view.extend({
 		};
 
 		s.handleAdd = function(ev) {
-			var config_name = this.uciconfig || this.map.config;
-			
-			// 1. 기존 Admin_IP 규칙 개수 확인
-			var existing_rules = uci.sections('firewall', 'rule');
-			var used_admin_ip_indices = new Set();
+			var config_name = this.uciconfig || this.map.config,
+			    section_id = uci.add(config_name, this.sectiontype),
+			    opt1 = this.getOption('src'),
+			    opt2 = this.getOption('dest');
 
-			existing_rules.forEach(function(rule_section) {
-				var name = uci.get('firewall', rule_section['.name'], 'name');
-				if (name && name.startsWith('Admin_IP_')) {
-					var num_str = name.substring('Admin_IP_'.length);
-					if (/^\d+$/.test(num_str)) {
-						var num = parseInt(num_str, 10);
-						if (num >= 0 && num <= 9) {
-							used_admin_ip_indices.add(num);
-						}
-					}
-				}
-			});
-			
-			var next_admin_ip_index = -1;
-			for (var i = 0; i <= 9; i++) {
-				if (!used_admin_ip_indices.has(i)) {
-					next_admin_ip_index = i;
-					break;
-				}
-			}
-
-			if (next_admin_ip_index === -1) {
-				ui.showModal(_('Error'), E('p', _('All Admin_IP rule slots (0-9) are currently in use.')));
-				return;
-			}
-
-			// 표준 LuCI 방식으로 새 섹션 추가
-			var section_id = uci.add(config_name, this.sectiontype);
-			
-			// Admin_IP 관련 속성 설정
-			var new_rule_name = 'Admin_IP_' + next_admin_ip_index;
-			uci.set('firewall', section_id, 'name', new_rule_name);
-			uci.set('firewall', section_id, 'src', 'wan');
-			uci.set('firewall', section_id, 'proto', 'all');
-			uci.set('firewall', section_id, 'target', 'ACCEPT');
+			opt1.default = 'wan';
+			opt2.default = 'lan';
 
 			this.addedSection = section_id;
 			this.renderMoreOptionsModal(section_id);
+
+			delete opt1.default;
+			delete opt2.default;
 		};
 
 		o = s.taboption('general', form.Value, 'name', _('Name'));
 		o.placeholder = _('Unnamed rule');
 		o.modalonly = true;
-		o.readonly = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				var num_str = current_name.substring('Admin_IP_'.length);
-				var num = parseInt(num_str, 10);
-				if (num >= 0 && num <= 9) {
-					return true; // Make it read-only
-				}
-			}
-			return false; // Otherwise, editable
-		};
 
 		o = s.option(form.DummyValue, '_match', _('Match'));
 		o.modalonly = false;
@@ -370,147 +243,17 @@ return view.extend({
 			return null;
 		};
 
-		o = s.taboption('advanced', form.ListValue, 'direction', _('Match device'));
-		o.modalonly = true;
-		o.value('', _('unspecified'));
-		o.value('in', _('Inbound device'));
-		o.value('out', _('Outbound device'));
-		o.cfgvalue = function(section_id) {
-			var val = uci.get('firewall', section_id, 'direction');
-			switch (val) {
-				case 'in':
-				case 'ingress':
-					return 'in';
-
-				case 'out':
-				case 'egress':
-					return 'out';
-			}
-
-			return null;
-		};
-
-		o = s.taboption('advanced', widgets.DeviceSelect, 'device', _('Device name'),
-			_('Specifies whether to tie this traffic rule to a specific inbound or outbound network device.'));
-		o.modalonly = true;
-		o.noaliases = true;
-		o.rmempty = false;
-		o.depends('direction', 'in');
-		o.depends('direction', 'out');
-
-		o = s.taboption('advanced', form.ListValue, 'family', _('Restrict to address family'));
-		o.modalonly = true;
-		o.rmempty = true;
-		o.value('', _('IPv4 and IPv6'));
-		o.value('ipv4', _('IPv4 only'));
-		o.value('ipv6', _('IPv6 only'));
-		o.validate = function(section_id, value) {
-			fwtool.updateHostHints(this.map, section_id, 'src_ip', value, hosts);
-			fwtool.updateHostHints(this.map, section_id, 'dest_ip', value, hosts);
-			return true;
-		};
 
 		o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
 		o.modalonly = true;
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return 'all'; // Use 'all' for 'Any' for Admin_IP rules
-			}
-			return uci.get('firewall', section_id, 'proto') || 'tcp udp'; // Raw value for other rules, default to 'tcp udp'
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'proto', 'all'); // Save as 'all'
-			}
-			return this.super('write', [section_id, value]); // Default behavior for other rules
-		};
-		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
-		o.default = 'tcp udp'; // Default for general rules if not Admin_IP_X
-
-		o = s.taboption('advanced', form.MultiValue, 'icmp_type', _('Match ICMP type'));
-		o.modalonly = true;
-		o.multiple = true;
-		o.custom = true;
-		o.cast = 'table';
-		o.placeholder = _('any');
-		o.value('', 'any');
-		o.value('address-mask-reply');
-		o.value('address-mask-request');
-		o.value('address-unreachable'); /* ipv6 */
-		o.value('bad-header');  /* ipv6 */
-		o.value('communication-prohibited');
-		o.value('destination-unreachable');
-		o.value('echo-reply');
-		o.value('echo-request');
-		o.value('fragmentation-needed');
-		o.value('host-precedence-violation');
-		o.value('host-prohibited');
-		o.value('host-redirect');
-		o.value('host-unknown');
-		o.value('host-unreachable');
-		o.value('ip-header-bad');
-		o.value('neighbour-advertisement');
-		o.value('neighbour-solicitation');
-		o.value('network-prohibited');
-		o.value('network-redirect');
-		o.value('network-unknown');
-		o.value('network-unreachable');
-		o.value('no-route');  /* ipv6 */
-		o.value('packet-too-big');
-		o.value('parameter-problem');
-		o.value('port-unreachable');
-		o.value('precedence-cutoff');
-		o.value('protocol-unreachable');
-		o.value('redirect');
-		o.value('required-option-missing');
-		o.value('router-advertisement');
-		o.value('router-solicitation');
-		o.value('source-quench');
-		o.value('source-route-failed');
-		o.value('time-exceeded');
-		o.value('timestamp-reply');
-		o.value('timestamp-request');
-		o.value('TOS-host-redirect');
-		o.value('TOS-host-unreachable');
-		o.value('TOS-network-redirect');
-		o.value('TOS-network-unreachable');
-		o.value('ttl-zero-during-reassembly');
-		o.value('ttl-zero-during-transit');
-		o.value('unknown-header-type');  /* ipv6 */
-		o.value('unknown-option');  /* ipv6 */
-		o.depends({ proto: 'icmp', '!contains': true });
-		o.depends({ proto: 'icmpv6', '!contains': true });
+		o.default = 'tcp udp';
 
 		o = s.taboption('general', widgets.ZoneSelect, 'src', _('Source zone'));
 		o.modalonly = true;
 		o.nocreate = true;
 		o.allowany = true;
 		o.allowlocal = 'src';
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return 'wan'; // For Admin_IP rules, source zone is always 'wan'
-			}
-			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'src', 'wan'); // Ensure it's saved as 'wan'
-			}
-			return this.super('write', [section_id, value]);
-		};
-		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
 
-		fwtool.addMACOption(s, 'advanced', 'src_mac', _('Source MAC address'), null, hosts);
 		fwtool.addIPOption(s, 'general', 'src_ip', _('Source address'), null, '', hosts, true);
 
 		o = s.taboption('general', form.Value, 'src_port', _('Source port'));
@@ -569,80 +312,6 @@ return view.extend({
 		o.depends('target', 'HELPER');
 		for (var i = 0; i < ctHelpers.length; i++)
 			o.value(ctHelpers[i].name, '%s (%s)'.format(ctHelpers[i].description, ctHelpers[i].name.toUpperCase()));
-
-		o = s.taboption('advanced', form.Value, 'helper', _('Match helper'), _('Match traffic using the specified connection tracking helper.'));
-		o.modalonly = true;
-		o.placeholder = _('any');
-		for (var i = 0; i < ctHelpers.length; i++)
-			o.value(ctHelpers[i].name, '%s (%s)'.format(ctHelpers[i].description, ctHelpers[i].name.toUpperCase()));
-		o.validate = function(section_id, value) {
-			if (value == '' || value == null)
-				return true;
-
-			value = value.replace(/^!\s*/, '');
-
-			for (var i = 0; i < ctHelpers.length; i++)
-				if (value == ctHelpers[i].name)
-					return true;
-
-			return _('Unknown or not installed conntrack helper "%s"').format(value);
-		};
-
-		fwtool.addMarkOption(s, false);
-		fwtool.addDSCPOption(s, false);
-		fwtool.addLimitOption(s);
-		fwtool.addLimitBurstOption(s);
-
-		o = s.taboption('advanced', form.Value, 'extra', _('Extra arguments'),
-			_('Passes additional arguments to iptables. Use with care!'));
-		o.modalonly = true;
-
-		o = s.taboption('timed', form.MultiValue, 'weekdays', _('Week Days'));
-		o.modalonly = true;
-		o.multiple = true;
-		o.display = 5;
-		o.placeholder = _('Any day');
-		o.value('Sun', _('Sunday'));
-		o.value('Mon', _('Monday'));
-		o.value('Tue', _('Tuesday'));
-		o.value('Wed', _('Wednesday'));
-		o.value('Thu', _('Thursday'));
-		o.value('Fri', _('Friday'));
-		o.value('Sat', _('Saturday'));
-		o.write = function(section_id, value) {
-			return this.super('write', [ section_id, L.toArray(value).join(' ') ]);
-		};
-
-		o = s.taboption('timed', form.MultiValue, 'monthdays', _('Month Days'));
-		o.modalonly = true;
-		o.multiple = true;
-		o.display_size = 15;
-		o.placeholder = _('Any day');
-		o.write = function(section_id, value) {
-			return this.super('write', [ section_id, L.toArray(value).join(' ') ]);
-		};
-		for (var i = 1; i <= 31; i++)
-			o.value(i);
-
-		o = s.taboption('timed', form.Value, 'start_time', _('Start Time (hh:mm:ss)'));
-		o.modalonly = true;
-		o.datatype = 'timehhmmss';
-
-		o = s.taboption('timed', form.Value, 'stop_time', _('Stop Time (hh:mm:ss)'));
-		o.modalonly = true;
-		o.datatype = 'timehhmmss';
-
-		o = s.taboption('timed', form.Value, 'start_date', _('Start Date (yyyy-mm-dd)'));
-		o.modalonly = true;
-		o.datatype = 'dateyyyymmdd';
-
-		o = s.taboption('timed', form.Value, 'stop_date', _('Stop Date (yyyy-mm-dd)'));
-		o.modalonly = true;
-		o.datatype = 'dateyyyymmdd';
-
-		o = s.taboption('timed', form.Flag, 'utc_time', _('Time in UTC'));
-		o.modalonly = true;
-		o.default = o.disabled;
 
 		return m.render();
 	}
