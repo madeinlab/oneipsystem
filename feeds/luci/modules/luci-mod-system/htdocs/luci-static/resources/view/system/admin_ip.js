@@ -178,6 +178,7 @@ return view.extend({
 		m.save = function(cb) {
 			// Admin_IP 규칙들을 위한 처리
 			var sections = uci.sections('firewall', 'rule');
+			var includeSections = uci.sections('firewall', 'include');
 			var adminIpRules = [];
 			var otherRules = [];
 			
@@ -206,6 +207,13 @@ return view.extend({
 				delete ruleConfigs[section['.name']]['.type'];
 				delete ruleConfigs[section['.name']]['.index'];
 			});
+
+			var includeConfigs = {};
+			includeSections.forEach(function(section) {
+				if (section.path) {
+					includeConfigs[section.path] = { path: section.path };
+				}
+			});
 			
 			// 2. 기존 규칙 모두 삭제
 			sections.forEach(function(section) {
@@ -223,7 +231,15 @@ return view.extend({
 				});
 			});
 			
-			// 4. 나머지 규칙 추가
+			// 4. include section 추가 (path만 저장)
+			Object.values(includeConfigs).forEach(function(config) {
+				if (config.path) {
+					var newSection = uci.add('firewall', 'include');
+					uci.set('firewall', newSection, 'path', config.path);
+				}
+			});
+			
+			// 5. 나머지 규칙 추가
 			otherRules.forEach(function(sectionName) {
 				var config = ruleConfigs[sectionName];
 				var newSection = uci.add('firewall', 'rule');
