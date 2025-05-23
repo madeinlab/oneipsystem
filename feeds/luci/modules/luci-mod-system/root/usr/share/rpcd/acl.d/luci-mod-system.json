@@ -237,7 +237,7 @@
 				"luci": [ "getHostHints", "getConntrackHelpers" ],
 				"uci": [ "get", "state" ]
 			},
-			"uci": [ "firewall", "firewall_adminIP" ]
+			"uci": [ "firewall" ]
 		},
 		"write": {
 			"file": {
@@ -247,7 +247,7 @@
 				"file": [ "exec", "write" ],
 				"uci": [ "set", "commit", "apply" ]
 			},
-			"uci": [ "firewall", "firewall_adminIP" ]
+			"uci": [ "firewall" ]
 		}
 	}
 }
