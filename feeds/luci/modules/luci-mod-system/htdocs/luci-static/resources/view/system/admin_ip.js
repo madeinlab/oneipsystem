@@ -204,49 +204,60 @@ return view.extend({
 
 		s.handleAdd = function(ev) {
 			var config_name = this.uciconfig || this.map.config;
-			
-			// 1. 기존 Admin_IP 규칙 개수 확인
-			var existing_rules = uci.sections('firewall', 'rule');
-			var used_admin_ip_indices = new Set();
+			var found = null;
+			var used = new Set();
 
-			existing_rules.forEach(function(rule_section) {
-				var name = uci.get('firewall', rule_section['.name'], 'name');
+			uci.sections('firewall', 'rule').forEach(function(rule) {
+				var name = uci.get('firewall', rule['.name'], 'name');
+				if (name && name.startsWith('NoAdmin_IP_') && uci.get('firewall', rule['.name'], 'enabled') === '0' && !found) {
+					found = rule['.name'];
+				}
 				if (name && name.startsWith('Admin_IP_')) {
-					var num_str = name.substring('Admin_IP_'.length);
-					if (/^\d+$/.test(num_str)) {
-						var num = parseInt(num_str, 10);
-						if (num >= 0 && num <= 9) {
-							used_admin_ip_indices.add(num);
-						}
-					}
+					var idx = parseInt(name.replace('Admin_IP_', ''), 10);
+					used.add(idx);
 				}
 			});
-			
-			var next_admin_ip_index = -1;
+
+			if (!found) {
+				ui.showModal(_('Error'), E('p', _('No available Admin_IP slots.')));
+				return;
+			}
+
+			// 다음 사용 가능한 인덱스 찾기
+			var next_idx = -1;
 			for (var i = 0; i <= 9; i++) {
-				if (!used_admin_ip_indices.has(i)) {
-					next_admin_ip_index = i;
+				if (!used.has(i)) {
+					next_idx = i;
 					break;
 				}
 			}
-
-			if (next_admin_ip_index === -1) {
+			if (next_idx === -1) {
 				ui.showModal(_('Error'), E('p', _('All Admin_IP rule slots (0-9) are currently in use.')));
 				return;
 			}
 
-			// 표준 LuCI 방식으로 새 섹션 추가
-			var section_id = uci.add(config_name, this.sectiontype);
-			
-			// Admin_IP 관련 속성 설정
-			var new_rule_name = 'Admin_IP_' + next_admin_ip_index;
-			uci.set('firewall', section_id, 'name', new_rule_name);
-			uci.set('firewall', section_id, 'src', 'wan');
-			uci.set('firewall', section_id, 'proto', 'all');
-			uci.set('firewall', section_id, 'target', 'ACCEPT');
+			// 이름 및 옵션 변경
+			uci.set('firewall', found, 'name', 'Admin_IP_' + next_idx);
+			uci.set('firewall', found, 'enabled', '1');
+			uci.set('firewall', found, 'src', 'wan');
+			uci.set('firewall', found, 'proto', 'all');
+			uci.set('firewall', found, 'target', 'ACCEPT');
+			// src_ip 등은 모달에서 입력받음
+			this.addedSection = found;
+			this.renderMoreOptionsModal(found);
+		};
 
-			this.addedSection = section_id;
-			this.renderMoreOptionsModal(section_id);
+		s.handleRemove = function(section_id) {
+			var name = uci.get('firewall', section_id, 'name');
+			if (name && name.startsWith('Admin_IP_')) {
+				var idx = name.replace('Admin_IP_', '');
+				uci.set('firewall', section_id, 'name', 'NoAdmin_IP_' + idx);
+				uci.set('firewall', section_id, 'enabled', '0');
+				uci.set('firewall', section_id, 'src', 'wan');
+				uci.set('firewall', section_id, 'proto', 'all');
+				uci.set('firewall', section_id, 'target', 'ACCEPT');
+				this.map.save();
+			}
 		};
 
 		o = s.taboption('general', form.Value, 'name', _('Name'));
