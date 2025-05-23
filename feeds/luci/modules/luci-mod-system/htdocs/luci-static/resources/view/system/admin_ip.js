@@ -176,7 +176,19 @@ return view.extend({
 		s = m.section(form.GridSection, 'rule', _('Administrator IP Rules'));
 		s.addremove = true;
 		s.anonymous = true;
-		s.sortable  = true;
+		s.sortable  = false;
+
+		s.renderRowActions = function(section_id) {
+			var name = uci.get('firewall', section_id, 'name') || '';
+			if (name === 'Admin_IP_Default_Policy')
+				return E('td'); // 빈 셀 반환
+			return E('td', { 'class': 'cbi-section-table-cell cbi-section-actions' }, [
+				E('button', {
+					'class': 'btn cbi-button-remove',
+					'click': ui.createHandlerFn(this, 'handleRemove', section_id)
+				}, _('삭제'))
+			]);
+		};
 
 		s.tab('general', _('General Settings'));
 
