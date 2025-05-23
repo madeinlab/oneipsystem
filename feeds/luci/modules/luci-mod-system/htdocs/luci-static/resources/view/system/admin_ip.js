@@ -296,6 +296,39 @@ return view.extend({
 		o.modalonly = false;
 		o.default = o.enabled;
 		o.editable = true;
+		o.renderWidget = function(section_id, option_index, cfgvalue) {
+			var widget = form.Flag.prototype.renderWidget.apply(this, arguments);
+			var name = uci.get('firewall', section_id, 'name');
+			if (name === 'Admin_IP_Default_Policy') {
+				var checkbox = widget.querySelector ? widget.querySelector('input[type=checkbox]') : widget;
+				if (checkbox) {
+					checkbox.addEventListener('change', function(ev) {
+						if (checkbox.checked) {
+							var has_admin_ip = false;
+							uci.sections('firewall', 'rule').forEach(function(rule) {
+								var n = uci.get('firewall', rule['.name'], 'name');
+								var en = uci.get('firewall', rule['.name'], 'enabled');
+								if (n && n.match(/^Admin_IP_\d+$/) && en === '1') {
+									has_admin_ip = true;
+								}
+							});
+							if (!has_admin_ip) {
+								ui.showModal(_('Warning'), [
+									E('h2', { style: 'color:red;font-size:1.2em;text-align:center;' }, _('Please register at least one available Admin IP before enabling the default policy for Admin IP.')),
+									E('p', { style: 'font-size:1.2em;text-align:center;' }, _('If you enable the default policy without any Admin IP registered, you may lose web access!')),
+									E('p', { style: 'font-size:1.1em;text-align:center;color:#555;' }, _('(If communication is lost for more than 90 seconds, the change will be automatically rolled back.)')),
+									E('div', { 'class': 'right' }, [
+										E('button', { 'class': 'btn', 'click': ui.hideModal }, _('OK'))
+									])
+								]);
+							}
+						}
+					});
+				}
+			}
+			return widget;
+		};
+
 		o.tooltip = function(section_id) {
 			var weekdays = uci.get('firewall', section_id, 'weekdays');
 			var monthdays = uci.get('firewall', section_id, 'monthdays');
@@ -309,7 +342,6 @@ return view.extend({
 
 			return null;
 		};
-
 
 		o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
 		o.modalonly = true;
@@ -367,6 +399,12 @@ return view.extend({
 					widget.setAttribute('style', 'border-color: var(--main-bright-color)');
 				}
 				return widget;
+			};
+			// 저장 시 option src_ip로, CIDR /32로 저장
+			src_ip_field.write = function(section_id, value) {
+				if (Array.isArray(value)) value = value[0];
+				if (value && !value.includes('/')) value = value + '/32';
+				return uci.set('firewall', section_id, 'src_ip', value);
 			};
 		}
 
