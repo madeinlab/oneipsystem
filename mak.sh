@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo -n "make -j$(nproc)..."
+#echo -n "make -j$(($(nproc) - 2))..."
 
 if [ $SCRIPT_PROGESS ]; then
 	if [ $SCRIPT_PROGESS == 1 ]; then
@@ -32,6 +33,7 @@ fi
 
 echo "$TEST_CNT"
 make -j$(nproc)
+#make -j$(($(nproc) - 2))
 
 END_TEST_DATE=`date +%F_%T`
 
