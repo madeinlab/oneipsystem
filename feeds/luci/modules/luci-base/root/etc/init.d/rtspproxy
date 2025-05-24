@@ -1,0 +1,52 @@
+#!/bin/sh /etc/rc.common
+
+START=95
+STOP=10
+
+MEDIAMTX_BIN=/usr/lib/rtsp-server/mediamtx
+CONFIG_FILE=/usr/lib/rtsp-server/config.yml
+PIDFILE=/var/run/mediamtx.pid
+
+start() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Creating default config.yml..."
+        mkdir -p "$(dirname "$CONFIG_FILE")"
+        cat <<EOF > "$CONFIG_FILE"
+rtsp: yes
+rtspTransports: [tcp]
+rtspEncryption: "no"
+rtspAddress: :10554
+
+readTimeout: 5s
+writeTimeout: 5s
+readBufferCount: 128
+
+paths:
+  all:
+    source: publisher
+EOF
+    fi
+
+    echo "Starting mediamtx..."
+    start-stop-daemon -S -b -m -p "$PIDFILE" -x "$MEDIAMTX_BIN" -- "$CONFIG_FILE"
+}
+
+stop() {
+    echo "Stopping mediamtx..."
+    start-stop-daemon -K -p "$PIDFILE"
+}
+
+restart() {
+    stop
+    start
+}
+
+status() {
+    if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+        echo "mediamtx is running (PID: $(cat "$PIDFILE"))"
+        return 0
+    else
+        echo "mediamtx is not running"
+        return 1
+    fi
+}

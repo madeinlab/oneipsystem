@@ -645,23 +645,28 @@ local methods = {
 	},
 
 	addCamera = {
-		args = { ip = "ip" },
+		args = {
+			ip = "string",
+			mac = "string",
+			username = { type = "string", required = false },
+			password = { type = "string", required = false }
+		},
 		call = function(args)
 			local camera = require "luci.camera"
-			camera.addCamera(args.ip);
+			camera.addCamera(args.ip, args.mac, args.username or "", args.password or "");
 
 			return { result = true }
-		end		
+		end
 	},
 
 	removeCamera = {
-		args = { ip = "ip" },
+		args = { ip = "string", mac = "string" },
 		call = function(args)
 			local camera = require "luci.camera"
-			camera.removeCamera(args.ip);
+			camera.removeCamera(args.ip, args.mac);
 
 			return { result = true }
-		end		
+		end
 	},
 
 	getCameraInfo = {
@@ -671,14 +676,14 @@ local methods = {
 			local result = camera.getCameraInfo(args.section_id, args.type);
 
 			return result
-		end		
+		end
 	},
 
 	rebootCamera = {
-		args = { section_id = "section_id" },
+		args = { ip = "string", mac = "string" },
 		call = function(args)
 			local camera = require "luci.camera"
-			local result = camera.rebootCamera(args.section_id);
+			local result = camera.rebootCamera(args.ip, args.mac);
 
 			return result
 		end
@@ -743,6 +748,61 @@ local methods = {
 			else
 				return { error = "Key destruction failed" }
 			end
+		end
+	},
+
+	updateRTSPProxyConf = {
+		call = function()
+			local handle = io.popen("/usr/lib/rtsp-server/generate_rtsp_config.lua")
+			local result = handle:read("*a")
+			handle:close()
+	
+			if result:match("OK") then
+				return { result = "RTSP configuration generated successfully." }
+			else
+				return { error = "RTSP configuration generation failed." }
+			end
+		end
+	},
+
+	updateAccountsConf = {
+		call = function()
+			local camera = require "luci.camera"
+			local result = camera.updateAccountsConf();
+
+			return result
+		end
+	},
+	
+	getMacAddr = {
+		call = function()
+			local camera = require "luci.camera"
+			local result = camera.getMacAddr();
+
+			return result
+		end
+	},
+
+	saveAccountConf = {
+		args = { mac = "string", username = "string", password = "string" },
+		call = function(args)
+			local camera = require "luci.camera"
+			local result = camera.saveAccountConf(args.mac, args.username, args.password);
+
+			return result
+		end
+	},
+
+	getAccountByMac = {
+		args = { mac = "string" },
+		call = function(args)
+			local camera = require "luci.camera"
+			local username, password = camera.getAccountByMac(args.mac)
+
+			return {
+				username = username,
+				password = password
+			}
 		end
 	}
 }

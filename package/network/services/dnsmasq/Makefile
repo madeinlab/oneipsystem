@@ -182,7 +182,6 @@ define Package/dnsmasq/install
 	$(INSTALL_BIN) ./files/dhcp-host.doowon $(1)/usr/lib/dnsmasq/dhcp-host.doowon
 	$(INSTALL_BIN) ./files/check_link.sh $(1)/usr/lib/dnsmasq/check_link.sh
 	$(INSTALL_BIN) ./files/check_link.init $(1)/etc/init.d/check_link
-	$(INSTALL_BIN) ./files/reboot-camera.sh $(1)/usr/lib/dnsmasq/reboot-camera.sh
 	$(INSTALL_DIR) $(1)/usr/share/acl.d
 	$(INSTALL_DATA) ./files/dnsmasq_acl.json $(1)/usr/share/acl.d/
 	$(INSTALL_DIR) $(1)/etc/uci-defaults

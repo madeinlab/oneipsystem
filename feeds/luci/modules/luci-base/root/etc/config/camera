@@ -1,0 +1,31 @@
+config camera 'cam1'
+        option name 'cam1'
+        option switchPort '1'
+
+config camera 'cam2'
+        option name 'cam2'
+        option switchPort '2'
+
+config camera 'cam3'
+        option name 'cam3'
+        option switchPort '3'
+
+config camera 'cam4'
+        option name 'cam4'
+        option switchPort '4'
+        
+config camera 'cam5'
+        option name 'cam5'
+        option switchPort '5'
+
+config camera 'cam6'
+        option name 'cam6'
+        option switchPort '6'
+
+config camera 'cam7'
+        option name 'cam7'
+        option switchPort '7'
+
+config camera 'cam8'
+        option name 'cam8'
+        option switchPort '8'

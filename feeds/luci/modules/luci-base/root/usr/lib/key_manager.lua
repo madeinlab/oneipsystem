@@ -6,11 +6,23 @@ ffi.cdef[[
     void *memcpy(void *dest, const void *src, size_t n);
 ]]
 
-function secure_wipe_cbuf(buf, len)
-	-- nixio.syslog("debug", "secure_wipe_cbuf len:" .. len)
-    ffi.C.memset(buf, 0, len)
+local KEK_PATH = "/etc/.kek"
+local DEK_PATH = "/etc/.dek"
+
+local function safe_popen_read(cmd)
+    local handle = io.popen(cmd)
+    if not handle then
+        return ""
+    end
+    local result = handle:read("*a")
+    handle:close()
+    if not result then
+        return ""
+    end
+    return result
 end
 
+-- 암복호화 수행 시 FFI 기반 C 버퍼에 키를 로드한다.
 function copy_to_cbuf(str)
     local len = #str
     local buf = ffi.new("char[?]", len + 1)
@@ -19,16 +31,44 @@ function copy_to_cbuf(str)
     return buf, len
 end
 
+-- 작업 종료 직전, 해당 메모리 공간을 0으로 초기화하여 키를 안전하게 파기한다.
+function secure_wipe_cbuf(buf, len)
+    ffi.C.memset(buf, 0, len)
+end
+
+-- 문자열 키 역시 무의미한 값으로 덮어쓴 뒤 가비지 컬렉션을 수행한다.
 function destroy_string(str)
 	if type(str) ~= "string" then return end
 	local dummy = string.rep("X", #str)
-	str = nil
-	dummy = nil
-	collectgarbage("collect")
+	str = nil  -- 기존 문자열 참조 해제
+	dummy = nil  -- 덮어쓴 더미도 해제
+	collectgarbage("collect")  -- 즉시 GC 유도
 end
 
-local KEK_PATH = "/etc/.kek"
-local DEK_PATH = "/etc/.dek"
+-- 파일로 저장된 키는 0x00, 0xFF, 0x00 값으로 3회 덮어쓴 후 삭제된다.
+function overwrite_and_delete(path)
+	local size = 0
+
+	-- 먼저 파일 크기 확인
+	local f = io.open(path, "rb")
+	if not f then return end
+	local content = f:read("*a")
+	f:close()
+	size = #content
+
+	-- 3회 덮어쓰기: 0x00, 0xFF, 0x00 (0, 1, 0)
+	local patterns = { string.char(0x00), string.char(0xFF), string.char(0x00) }
+	for _, pattern in ipairs(patterns) do
+		local f = io.open(path, "wb")
+		if f then
+			f:write(string.rep(pattern, size))
+			f:close()
+		end
+	end
+
+	-- 마지막으로 삭제
+	os.remove(path)
+end
 
 -- 파일 존재 여부 확인
 function file_exists(path)
@@ -38,9 +78,7 @@ end
 
 -- 랜덤 키 생성
 function generate_key()
-	local handle = io.popen("openssl rand -base64 32")
-	local key = handle:read("*a")
-	handle:close()
+	local key = safe_popen_read("openssl rand -base64 32")
 	return key:gsub("\n", "")
 end
 
@@ -75,9 +113,7 @@ end
 -- KEK로 DEK 복호화
 function decrypt_dek(kek)
 	local cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', DEK_PATH, kek)
-	local handle = io.popen(cmd)
-	local dek = handle:read("*a")
-	handle:close()
+	local dek = safe_popen_read(cmd)
 	return dek:gsub("\n", "")
 end
 
@@ -106,38 +142,6 @@ function getEncryptKey(action)
 	return dek_buf, dek_len
 end
 
-function destroy_string(str)
-	if type(str) ~= "string" then return end
-	local dummy = string.rep("X", #str)
-	str = nil  -- 기존 문자열 참조 해제
-	dummy = nil  -- 덮어쓴 더미도 해제
-	collectgarbage("collect")  -- 즉시 GC 유도
-end
-
-function overwrite_and_delete(path)
-	local size = 0
-
-	-- 먼저 파일 크기 확인
-	local f = io.open(path, "rb")
-	if not f then return end
-	local content = f:read("*a")
-	f:close()
-	size = #content
-
-	-- 3회 덮어쓰기: 0x00, 0xFF, 0x00 (0, 1, 0)
-	local patterns = { string.char(0x00), string.char(0xFF), string.char(0x00) }
-	for _, pattern in ipairs(patterns) do
-		local f = io.open(path, "wb")
-		if f then
-			f:write(string.rep(pattern, size))
-			f:close()
-		end
-	end
-
-	-- 마지막으로 삭제
-	os.remove(path)
-end
-
 -- 키 파기 함수
 function destroy_keys()
 	overwrite_and_delete("/etc/.kek")
@@ -158,9 +162,7 @@ if arg[1] == "encrypt" then
 	local dek_str = ffi.string(dek_buf, dek_len)
 
 	local cmd = string.format('echo -n "%s" | openssl enc -aes-256-cbc -base64 -pbkdf2 -pass pass:%s', plaintext, dek_str)
-	local handle = io.popen(cmd)
-	local result = handle:read("*a")
-	handle:close()
+	local result = safe_popen_read(cmd)
 
 	secure_wipe_cbuf(dek_buf, dek_len)
 	destroy_string(dek_str)
@@ -188,9 +190,7 @@ elseif arg[1] == "decrypt" then
 	end
 
 	local cmd = string.format('openssl enc -aes-256-cbc -d -base64 -pbkdf2 -in %s -pass pass:%s', tmpFile, dek_str)
-	local handle = io.popen(cmd)
-	local result = handle:read("*a")
-	handle:close()
+	local result = safe_popen_read(cmd)
 	os.remove(tmpFile)
 
 	secure_wipe_cbuf(dek_buf, dek_len)
@@ -204,7 +204,6 @@ elseif arg[1] == "get_dek" then
 	print(dek_str)
 	secure_wipe_cbuf(dek_buf, dek_len)
 	destroy_string(dek_str)
-
 elseif arg[1] == "destroy_keys" then
 	destroy_keys()
 	print("OK")
