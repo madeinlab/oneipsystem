@@ -30,19 +30,93 @@ local function rsa_decrypt_base64(enc_base64)
 	local tmp_in = "/tmp/rsa_enc_in"
 	local tmp_out = "/tmp/rsa_dec_out"
 	local privkey = "/etc/ssl/private.pem"
-	-- base64 디코딩 후 임시 파일로 저장
-	local f = io.open(tmp_in, "wb")
-	f:write(require("luci.util").base64_decode(enc_base64))
-	f:close()
-	-- openssl로 복호화
-	os.execute(string.format("openssl rsautl -decrypt -inkey %s -in %s -out %s", privkey, tmp_in, tmp_out))
+	local openssl_bin = "/usr/bin/openssl" -- 실제 경로 확인 필요
+
+	-- base64 디코딩
+	local decoded = require("luci.util").base64_decode(enc_base64)
+	nixio.syslog("debug", "[RSA] base64 decode length: " .. (decoded and #decoded or 0))
+	if not decoded or #decoded == 0 then
+		nixio.syslog("debug", "[RSA] base64 decode 실패! luci.util.base64_decode 결과 없음. openssl base64 -d로 재시도");
+		-- openssl base64 -d로 디코딩 시도
+		local tmp_b64 = "/tmp/rsa_enc_b64"
+		local f_b64 = io.open(tmp_b64, "w")
+		if f_b64 then
+			f_b64:write(enc_base64)
+			f_b64:close()
+			local openssl_bin = "/usr/bin/openssl"
+			local cmd = string.format("%s base64 -d -in %s -out %s 2>/tmp/rsa_err.log", openssl_bin, tmp_b64, tmp_in)
+			nixio.syslog("debug", "[RSA] openssl base64 decode 명령: " .. cmd)
+			local ret = os.execute(cmd)
+			nixio.syslog("debug", "[RSA] openssl base64 decode 실행 결과: " .. tostring(ret))
+			local stat = nixio.fs.stat(tmp_in)
+			nixio.syslog("debug", "[RSA] openssl base64 decode 후 임시 입력 파일 크기: " .. (stat and stat.size or "nil"))
+			os.remove(tmp_b64)
+		else
+			nixio.syslog("debug", "[RSA] 임시 base64 파일 생성 실패: " .. tmp_b64)
+		end
+	else
+		-- 임시 파일로 저장
+		local f, err = io.open(tmp_in, "wb")
+		if not f then
+			nixio.syslog("debug", "[RSA] 임시 입력 파일 생성 실패: " .. tostring(err))
+			return nil
+		end
+		f:write(decoded)
+		f:close()
+		local stat = nixio.fs.stat(tmp_in)
+		nixio.syslog("debug", "[RSA] 임시 입력 파일 크기: " .. (stat and stat.size or "nil"))
+	end
+
+	-- openssl로 복호화 (표준에러 로그로 남김)
+	local cmd = string.format("%s rsautl -decrypt -inkey %s -in %s -out %s 2>/tmp/rsa_err.log", openssl_bin, privkey, tmp_in, tmp_out)
+	nixio.syslog("debug", "[RSA] openssl 명령: " .. cmd)
+	local ret = os.execute(cmd)
+	nixio.syslog("debug", "[RSA] openssl 실행 결과: " .. tostring(ret))
+
 	-- 복호문 읽기
 	local f2 = io.open(tmp_out, "rb")
+	if not f2 then
+		nixio.syslog("debug", "[RSA] 임시 출력 파일 없음: " .. tmp_out)
+	end
 	local decrypted = f2 and f2:read("*a") or nil
 	if f2 then f2:close() end
-	os.remove(tmp_in)
-	os.remove(tmp_out)
-	return decrypted
+
+	-- 임시 파일 삭제 전 내용 로그로 남김(진단용)
+	local ferr = io.open("/tmp/rsa_err.log", "rb")
+	local errlog = ferr and ferr:read("*a") or ""
+	if ferr then ferr:close() end
+
+	if decrypted and #decrypted > 0 then
+		nixio.syslog("debug", "[RSA] 복호화 성공, 길이: " .. #decrypted)
+		nixio.syslog("debug", "[RSA] 복호화 평문: " .. decrypted)
+		return decrypted
+	else
+		nixio.syslog("debug", "[RSA] 복호화 실패")
+		nixio.syslog("debug", "[RSA] 입력 base64: " .. enc_base64)
+		return nil
+	end
+end
+
+local function rsa_decrypt_base64_nofile(enc_base64)
+	local privkey = "/etc/ssl/private.pem"
+	local openssl_bin = "/usr/bin/openssl"
+	-- echo base64 | openssl base64 -d | openssl rsautl -decrypt -inkey ...
+	local cmd = string.format("echo '%s' | %s base64 -d | %s rsautl -decrypt -inkey %s 2>/tmp/rsa_err.log", enc_base64, openssl_bin, openssl_bin, privkey)
+	nixio.syslog("debug", "[RSA] nofile 복호화 명령: " .. cmd)
+	local f = io.popen(cmd, "r")
+	local decrypted = f:read("*a")
+	f:close()
+	if decrypted and #decrypted > 0 then
+		nixio.syslog("debug", "[RSA] nofile 복호화 성공, 길이: " .. #decrypted)
+		nixio.syslog("debug", "[RSA] nofile 복호화 평문: " .. decrypted)
+		return decrypted
+	else
+		local ferr = io.open("/tmp/rsa_err.log", "rb")
+		local errlog = ferr and ferr:read("*a") or ""
+		if ferr then ferr:close() end
+		nixio.syslog("debug", "[RSA] nofile 복호화 실패, openssl 에러: " .. errlog)
+		return nil
+	end
 end
 
 -- 로그인 시도 데이터 로드/저장 함수
@@ -767,6 +841,8 @@ local function schedule_rule_deletion(rule_name, retry_interval)
 end
 
 local function session_setup(user, pass)
+	nixio.syslog("debug", "[LOGIN] 입력된 사용자: " .. tostring(user))
+	nixio.syslog("debug", "[LOGIN] 암호화된 패스워드(base64): " .. tostring(pass))
 	local tpl = require "luci.template"
 	local rp = context.requestpath
 		and table.concat(context.requestpath, "/") or ""
@@ -810,6 +886,7 @@ local function session_setup(user, pass)
 	end)
 
 	if not current_password then
+		nixio.syslog("debug", "[LOGIN] current_password(해시) 없음. 인증 실패")
 		-- 패스워드를 찾을 수 없는 경우
 		context.auth_failed = {
 			fuser = user,
@@ -821,14 +898,21 @@ local function session_setup(user, pass)
 	end
 
 	-- RSA 복호화 시도
-	local ok, decrypted = pcall(rsa_decrypt_base64, pass)
+	local ok, decrypted = pcall(rsa_decrypt_base64_nofile, pass)
 	if ok and decrypted and #decrypted > 0 then
+		nixio.syslog("debug", "[LOGIN] RSA 복호화 성공, 길이: " .. #decrypted)
+		nixio.syslog("debug", "[LOGIN] 복호화 평문: " .. decrypted)
 		pass = decrypted
+	else
+		nixio.syslog("debug", "[LOGIN] RSA 복호화 실패")
+		nixio.syslog("debug", "[LOGIN] 입력 base64: " .. pass)
 	end
 
 	-- 입력받은 패스워드를 SHA-512로 해시
 	local salt = current_password:match("%$6%$([^%$]+)%$")
 	local hashed_input_password = nixio.crypt(pass, "$6$" .. salt)
+	nixio.syslog("debug", "[LOGIN] 입력 패스워드 해시: " .. tostring(hashed_input_password))
+	nixio.syslog("debug", "[LOGIN] 저장된 해시: " .. tostring(current_password))
 
 	-- default_password 가져오기
 	local default_password = nil
@@ -841,6 +925,7 @@ local function session_setup(user, pass)
 
 	-- 해시된 패스워드 비교
 	if hashed_input_password == current_password and current_password == default_password then
+		nixio.syslog("debug", "[LOGIN] 패스워드 일치, 최초 로그인 인증 성공")
 		-- 로그인 성공 시 카운트 초기화
 		login_attempts[key].count = 0
 		save_attempts()
@@ -907,6 +992,7 @@ local function session_setup(user, pass)
 	})
 
 	if type(login) == "table" and type(login.ubus_rpc_session) == "string" then
+		nixio.syslog("debug", "[LOGIN] 일반 로그인 인증 성공")
 		-- 방어코드: first_login 값이 여전히 "1"인 경우에만 "0"으로 변경
 		local current = uci:get("system", "@system[0]", "first_login")
 		if current == "1" then
@@ -949,6 +1035,7 @@ local function session_setup(user, pass)
 		retry_count = retry_count
 	}
 
+	nixio.syslog("debug", "[LOGIN] 최종 인증 실패")
 	return nil
 end
 
