@@ -66,84 +66,84 @@
 		<input type="reset" value="<%:Reset%>" class="btn cbi-button cbi-button-reset" />
 	</div>
 </form>
-<script type="text/javascript">//<![CDATA[
-	function validateForm() {
-		console.log("## validateForm")
 
-		var username = document.getElementById('luci_username');
+<script src="<%=resource%>/jsencrypt.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+	if (sessionStorage.getItem("username")) sessionStorage.removeItem("username");
+	if (sessionStorage.getItem("password")) sessionStorage.removeItem("password");
+
+	var username = document.getElementById('luci_username');
+	var password = document.getElementById('luci_password');
+	if (username) { username.value = ""; username.focus(); }
+	if (password) password.value = "";
+
+	var form = document.querySelector("form");
+	if (!form) return;
+
+	form.addEventListener("submit", function(event) {
+		console.log("[LuCI][DEBUG] Form submit event");
+		if (!validateForm()) {
+			console.log("[LuCI][DEBUG] Validation failed");
+			event.preventDefault();
+			return false;
+		}
+
+		var pubkey = `<%=rsa_pubkey%>`;
+		console.log("[LuCI][DEBUG] RSA pubkey length:", pubkey ? pubkey.length : 0);
+		var encrypt = new JSEncrypt();
+		encrypt.setPublicKey(pubkey);
+
 		var password = document.getElementById('luci_password');
-		
-		removeErrorMessage();
+		console.log("[LuCI][DEBUG] Plain password length:", password.value.length);
+		var encrypted = encrypt.encrypt(password.value);
+		console.log("[LuCI][DEBUG] Encrypted password length:", encrypted ? encrypted.length : 0);
 
-		var valid = true;
-		var errorMessage = "";
-
-		if (username.value.trim() === "") {
-			errorMessage = "<%:Please enter your username.%>";
-			username.focus();
-			valid = false;
-		} else if (password.value.trim() === "") {
-			errorMessage = "<%:Please enter your password.%>";
-			password.focus();
-			valid = false;
+		if (!encrypted) {
+			console.error("[LuCI][DEBUG] ì•”í˜¸í™” ì‹¤íŒ¨");
+			alert("ì•”í˜¸í™” ì‹¤íŒ¨");
+			event.preventDefault();
+			return false;
 		}
 
-		if (!valid) {
-			showError(password, errorMessage);
-		}
-
-		return valid;
-	}
-
-	function showError(referenceElement, message) {
-		var error = document.createElement("p");
-		error.className = "error-text";
-		error.style.color = "red";
-		error.style.fontSize = "15px";
-		error.style.marginTop = "10px";
-		error.innerText = message;
-
-		var parent = referenceElement.parentNode;
-		parent.appendChild(error);
-	}
-
-	function removeErrorMessage() {
-		var errorElement = document.querySelector('.error-text');
-		if (errorElement) {
-			errorElement.remove();
-		}
-	}
-
-	document.addEventListener("DOMContentLoaded", function () {
-		if (sessionStorage.getItem("username")) {
-			sessionStorage.removeItem("username");
-		}
-
-		if (sessionStorage.getItem("password")) {
-			sessionStorage.removeItem("password");
-		}
-
-		var username = document.getElementById('luci_username');
-		var password = document.getElementById('luci_password');
-
-		if (username) {
-			username.value = "";
-			username.focus();
-		}
-
-		if (password) {
-			password.value = "";
-		}
-
-		var form = document.querySelector("form");		
-		form.addEventListener("submit", function (event) {
-			console.log("## submit event")
-			if (!validateForm()) {
-				event.preventDefault(); // Æû Á¦ÃâÀ» ¸·À½
-			}
-		});
+		console.log("[LuCI][DEBUG] ì•”í˜¸í™” ì„±ê³µ, ì•”í˜¸ë¬¸ ì•ž 20ìž:", encrypted.substring(0, 20));
+		password.value = encrypted;
 	});
-//]]></script>
+});
+
+function validateForm() {
+	var username = document.getElementById('luci_username');
+	var password = document.getElementById('luci_password');
+	removeErrorMessage();
+	var valid = true;
+	var errorMessage = "";
+	if (username.value.trim() === "") {
+		errorMessage = "<%:Please enter your username.%>";
+		username.focus();
+		valid = false;
+	} else if (password.value.trim() === "") {
+		errorMessage = "<%:Please enter your password.%>";
+		password.focus();
+		valid = false;
+	}
+	if (!valid) showError(password, errorMessage);
+	return valid;
+}
+function showError(referenceElement, message) {
+	var error = document.createElement("p");
+	error.className = "error-text";
+	error.style.color = "red";
+	error.style.fontSize = "15px";
+	error.style.marginTop = "10px";
+	error.innerText = message;
+	var parent = referenceElement.parentNode;
+	parent.appendChild(error);
+}
+function removeErrorMessage() {
+	var errorElement = document.querySelector('.error-text');
+	if (errorElement) errorElement.remove();
+}
+</script>
 
 <%
 local uci  = require "luci.model.uci".cursor()
@@ -156,6 +156,9 @@ end
 
 if https_port and fs.access(https_key) then
 	https_port = https_port:match("(%d+)$")
+end
+
+local pubkey = fs.readfile("/etc/ssl/public.pem")
 %>
 
 <script type="text/javascript">//<![CDATA[
@@ -169,7 +172,5 @@ if https_port and fs.access(https_key) then
 		}, 5000);
 	}
 //]]></script>
-
-<% end %>
 
 <%+footer%>

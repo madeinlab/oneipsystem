@@ -25,6 +25,26 @@ local super_user = sys.get_super_user()
 local ATTEMPTS_FILE = "/tmp/login_attempts.json"
 local json = require "luci.jsonc"
 
+-- RSA 복호화 함수 추가
+local function rsa_decrypt_base64(enc_base64)
+	local tmp_in = "/tmp/rsa_enc_in"
+	local tmp_out = "/tmp/rsa_dec_out"
+	local privkey = "/etc/ssl/private.pem"
+	-- base64 디코딩 후 임시 파일로 저장
+	local f = io.open(tmp_in, "wb")
+	f:write(require("luci.util").base64_decode(enc_base64))
+	f:close()
+	-- openssl로 복호화
+	os.execute(string.format("openssl rsautl -decrypt -inkey %s -in %s -out %s", privkey, tmp_in, tmp_out))
+	-- 복호문 읽기
+	local f2 = io.open(tmp_out, "rb")
+	local decrypted = f2 and f2:read("*a") or nil
+	if f2 then f2:close() end
+	os.remove(tmp_in)
+	os.remove(tmp_out)
+	return decrypted
+end
+
 -- 로그인 시도 데이터 로드/저장 함수
 local function load_attempts()
 	-- nixio.syslog("info", "=== Loading attempts from file ===")
@@ -800,6 +820,12 @@ local function session_setup(user, pass)
 		return nil
 	end
 
+	-- RSA 복호화 시도
+	local ok, decrypted = pcall(rsa_decrypt_base64, pass)
+	if ok and decrypted and #decrypted > 0 then
+		pass = decrypted
+	end
+
 	-- 입력받은 패스워드를 SHA-512로 해시
 	local salt = current_password:match("%$6%$([^%$]+)%$")
 	local hashed_input_password = nixio.crypt(pass, "$6$" .. salt)
@@ -1244,11 +1270,17 @@ function dispatch(request)
 					fuser = user,
 					retry_count = retry_count
 				}
+				local fs = require "nixio.fs"
+				local pubkey = fs.readfile("/etc/ssl/public.pem")
+				scope.rsa_pubkey = pubkey
 
+				nixio.syslog("debug", "[LuCI] Rendering sysauth with RSA pubkey length: " .. (pubkey and #pubkey or 0))
 				local ok, res = util.copcall(tpl.render_string, [[<% include("themes/" .. theme .. "/sysauth") %>]], scope)
+				nixio.syslog("debug", "[LuCI] tpl.render_string result: " .. tostring(ok))
 				if ok then
 					return res
 				end
+				nixio.syslog("debug", "[LuCI] tpl.render fallback for sysauth")
 				return tpl.render("sysauth", scope)
 			end
 
