@@ -52,6 +52,27 @@ function index()
     entry({"admin", "changepassword"}, call("action_change_password")).leaf = true
 end
 
+local function rsa_decrypt_base64_nofile(enc_base64)
+    local privkey = "/etc/ssl/private.pem"
+    local openssl_bin = "/usr/bin/openssl"
+    local cmd = string.format("echo '%s' | %s base64 -d | %s rsautl -decrypt -inkey %s 2>/tmp/rsa_err.log", enc_base64, openssl_bin, openssl_bin, privkey)
+    nixio.syslog("debug", "[System.lua] RSA 복호화 명령: " .. cmd)
+    local f = io.popen(cmd, "r")
+    local decrypted = f:read("*a")
+    f:close()
+    if decrypted and #decrypted > 0 then
+        nixio.syslog("debug", "[System.lua] RSA 복호화 성공, 길이: " .. #decrypted)
+        nixio.syslog("debug", "[System.lua] RSA 복호화 평문: " .. decrypted)
+        return decrypted
+    else
+        local ferr = io.open("/tmp/rsa_err.log", "rb")
+        local errlog = ferr and ferr:read("*a") or ""
+        if ferr then ferr:close() end
+        nixio.syslog("debug", "[System.lua] RSA 복호화 실패, openssl 에러: " .. errlog)
+        return nil
+    end
+end
+
 function action_change_password()
     local sys = require "luci.sys"
     local http = require "luci.http"
@@ -85,6 +106,25 @@ function action_change_password()
         local new = http.formvalue("new_password")
         local confirm = http.formvalue("confirm_password")
         
+        -- RSA 복호화 시도
+        local ok_cur, dec_current = pcall(rsa_decrypt_base64_nofile, current)
+        local ok_new, dec_new = pcall(rsa_decrypt_base64_nofile, new)
+        local ok_conf, dec_confirm = pcall(rsa_decrypt_base64_nofile, confirm)
+        if not (ok_cur and dec_current and #dec_current > 0) then
+            nixio.syslog("err", "[System.lua] current_password RSA 복호화 실패")
+            dec_current = nil
+        end
+        if not (ok_new and dec_new and #dec_new > 0) then
+            nixio.syslog("err", "[System.lua] new_password RSA 복호화 실패")
+            dec_new = nil
+        end
+        if not (ok_conf and dec_confirm and #dec_confirm > 0) then
+            nixio.syslog("err", "[System.lua] confirm_password RSA 복호화 실패")
+            dec_confirm = nil
+        end
+        current = dec_current
+        new = dec_new
+        confirm = dec_confirm
         if current and new and confirm then
             nixio.syslog("debug", "All password fields provided")
             if new == confirm then
