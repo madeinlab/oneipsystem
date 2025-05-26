@@ -18,29 +18,22 @@ function verify_password(username, password, current_format, user_section)
     elseif current_format == "$6$" then
         -- 1. 저장된 해시값 가져오기
         local stored_hash = user_section.password:trim()
-        -- nixio.syslog("debug", string.format("Stored hash from rpcd: %s", stored_hash))
 
         -- 2. 저장된 해시에서 salt 추출 ($6$salt$hash 형식)
         local salt = stored_hash:match("^%$6%$([^%$]+)%$")
         if not salt then
-            nixio.syslog("err", "Failed to extract salt from stored hash")
             return false
         end
-        -- nixio.syslog("debug", string.format("Extracted salt: %s", salt))
 
         -- 3. 추출한 salt로 현재 비밀번호의 해시값 생성
         local cmd = string.format('echo "%s" | openssl passwd -6 -salt "%s" -stdin', password, salt)
-        nixio.syslog("debug", "Generating hash with extracted salt")
         local current_hash = sys.exec(cmd)
         if not current_hash then
-            nixio.syslog("err", "Failed to generate hash for current password")
             return false
         end
-        -- nixio.syslog("debug", string.format("Generated hash for verification: %s", current_hash:trim()))
 
         -- 4. 해시값 비교
         local result = (stored_hash == current_hash:trim())
-        nixio.syslog("debug", string.format("Password verification result: %s", tostring(result)))
         return result
     end
     return false
@@ -48,28 +41,18 @@ end
 
 function index()
     entry({"admin", "system", "password_rules", "get"}, call("get_password_rules")).leaf = true
-    entry({"admin", "system", "set", "model"}, call("set_model_name")).leaf = true
     entry({"admin", "changepassword"}, call("action_change_password")).leaf = true
 end
 
 local function rsa_decrypt_base64_nofile(enc_base64)
     local privkey = "/etc/ssl/private.pem"
     local openssl_bin = "/usr/bin/openssl"
-    local cmd = string.format("echo '%s' | %s base64 -d | %s rsautl -decrypt -inkey %s 2>/tmp/rsa_err.log", enc_base64, openssl_bin, openssl_bin, privkey)
-    nixio.syslog("debug", "[System.lua] RSA 복호화 명령: " .. cmd)
+    local cmd = string.format("echo '%s' | %s base64 -d | %s rsautl -decrypt -inkey %s", enc_base64, openssl_bin, openssl_bin, privkey)
     local f = io.popen(cmd, "r")
     local decrypted = f:read("*a")
     f:close()
     if decrypted and #decrypted > 0 then
-        nixio.syslog("debug", "[System.lua] RSA 복호화 성공, 길이: " .. #decrypted)
-        nixio.syslog("debug", "[System.lua] RSA 복호화 평문: " .. decrypted)
         return decrypted
-    else
-        local ferr = io.open("/tmp/rsa_err.log", "rb")
-        local errlog = ferr and ferr:read("*a") or ""
-        if ferr then ferr:close() end
-        nixio.syslog("debug", "[System.lua] RSA 복호화 실패, openssl 에러: " .. errlog)
-        return nil
     end
 end
 
@@ -91,17 +74,11 @@ function action_change_password()
         return
     end
 
-    nixio.syslog("debug", "Password change attempt started")
-
     if dispatcher.context and dispatcher.context.authuser then
         username = dispatcher.context.authuser
-        nixio.syslog("debug", string.format("Authenticated user: %s", username))
-    else
-        nixio.syslog("error", "No authenticated user found")
     end
 
     if http.getenv("REQUEST_METHOD") == "POST" then
-        nixio.syslog("debug", "Processing POST request")
         local current = http.formvalue("current_password")
         local new = http.formvalue("new_password")
         local confirm = http.formvalue("confirm_password")
@@ -111,93 +88,51 @@ function action_change_password()
         local ok_new, dec_new = pcall(rsa_decrypt_base64_nofile, new)
         local ok_conf, dec_confirm = pcall(rsa_decrypt_base64_nofile, confirm)
         if not (ok_cur and dec_current and #dec_current > 0) then
-            nixio.syslog("err", "[System.lua] current_password RSA 복호화 실패")
             dec_current = nil
         end
         if not (ok_new and dec_new and #dec_new > 0) then
-            nixio.syslog("err", "[System.lua] new_password RSA 복호화 실패")
             dec_new = nil
         end
         if not (ok_conf and dec_confirm and #dec_confirm > 0) then
-            nixio.syslog("err", "[System.lua] confirm_password RSA 복호화 실패")
             dec_confirm = nil
         end
         current = dec_current
         new = dec_new
         confirm = dec_confirm
         if current and new and confirm then
-            nixio.syslog("debug", "All password fields provided")
             if new == confirm then
-                nixio.syslog("debug", "New passwords match")
-
                 if username then
-                    nixio.syslog("debug", string.format("Searching for user %s in rpcd config", username))
-                    -- UCI 설정 디버그
-                    local configs = uci:get_all("rpcd")
-                    if configs then
-                        nixio.syslog("debug", "Found rpcd config sections:")
-                        for k, v in pairs(configs) do
-                            nixio.syslog("debug", string.format("Section: %s, Type: %s", k, v[".type"] or "unknown"))
-                            if v.username then
-                                nixio.syslog("debug", string.format("Username in section: %s", v.username))
-                            end
-                        end
-                    else
-                        nixio.syslog("error", "No rpcd config sections found")
-                    end
-
                     -- 현재 사용자의 패스워드 형식 확인
                     local user_section = nil
                     uci:foreach("rpcd", "login", function(s)
-                        nixio.syslog("debug", string.format("Checking section: %s", s[".name"] or "unknown"))
                         if s.username == username then
                             user_section = s
-                            nixio.syslog("debug", string.format("Found user section for %s", username))
                             return false
                         end
                     end)
 
                     if user_section then
                         local current_password = user_section.password
-                        nixio.syslog("debug", string.format("Current password format: %s", current_password:sub(1,3)))
                         local success = false
 
                         -- 현재 비밀번호 검증
                         local password_format = current_password:sub(1, 3)
                         if verify_password(username, current, password_format, user_section) then
-                            nixio.syslog("debug", "Current password verified successfully")
-
                             -- 패스워드 형식에 따른 처리
                             if password_format == "$p$" then
-                                nixio.syslog("debug", "Updating password in /etc/shadow")
                                 success = sys.user.setpasswd(username, new)
-                                nixio.syslog("debug", string.format("Shadow update result: %s", tostring(success)))
                             elseif password_format == "$6$" then
-                                nixio.syslog("debug", "Starting password change for $6$ format")
                                 -- 새로운 비밀번호의 SHA-512 해시 생성 (기본 동작 - 랜덤 salt 사용)
                                 local cmd = string.format('echo "%s" | openssl passwd -6 -stdin', new)
-                                nixio.syslog("debug", "Executing openssl command for new password")
                                 local new_hash = sys.exec(cmd)
 
                                 if new_hash and new_hash:match("^%$6%$") then
-                                    -- nixio.syslog("debug", string.format("Generated new hash: %s", new_hash:trim()))
                                     -- 새 해시값을 UCI에 저장
                                     local section_name = user_section[".name"]
-                                    nixio.syslog("debug", string.format("Updating UCI section: %s", section_name))
-
                                     local set_result = uci:set("rpcd", section_name, "password", new_hash:trim())
-                                    nixio.syslog("debug", string.format("UCI set result: %s", tostring(set_result)))
-
                                     success = uci:commit("rpcd")
-                                    nixio.syslog("debug", string.format("UCI commit result: %s", tostring(success)))
-                                else
-                                    nixio.syslog("err", "Failed to generate valid SHA-512 hash")
                                 end
-                            else
-                                nixio.syslog("err", string.format("Unknown password format: %s", password_format))
                             end
-                        else
-                            nixio.syslog("err", "Current password verification failed")
                         end
 
                         if success then
@@ -209,15 +144,8 @@ function action_change_password()
                                     if current_password:sub(1, 3) == "$6$" then
                                         sys.exec("/etc/init.d/rpcd reload")
                                     end
-                                else
-                                    nixio.syslog("err", "UCI commit to system failed")
                                 end
-                            else
-                                nixio.syslog("err", "UCI set first_login failed")
                             end
-                            -- if current_password:sub(1, 3) == "$6$" then
-                            --     sys.exec("/etc/init.d/rpcd reload")
-                            -- end
 
                             -- 세션의 default_login_flag를 false로 업데이트
                             if dispatcher.context.authsession then
@@ -244,20 +172,10 @@ function action_change_password()
                             -- 로그인 페이지로 리다이렉트
                             http.redirect(build_url("admin/login"))
                             return
-                        else
-                            nixio.syslog("err", "Failed to set new password")
                         end
-                    else
-                        nixio.syslog("err", "Authentication required")
                     end
-                else
-                    nixio.syslog("warning", "Password confirmation mismatch")
                 end
-            else
-                nixio.syslog("warning", "Missing required fields")
             end
-        else
-            -- nixio.syslog("warning", "Missing required fields")
         end
         
         -- 실패 시 에러 메시지와 함께 폼 다시 표시
@@ -280,6 +198,14 @@ function action_change_password()
 end
 
 function get_password_rules()
+    -- 인증 체크 추가
+    if not luci.dispatcher.context.authsession then
+        luci.http.status(403, "Forbidden")
+        luci.http.prepare_content("application/json")
+        luci.http.write_json({ error = "Authentication required" })
+        return
+    end
+
     local first_section = nil 
     uci:foreach("admin_manage", "password_rule", function(section)
         if not first_section then
@@ -300,37 +226,23 @@ function get_password_rules()
 
         -- JSON 반환
         luci.http.prepare_content("application/json")
-        luci.http.write(json.stringify({
+        luci.http.write_json({
             minLength = tonumber(min_length),
             maxLength = tonumber(max_length),
             checkSequential = check_sequential,
             checkSequentialIgnoreCase = check_sequential_ignore_case,
             checkSequentialSpecial = check_sequential_special
-        }))
+        })
+    else
+        -- 기본값 반환
+        luci.http.prepare_content("application/json")
+        luci.http.write_json({
+            minLength = 9,
+            maxLength = 32,
+            checkSequential = "0",
+            checkSequentialIgnoreCase = "0",
+            checkSequentialSpecial = "0"
+        })
     end
-
-    -- nixio.syslog("err", "No password_rule section found in uci")
-    return
 end
 
--- https://192.168.1.100/cgi-bin/luci/admin/system/set/model?model_name=modelname
-function set_model_name()
-    -- nixio.syslog("debug", "set_model_name()")
-
-    -- URL 파라미터에서 모델명 가져오기
-    local model_name = luci.http.formvalue("model_name")
-
-    if not model_name or model_name == "" then
-        -- nixio.syslog("debug", "set_model_name() failed: No model name provided")
-        luci.http.status(400, "Model name not provided")
-        return  -- 400 에러 후 함수 종료
-    end
-
-    uci:set("system", "@system[0]", "model", model_name)
-    uci:commit("system")
-    luci.sys.exec("/etc/init.d/system reload")  -- 모델명 변경 적용
-
-    -- 성공 응답 반환
-    luci.http.prepare_content("application/json")
-    luci.http.write(json.stringify({success = true, model_name = model_name}))
-end

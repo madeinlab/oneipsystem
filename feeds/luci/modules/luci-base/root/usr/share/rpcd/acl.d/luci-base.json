@@ -16,12 +16,13 @@
 				"/*": [ "list" ],
 				"/etc/passwd": [ "read" ],
 				"/etc/config/rpcd": [ "read" ],
-				"/etc/shadow": [ "read" ]
+				"/etc/shadow": [ "read" ],
+				"/etc/ssl/public.pem": [ "read" ]
 			},
 			"ubus": {
 				"file": [ "list" ],
 				"uci": [ "changes", "get", "state" ],
-				"luci": [ "getProcessList" ],
+				"luci": [ "getUserID", "getProcessList", "getPublicPem", "getPasswordRules" ],
 				"system": [ "watchdog" ]
 			},
 			"uci": [ "admin_manage", "rpcd" ]

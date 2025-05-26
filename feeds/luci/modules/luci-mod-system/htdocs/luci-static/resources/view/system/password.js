@@ -5,9 +5,37 @@
 'require form';
 'require rpc';
 'require uci';
+'require jsencrypt';
 
 function getCurrentUser() {
-	return L.env.username || 'doowon';  // Fallback to doowon if username is not available
+	var username = '';
+	if (typeof L !== 'undefined' && L.env && L.env.username) {
+		username = L.env.username;
+		console.log('[DEBUG] getCurrentUser: L.env.username =', username);
+	} else {
+		console.warn('[DEBUG] getCurrentUser: L.env.username is undefined');
+	}
+
+	// 1. window.sessionStorage
+	if (!username && window.sessionStorage && sessionStorage.getItem('username')) {
+		username = sessionStorage.getItem('username');
+		console.log('[DEBUG] getCurrentUser: sessionStorage.username =', username);
+	}
+
+	// 2. document.cookie
+	if (!username && document.cookie) {
+		var match = document.cookie.match(/sysauth=(\w+)/);
+		if (match) {
+			username = match[1];
+			console.log('[DEBUG] getCurrentUser: cookie sysauth =', username);
+		}
+	}
+
+	// 3. ubus 세션 정보 (비동기, 별도 함수 필요)
+	// Luci JS에서 ubus로 세션 사용자명을 얻으려면 별도 rpc.declare 필요
+	// 아래는 참고용, 실제 적용은 load에서 Promise로 받아서 전역에 저장 가능
+
+	return username;
 }
 
 var formData = {
@@ -22,6 +50,32 @@ var callSetPassword = rpc.declare({
 	method: 'setPassword',
 	params: [ 'username', 'password' ],
 	expect: { result: false }
+});
+
+// public.pem 파일 내용을 가져오는 rpc 선언
+var callGetPublicPem = rpc.declare({
+	object: 'luci',
+	method: 'getPublicPem',
+	params: []
+});
+
+// 1. public.pem을 받아올 때 전역 변수에 저장
+var loadedPublicKey = null;
+
+// getUserID RPC 선언
+var callGetUserID = rpc.declare({
+	object: 'luci',
+	method: 'getUserID',
+	params: [ 'sessionid' ],
+	expect: { }
+});
+
+var sessionid = (typeof L !== 'undefined' && L.env && (L.env.sessionid || L.env.ubus_rpc_session))
+	|| (window.sessionStorage && sessionStorage.getItem('ubus_rpc_session'));
+
+callGetUserID(sessionid).then(function(res) {
+	console.log('[DEBUG] getUserID RPC result:', res);
+	window._getUserIDTestResult = res;
 });
 
 function hasSequentialCharacters(password, ignoreCase, checkSpecialChars) {
@@ -79,6 +133,12 @@ let checkSequential, checkSequnetialIgnoreCase, checkSequentialSpecial;
 
 return view.extend({
 	load: function() {
+		// getUserID 테스트: RPC 호출 및 결과 저장
+		window._getUserIDTestResult = null;
+		callGetUserID(sessionid).then(function(res) {
+			console.log('[DEBUG] getUserID RPC result:', res);
+			window._getUserIDTestResult = res;
+		});
 		return Promise.all([
 			uci.load('admin_manage')
 		]);
@@ -224,13 +284,63 @@ return view.extend({
 			return node;
 		};
 
+		// public.pem 내용을 보여줄 div 추가
+		var pemDiv = E('div', { 'id': 'public-pem-content', 'style': 'margin-top:20px; font-family:monospace; white-space:pre-wrap; background:#f8f8f8; border:1px solid #ccc; padding:10px;' }, _('Loading public.pem...'));
+		// 1. public.pem을 받아올 때 전역 변수에 저장
+		setTimeout(function() {
+			callGetPublicPem().then(function(res) {
+				console.log('[DEBUG] getPublicPem RPC result:', res);
+				if (res && res.result) {
+					pemDiv.textContent = res.result;
+					loadedPublicKey = res.result; // 전역 변수에 저장
+				} else {
+					let errMsg = _('Failed to load public.pem');
+					if (res && res.error) {
+						errMsg += '\\n' + res.error;
+					}
+					pemDiv.textContent = errMsg;
+					console.error('[DEBUG] getPublicPem error:', res && res.error);
+				}
+			}).catch(function(err) {
+				console.error('[DEBUG] getPublicPem RPC exception:', err);
+				pemDiv.textContent = _('Failed to load public.pem (exception)');
+			});
+		}, 0);
+		// 폼 하단에 추가
+		m.render().then(function(mapNode) {
+			mapNode.appendChild(pemDiv);
+		});
+
+		// getUserID 결과를 화면에 표시하는 div 추가
+		var userDiv = E('div', { 'id': 'get-userid-result', 'style': 'margin-top:10px; font-size:13px; color:#333;' }, _('Loading user info...'));
+		setTimeout(function() {
+			var res = window._getUserIDTestResult;
+			if (res && res.username) {
+				userDiv.textContent = 'getUserID RPC username: ' + res.username;
+			} else if (res && res.error) {
+				userDiv.textContent = 'getUserID RPC error: ' + res.error;
+			} else {
+				userDiv.textContent = 'getUserID RPC: No response yet';
+			}
+		}, 500);
+		// 폼 하단에 추가
+		m.render().then(function(mapNode) {
+			mapNode.appendChild(userDiv);
+		});
+
 		return m.render();
 	},
 
 	handleSave: function() {
 		var map = document.querySelector('.cbi-map');
 		var requirements = document.querySelector('.cbi-value-description');
-		var currentUser = getCurrentUser();
+		var currentUser = window._getUserIDTestResult.username; // getUserID RPC 결과 사용
+
+		console.log('[DEBUG] currentUser (final):', currentUser);
+		if (!currentUser) {
+			ui.addNotification(null, E('p', _('No user detected. Cannot change password.')), 'danger');
+			return;
+		}
 
 		return dom.callClassMethod(map, 'save').then(function() {
 			if (formData.password.pw1 == null || formData.password.pw1.length == 0)
@@ -241,44 +351,46 @@ return view.extend({
 				return;
 			}
 
-			return callSetPassword(currentUser, formData.password.pw1).then(function(success) {
-				if (success) {
-					// Clear password requirements display
-					if (requirements) {
-						requirements.innerHTML = '';
-					}
-					ui.addNotification(null, E('p', _('The system password has been successfully changed.')), 'info');
+			// 1. public.pem 내용 가져오기
+			var pubkey = loadedPublicKey;
+			if (!pubkey || pubkey.indexOf('BEGIN PUBLIC KEY') === -1) {
+				ui.addNotification(null, E('p', _('No public key loaded, cannot encrypt password!')), 'danger');
+				return;
+			}
 
-					// 1초 후에 리다이렉션 메시지 표시
+			// 2. JSEncrypt로 암호화
+			var encrypt = new JSEncrypt();
+			encrypt.setPublicKey(pubkey);
+
+			var encryptedPw = encrypt.encrypt(formData.password.pw1);
+			if (!encryptedPw) {
+				ui.addNotification(null, E('p', _('Password encryption failed!')), 'danger');
+				return;
+			}
+
+			// 3. 암호문을 서버로 전송
+			return callSetPassword(currentUser, encryptedPw).then(function(success) {
+				if (success) {
+					if (requirements) requirements.innerHTML = '';
+					ui.addNotification(null, E('p', _('The system password has been successfully changed.')), 'info');
 					setTimeout(function() {
-						// 리다이렉션 메시지를 warning으로 표시
 						ui.addNotification(null, E('p', [
 							E('i', { 'class': 'loading' }),
 							' ',
 							_('Logging out and redirecting to login page...')
 						]), 'warning');
-
-						// 추가로 2초 후에 로그아웃 및 리다이렉션 처리
 						setTimeout(function() {
-							// 로그아웃 요청
-							return fetch('/cgi-bin/luci/admin/logout', {
-								method: 'POST',
-								credentials: 'include'
-							})
+							fetch('/cgi-bin/luci/admin/logout', { method: 'POST', credentials: 'include' })
 							.finally(function() {
-								// 로그인 페이지로 리다이렉션
 								window.location.href = '/cgi-bin/luci/admin/login';
 							});
-						}, 2000);  // 총 3초 딜레이 (1초 + 2초)
+						}, 2000);
 					}, 1000);
-
 				} else {
 					ui.addNotification(null, E('p', _('Failed to change the system password.')), 'danger');
 				}
-
 				formData.password.pw1 = null;
 				formData.password.pw2 = null;
-
 				dom.callClassMethod(map, 'render');
 			});
 		});
