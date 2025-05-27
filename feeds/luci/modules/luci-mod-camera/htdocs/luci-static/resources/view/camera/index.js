@@ -25,6 +25,8 @@ var _wanip = ''
 var _oldDescriptions = {}
 var _isConfigUpdating = false
 var _macAddrArr = {}
+var _hlsport = '8888'
+var _rtspport = '10554'
 
 var initCameraConfig = rpc.declare({
 	object: 'luci',
@@ -176,6 +178,11 @@ async function updateStatusAndCamera(topologies) {
 		let tasks = [];
 		let states = [];
 		
+		_macAddrArr = await callGetMacAddr()
+		// for (let i=0; i<8; i++) {
+		// 	console.log(String.format("mac[%d][%s]", i, _macAddrArr[i]))
+		// }
+
 		for (var switch_name in topologies)
 			tasks.push(callSwconfigPortState(switch_name).then(L.bind(function(switch_name, portstate) {
 				consoleLog('[debug] portstate ', portstate)
@@ -230,6 +237,7 @@ async function updateCameraInfo(portstate) {
             var rtsp = state ? (uci.get('camera', section_id, 'rtsp') || '') : ''
             var selectedRtsp = uci.get('camera', section_id, 'selectedrtsp')
             var port = uci.get('camera', section_id, 'rtspForwardingPort');
+			var switch_port  = uci.get('camera', section_id, 'switchPort');
 
 			// DOM
             var modelElement = document.querySelector(`div[data-camera-id="${section_id}"].model`);
@@ -288,13 +296,33 @@ async function updateCameraInfo(portstate) {
 					rtsp.forEach(function(item) {
 						var option = document.createElement('option');
 						option.value = item;
-						var match = item.match(/rtsp:\/\/[^\/]+\/(.+)/);
-						option.textContent = port && item && match
-							? String.format("rtsp://%s:%d/%s", _wanip, port, match[1])
-							: item;
+
+						// used with ffmpeg
+						// var match = item.match(/rtsp:\/\/[^\/]+\/(.+)/);
+						// option.textContent = port && item && match
+						// 	? String.format("rtsp://%s:%d/%s", _wanip, port, match[1])
+						// 	: item;
+
+						if (typeof item === 'string' && item.trim() !== '') {
+							const segments = item.split('/');
+							const profileName = segments[segments.length - 1];
+
+							// ex) rtsp://192.168.1.100:10554/camera/2/Profile1
+							option.textContent = String.format(
+								"rtsp://%s:%d/camera/%s/%s",
+								_wanip,
+								_rtspport,
+								switch_port,
+								profileName
+							);
+						} else {
+							option.textContent = item || '';
+						}
+
 						if (item === selectedRtsp) {
 							option.selected = true;
 						}
+
 						selectElement.appendChild(option);
 					});
 				
@@ -368,29 +396,57 @@ async function handleButtonClick(section_id, type) {
 		return
 	}
 
-	let port
-	try {
-		const info = await getCameraInfo(section_id, type)
-		port = parseInt(info.port, 10)
+	let url = ''
+	if (type === 'webpage') {
+		let port
+		try {
+			const info = await getCameraInfo(section_id, type)
+			port = parseInt(info.port, 10)
 
-		if (!_wanip || isNaN(port)) {
-			throw new Error("Invalid WAN IP or Port");
+			if (!_wanip || isNaN(port)) {
+				throw new Error("Invalid WAN IP or Port");
+			}
+		} catch (err) {
+			console.error("[error] Failed to get camera info:", err);
+			return
 		}
-	} catch (err) {
-		console.error("[error] Failed to get camera info:", err);
-		return
+
+		url = `https://${_wanip}:${port}`
+	} else if (type === 'streaming') {
+		var select_rtsp = uci.get('camera', section_id, 'selectedrtsp');
+		var switch_port = uci.get('camera', section_id, 'switchPort');
+		if (!select_rtsp || !switch_port) {
+			console.error("Missing RTSP or switch_port info");
+			return;
+		}
+
+		// used with mediamtx
+		const segments = select_rtsp.split('/');
+		const profileName = segments[segments.length - 1];
+		
+		// ex) rtsp://192.168.1.100:10554/camera/2/Profile1
+		url = String.format(
+			"http://%s:%d/camera/%s/%s",
+			_wanip,
+			_hlsport,
+			switch_port,
+			profileName
+		);
+
+		// used with ffmpeg
+		// url = `https://${_wanip}:${port}/hls/`
 	}
 
-	const url = (type === 'webpage')
-		? `https://${_wanip}:${port}`
-		: `https://${_wanip}:${port}/hls/`
-
-	consoleLog("[debug] Opening URL:", url);
-	window.open(url, '_blank');
+	if (url !== '') {
+		consoleLog("[debug] Opening URL:", url);
+		window.open(url, '_blank');
+	}
 }
 
 async function saveCameraUserAccount(mac, username, password) {
-	callSaveAccountConf(mac, username, password)
+	// console.log("saveCameraUserAccount mac:%s", mac)
+	if (typeof mac == 'string' && mac.trim() !== '' && mac.trim() !== "00:00:00:00:00:00")
+		callSaveAccountConf(mac, username, password)
 }
 
 async function handleSetCameraLoginInfo(section_id) {
@@ -561,6 +617,9 @@ return view.extend({
 		let linkstate = _useRtkGswForLinkState ? data[2] : null
 
 		_macAddrArr = data[3] ? data[3] : {}
+		// for (let i=0; i<8; i++) {
+		// 	console.log(String.format("mac[%d][%s]", i, _macAddrArr[i]))
+		// }
 
 		consoleLog('linkstate[%s]\ntopologies[%s] ', linkstate, topologies)
 
@@ -684,6 +743,7 @@ return view.extend({
 			var rtsp = uci.get('camera', section_id, 'rtsp');
 			var selectedrtsp = uci.get('camera', section_id, 'selectedrtsp');
 			var port = uci.get('camera', section_id, 'rtspForwardingPort');
+			var switch_port  = uci.get('camera', section_id, 'switchPort');
 		
 			if (!Array.isArray(rtsp)) {
 				rtsp = rtsp ? [rtsp] : [];
@@ -696,12 +756,31 @@ return view.extend({
 			rtsp.forEach(function(rtsp) {
 				var option = document.createElement('option');
 				option.value = rtsp;
-				if (rtsp && port) {
-					option.textContent = String.format("rtsp://%s:%d/%s", _wanip, port, rtsp.match(/rtsp:\/\/[^\/]+\/(.+)/)[1])					
+
+				// used with ffmpeg
+				// if (rtsp && port) {
+				// 	option.textContent = String.format("rtsp://%s:%d/%s", _wanip, port, rtsp.match(/rtsp:\/\/[^\/]+\/(.+)/)[1])
+				// } else {
+				// 	option.textContent = rtsp;
+				// }
+
+				// used with mediamtx]
+				if (typeof rtsp === 'string' && rtsp.trim() !== '') {
+					const segments = rtsp.split('/');
+					const profileName = segments[segments.length - 1];
+
+					// ex) rtsp://192.168.1.100:10554/camera/2/Profile1
+					option.textContent = String.format(
+						"rtsp://%s:%d/camera/%s/%s",
+						_wanip,
+						_rtspport,
+						switch_port,
+						profileName
+					);
 				} else {
-					option.textContent = rtsp;
+					option.textContent = rtsp || '';
 				}
-		
+
 				if (rtsp === selectedrtsp) {
 					option.selected = true;
 				}

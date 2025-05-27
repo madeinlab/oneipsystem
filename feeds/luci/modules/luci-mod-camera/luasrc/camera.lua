@@ -446,7 +446,7 @@ function parseCameraFile(filepath)
 		-- mac
 		elseif trimmed_line:match("HwAddress") then
 			key, value = parse_equals_line(trimmed_line)
-			camera_info.mac = value
+			camera_info.mac = string.lower(value)
 		-- default rtsp
 		elseif trimmed_line:match("^MediaUri.Uri") then
 			key, value = parse_equals_line(trimmed_line)
@@ -777,6 +777,7 @@ end
 
 -- Saves camera account information mapped to a MAC address
 function saveAccountConf(mac, username, password)
+	-- nixio.syslog("debug", string.format("saveAccountConf mac:%s)", mac))
     local accounts = {}
     local json_str = fs.readfile(account_path)
 

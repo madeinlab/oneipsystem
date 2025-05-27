@@ -12,10 +12,21 @@ start() {
         echo "Creating default config.yml..."
         mkdir -p "$(dirname "$CONFIG_FILE")"
         cat <<EOF > "$CONFIG_FILE"
+# RTSP
 rtsp: yes
 rtspTransports: [tcp]
 rtspEncryption: "no"
 rtspAddress: :10554
+
+# HLS
+hls: yes
+hlsAddress: :8888
+hlsVariant: mpegts
+hlsSegmentCount: 5
+hlsSegmentDuration: 2s
+hlsAlwaysRemux: yes
+hlsDirectory: /tmp/hls
+hlsAllowOrigin: '*'
 
 readTimeout: 5s
 writeTimeout: 5s

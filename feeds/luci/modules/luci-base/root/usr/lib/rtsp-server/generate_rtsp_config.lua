@@ -27,10 +27,21 @@ end
 
 local outfile = io.open("/usr/lib/rtsp-server/config.yml", "w")
 outfile:write([[
+# RTSP
 rtsp: yes
 rtspTransports: [tcp]
 rtspEncryption: "no"
 rtspAddress: :10554
+
+# HLS
+hls: yes
+hlsAddress: :8888
+hlsVariant: mpegts
+hlsSegmentCount: 5
+hlsSegmentDuration: 2s
+hlsAlwaysRemux: yes
+hlsDirectory: /tmp/hls
+hlsAllowOrigin: '*'
 
 readTimeout: 5s
 writeTimeout: 5s
@@ -39,18 +50,21 @@ readBufferCount: 128
 paths:
 ]])
 
+local nixio = require "nixio", require "nixio.util"
 local accounts = loadAccountsJson("/etc/camera/accounts.json")
 
 for _, cam in ipairs(camlist) do
     local name = exec("uci get camera."..cam..".name"):gsub("%s+$", "")
     local ip = exec("uci get camera."..cam..".ip"):gsub("%s+$", "")
     local mac = exec("uci get camera."..cam..".mac"):gsub("%s+$", "")
-    local username = exec("uci get camera."..cam..".username"):gsub("%s+$", "")
+    local username = ""
     local encpass = ""
-
-    if accounts[mac] and accounts[mac].username == username then
+    
+    if accounts[mac] then
+        username = accounts[mac].username or ""
         encpass = accounts[mac].password or ""
     end
+    -- nixio.syslog("debug", string.format("generate_rtsp_config name[%s] ip[%s] mac[%s] username[%s]", name, ip, mac, username))
 
     local rtsp_port = 554
     local profiles_raw = exec("uci get camera."..cam..".profile 2>/dev/null")
