@@ -263,8 +263,9 @@ function action_change_password_admin()
                     end
 
                     if success then
-                        sys.exec("logger '[DEBUG] action_change_password_admin: password change success!'")
+                        sys.exec("logger '[DEBUG] action_change_password_admin: password change success(" .. tostring(success) .. ")!'")
                         if dispatcher.context.authsession then
+                            sys.exec("logger '[DEBUG] action_change_password_admin: session update and destroy start'")
                             util.ubus("session", "set", {
                                 ubus_rpc_session = dispatcher.context.authsession,
                                 values = {
@@ -278,8 +279,10 @@ function action_change_password_admin()
                             http.header("Set-Cookie", "sysauth=; path=%s; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; HttpOnly%s" %{
                                 build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
                             })
+                            sys.exec("logger '[DEBUG] action_change_password_admin: session update and destroy end'")
                         end
-                        http.redirect(build_url("admin/system/admin"))
+                        http.prepare_content("text/plain")
+                        http.write("success")
                         return
                     else
                         sys.exec("logger '[DEBUG] action_change_password_admin: password change failed!'")
