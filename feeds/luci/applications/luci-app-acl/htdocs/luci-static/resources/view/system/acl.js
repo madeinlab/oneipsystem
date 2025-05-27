@@ -403,6 +403,7 @@ return view.extend({
 		o.modalonly = true;
 		o.value('shadow', _('Use UNIX password in /etc/shadow'));
 		o.value('crypted', _('Use encrypted password hash'));
+		o.readonly = true;
 		o.cfgvalue = function(section_id) {
 			var value = uci.get('rpcd', section_id, 'password') || '';
 
