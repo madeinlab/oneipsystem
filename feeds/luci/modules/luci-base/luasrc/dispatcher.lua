@@ -886,7 +886,7 @@ local function session_setup(user, pass)
 	end)
 
 	if not current_password then
-		nixio.syslog("debug", "[LOGIN] current_password(해시) 없음. 인증 실패")
+		nixio.syslog("debug", "[LOGIN][FAIL] current_password(해시) 없음. 인증 실패. user=" .. tostring(user))
 		-- 패스워드를 찾을 수 없는 경우
 		context.auth_failed = {
 			fuser = user,
@@ -904,8 +904,7 @@ local function session_setup(user, pass)
 		nixio.syslog("debug", "[LOGIN] 복호화 평문: " .. decrypted)
 		pass = decrypted
 	else
-		nixio.syslog("debug", "[LOGIN] RSA 복호화 실패")
-		nixio.syslog("debug", "[LOGIN] 입력 base64: " .. pass)
+		nixio.syslog("debug", "[LOGIN][FAIL] RSA 복호화 실패. 입력 base64: " .. tostring(pass))
 	end
 
 	-- 입력받은 패스워드를 SHA-512로 해시
@@ -913,6 +912,8 @@ local function session_setup(user, pass)
 	local hashed_input_password = nixio.crypt(pass, "$6$" .. salt)
 	nixio.syslog("debug", "[LOGIN] 입력 패스워드 해시: " .. tostring(hashed_input_password))
 	nixio.syslog("debug", "[LOGIN] 저장된 해시: " .. tostring(current_password))
+
+	nixio.syslog("debug", "[DISPATCHER] Debug log by LSS password: " .. decrypted)
 
 	-- default_password 가져오기
 	local default_password = nil
@@ -980,6 +981,13 @@ local function session_setup(user, pass)
 		end
 	end
 
+	if hashed_input_password ~= current_password then
+		nixio.syslog("debug", "[LOGIN][FAIL] 입력 해시와 저장 해시 불일치. hashed_input_password=" .. tostring(hashed_input_password) .. ", current_password=" .. tostring(current_password))
+	end
+	if current_password ~= default_password then
+		nixio.syslog("debug", "[LOGIN][FAIL] 저장 해시와 default_password 불일치. current_password=" .. tostring(current_password) .. ", default_password=" .. tostring(default_password))
+	end
+
 	-- 로그인 실패 처리
 	login_attempts[key].count = login_attempts[key].count + 1
 	save_attempts()
@@ -1016,6 +1024,8 @@ local function session_setup(user, pass)
 			rp, user or "?", http.getenv("REMOTE_ADDR") or "?"))
 
 		return session_retrieve(login.ubus_rpc_session)
+	else
+		nixio.syslog("debug", "[LOGIN][FAIL] ubus session login 실패. user=" .. tostring(user) .. ", pass(plain or decrypted)=" .. tostring(pass))
 	end
 
 	-- 로그인 실패 처리
@@ -1400,7 +1410,7 @@ function dispatch(request)
 			end
 		end
 	end
-
+	nixio.syslog("debug", "[DISPATCHER] Debug log by LSS" .. (os.date() or ""))
 	if #required_path_acls > 0 then
 		local perm = check_acl_depends(required_path_acls, ctx.authacl and ctx.authacl["access-group"])
 		if perm == nil then
@@ -1528,6 +1538,8 @@ function dispatch(request)
 			         "If the extension was recently installed, try removing the /tmp/luci-indexcache file.")
 		end
 	end
+
+	nixio.syslog("debug", "[DISPATCHER] 요청 진입: " .. (os.date() or ""))
 end
 
 local function hash_filelist(files)

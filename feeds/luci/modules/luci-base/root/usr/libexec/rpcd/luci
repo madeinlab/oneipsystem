@@ -442,12 +442,40 @@ local methods = {
 		args = { username = "root", password = "password" },
 		call = function(args)
 			local util = require "luci.util"
+			local nixio = require "nixio"
+			
+			-- 디버그 로그 추가
+			nixio.syslog("debug", "[PASSWORD] 패스워드 변경 시도 - 사용자: " .. tostring(args.username))
+			nixio.syslog("debug", "[PASSWORD] 입력된 패스워드 길이: " .. tostring(args.password and #args.password or 0))
+			
+			-- 패스워드 변경 명령어 구성
+			local cmd = string.format("(echo %s; sleep 1; echo %s) | /bin/busybox passwd %s >/dev/null 2>&1",
+				luci.util.shellquote(args.password),
+				luci.util.shellquote(args.password),
+				luci.util.shellquote(args.username)
+			)
+			nixio.syslog("debug", "[PASSWORD] 실행할 명령어: " .. cmd)
+			
+			-- 명령어 실행
+			local result = (os.execute(cmd) == 0)
+			nixio.syslog("debug", "[PASSWORD] 패스워드 변경 결과: " .. tostring(result))
+			
+			-- 변경 후 /etc/shadow 파일에서 해시 확인
+			if result then
+				local shadow = nixio.fs.readfile("/etc/shadow")
+				if shadow then
+					for line in shadow:gmatch("[^\n]+") do
+						local username, hash = line:match("^([^:]+):([^:]+)")
+						if username == args.username then
+							nixio.syslog("debug", "[PASSWORD] 변경된 해시: " .. tostring(hash))
+							break
+						end
+					end
+				end
+			end
+			
 			return {
-				result = (os.execute("(echo %s; sleep 1; echo %s) | /bin/busybox passwd %s >/dev/null 2>&1" %{
-					luci.util.shellquote(args.password),
-					luci.util.shellquote(args.password),
-					luci.util.shellquote(args.username)
-				}) == 0)
+				result = result
 			}
 		end
 	},

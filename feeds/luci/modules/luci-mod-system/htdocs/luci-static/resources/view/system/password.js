@@ -5,38 +5,8 @@
 'require form';
 'require rpc';
 'require uci';
-'require jsencrypt';
 
-function getCurrentUser() {
-	var username = '';
-	if (typeof L !== 'undefined' && L.env && L.env.username) {
-		username = L.env.username;
-		console.log('[DEBUG] getCurrentUser: L.env.username =', username);
-	} else {
-		console.warn('[DEBUG] getCurrentUser: L.env.username is undefined');
-	}
 
-	// 1. window.sessionStorage
-	if (!username && window.sessionStorage && sessionStorage.getItem('username')) {
-		username = sessionStorage.getItem('username');
-		console.log('[DEBUG] getCurrentUser: sessionStorage.username =', username);
-	}
-
-	// 2. document.cookie
-	if (!username && document.cookie) {
-		var match = document.cookie.match(/sysauth=(\w+)/);
-		if (match) {
-			username = match[1];
-			console.log('[DEBUG] getCurrentUser: cookie sysauth =', username);
-		}
-	}
-
-	// 3. ubus 세션 정보 (비동기, 별도 함수 필요)
-	// Luci JS에서 ubus로 세션 사용자명을 얻으려면 별도 rpc.declare 필요
-	// 아래는 참고용, 실제 적용은 load에서 Promise로 받아서 전역에 저장 가능
-
-	return username;
-}
 
 var formData = {
 	password: {
@@ -72,11 +42,6 @@ var callGetUserID = rpc.declare({
 
 var sessionid = (typeof L !== 'undefined' && L.env && (L.env.sessionid || L.env.ubus_rpc_session))
 	|| (window.sessionStorage && sessionStorage.getItem('ubus_rpc_session'));
-
-callGetUserID(sessionid).then(function(res) {
-	console.log('[DEBUG] getUserID RPC result:', res);
-	window._getUserIDTestResult = res;
-});
 
 function hasSequentialCharacters(password, ignoreCase, checkSpecialChars) {
 
@@ -136,7 +101,6 @@ return view.extend({
 		// getUserID 테스트: RPC 호출 및 결과 저장
 		window._getUserIDTestResult = null;
 		callGetUserID(sessionid).then(function(res) {
-			console.log('[DEBUG] getUserID RPC result:', res);
 			window._getUserIDTestResult = res;
 		});
 		return Promise.all([
@@ -284,49 +248,17 @@ return view.extend({
 			return node;
 		};
 
-		// public.pem 내용을 보여줄 div 추가
-		var pemDiv = E('div', { 'id': 'public-pem-content', 'style': 'margin-top:20px; font-family:monospace; white-space:pre-wrap; background:#f8f8f8; border:1px solid #ccc; padding:10px;' }, _('Loading public.pem...'));
 		// 1. public.pem을 받아올 때 전역 변수에 저장
 		setTimeout(function() {
 			callGetPublicPem().then(function(res) {
-				console.log('[DEBUG] getPublicPem RPC result:', res);
 				if (res && res.result) {
-					pemDiv.textContent = res.result;
 					loadedPublicKey = res.result; // 전역 변수에 저장
-				} else {
-					let errMsg = _('Failed to load public.pem');
-					if (res && res.error) {
-						errMsg += '\\n' + res.error;
-					}
-					pemDiv.textContent = errMsg;
-					console.error('[DEBUG] getPublicPem error:', res && res.error);
 				}
 			}).catch(function(err) {
 				console.error('[DEBUG] getPublicPem RPC exception:', err);
 				pemDiv.textContent = _('Failed to load public.pem (exception)');
 			});
 		}, 0);
-		// 폼 하단에 추가
-		m.render().then(function(mapNode) {
-			mapNode.appendChild(pemDiv);
-		});
-
-		// getUserID 결과를 화면에 표시하는 div 추가
-		var userDiv = E('div', { 'id': 'get-userid-result', 'style': 'margin-top:10px; font-size:13px; color:#333;' }, _('Loading user info...'));
-		setTimeout(function() {
-			var res = window._getUserIDTestResult;
-			if (res && res.username) {
-				userDiv.textContent = 'getUserID RPC username: ' + res.username;
-			} else if (res && res.error) {
-				userDiv.textContent = 'getUserID RPC error: ' + res.error;
-			} else {
-				userDiv.textContent = 'getUserID RPC: No response yet';
-			}
-		}, 500);
-		// 폼 하단에 추가
-		m.render().then(function(mapNode) {
-			mapNode.appendChild(userDiv);
-		});
 
 		return m.render();
 	},
@@ -336,24 +268,48 @@ return view.extend({
 		var requirements = document.querySelector('.cbi-value-description');
 		var currentUser = window._getUserIDTestResult.username; // getUserID RPC 결과 사용
 
-		console.log('[DEBUG] currentUser (final):', currentUser);
+		console.log('[DEBUG] handleSave: called');
+		console.log('[DEBUG] handleSave: currentUser =', currentUser);
+		console.log('[DEBUG] handleSave: loadedPublicKey =', loadedPublicKey);
+		console.log('[DEBUG] handleSave: formData.password =', formData.password);
+
 		if (!currentUser) {
+			console.warn('[DEBUG] handleSave: No user detected');
 			ui.addNotification(null, E('p', _('No user detected. Cannot change password.')), 'danger');
 			return;
 		}
 
+		// 1. JSEncrypt 동적 로드 (맨 위에 위치)
+		if (!window.JSEncrypt) {
+			console.warn('[DEBUG] handleSave: JSEncrypt not loaded, will load dynamically in 1 second...');
+			setTimeout(function() {
+				var script = document.createElement('script');
+				script.src = '/luci-static/resources/jsencrypt.min.js';
+				script.onload = function() {
+					console.log('[DEBUG] handleSave: JSEncrypt loaded, retrying save');
+					dom.callClassMethod(map, 'save');
+				};
+				document.head.appendChild(script);
+			}, 3000);
+		}
+
 		return dom.callClassMethod(map, 'save').then(function() {
-			if (formData.password.pw1 == null || formData.password.pw1.length == 0)
+			if (formData.password.pw1 == null || formData.password.pw1.length == 0) {
+				console.warn('[DEBUG] handleSave: Password is empty');
 				return;
+			}
 
 			if (formData.password.pw1 != formData.password.pw2) {
+				console.warn('[DEBUG] handleSave: Password confirmation does not match');
 				ui.addNotification(null, E('p', _('Given password confirmation did not match, password not changed!')), 'danger');
 				return;
 			}
 
 			// 1. public.pem 내용 가져오기
 			var pubkey = loadedPublicKey;
+			console.log('[DEBUG] handleSave: pubkey =', pubkey);
 			if (!pubkey || pubkey.indexOf('BEGIN PUBLIC KEY') === -1) {
+				console.warn('[DEBUG] handleSave: No public key loaded');
 				ui.addNotification(null, E('p', _('No public key loaded, cannot encrypt password!')), 'danger');
 				return;
 			}
@@ -363,14 +319,24 @@ return view.extend({
 			encrypt.setPublicKey(pubkey);
 
 			var encryptedPw = encrypt.encrypt(formData.password.pw1);
+			console.log('[DEBUG] handleSave: encryptedPw =', encryptedPw);
 			if (!encryptedPw) {
+				console.warn('[DEBUG] handleSave: Password encryption failed');
 				ui.addNotification(null, E('p', _('Password encryption failed!')), 'danger');
 				return;
 			}
 
-			// 3. 암호문을 서버로 전송
-			return callSetPassword(currentUser, encryptedPw).then(function(success) {
-				if (success) {
+			// 3. 암호문을 서버로 전송 (callSetPassword 대신 fetch 사용, 변수명 충돌 방지)
+			var postData = new FormData();
+			postData.append('new_password', encryptedPw);
+
+			fetch('/cgi-bin/luci/admin/system/password', {
+				method: 'POST',
+				body: postData
+			})
+			.then(response => response.text())
+			.then(html => {
+				if (html === 'success') {
 					if (requirements) requirements.innerHTML = '';
 					ui.addNotification(null, E('p', _('The system password has been successfully changed.')), 'info');
 					setTimeout(function() {
@@ -387,11 +353,16 @@ return view.extend({
 						}, 2000);
 					}, 1000);
 				} else {
+					console.warn('[DEBUG] handleSave: Failed to change the system password');
 					ui.addNotification(null, E('p', _('Failed to change the system password.')), 'danger');
 				}
 				formData.password.pw1 = null;
 				formData.password.pw2 = null;
 				dom.callClassMethod(map, 'render');
+			})
+			.catch(error => {
+				console.error('[DEBUG] handleSave: Error:', error);
+				ui.addNotification(null, E('p', _('Error occurred while changing password.')), 'danger');
 			});
 		});
 	},

@@ -42,6 +42,7 @@ end
 function index()
     entry({"admin", "system", "password_rules", "get"}, call("get_password_rules")).leaf = true
     entry({"admin", "changepassword"}, call("action_change_password")).leaf = true
+    entry({"admin", "system", "password"}, call("action_change_password_admin")).leaf = true
 end
 
 local function rsa_decrypt_base64_nofile(enc_base64)
@@ -194,6 +195,108 @@ function action_change_password()
             redirect = false,
             debug_info = debug_info
         })
+    end
+end
+
+function action_change_password_admin()
+    local sys = require "luci.sys"
+    local http = require "luci.http"
+    local template = require "luci.template"
+    local dispatcher = require "luci.dispatcher"
+    local nixio = require "nixio"
+    local util = require "luci.util"
+    local i18n = require "luci.i18n"
+
+    sys.exec("logger '[DEBUG] action_change_password_admin: called'")
+
+    if dispatcher.context and dispatcher.context.authuser then
+        username = dispatcher.context.authuser
+        sys.exec("logger '[DEBUG] action_change_password_admin: username = " .. tostring(username) .. "'")
+    end
+
+    if http.getenv("REQUEST_METHOD") == "POST" then
+        sys.exec("logger '[DEBUG] action_change_password_admin: POST request received'")
+        local new = http.formvalue("new_password")
+        sys.exec("logger '[DEBUG] action_change_password_admin: new_password(raw) = " .. tostring(new) .. "'")
+        
+        -- RSA 복호화 시도
+        local ok_new, dec_new = pcall(rsa_decrypt_base64_nofile, new)
+
+        sys.exec("logger '[DEBUG] action_change_password_admin: dec_new = " .. tostring(dec_new) .. " ok_new = " .. tostring(ok_new) .. "'")
+
+        if not (ok_new and dec_new and #dec_new > 0) then
+            dec_new = nil
+        end
+
+        new = dec_new
+
+        if new then
+            -- 비밀번호 변경 처리
+            if username then
+                -- 현재 사용자의 패스워드 형식 확인
+                local user_section = nil
+                uci:foreach("rpcd", "login", function(s)
+                    if s.username == username then
+                        user_section = s
+                        return false
+                    end
+                end)
+
+                if user_section then
+                    local current_password = user_section.password
+                    local success = false
+                    local password_format = current_password:sub(1, 3)
+                    sys.exec("logger '[DEBUG] action_change_password_admin: password_format = " .. tostring(password_format) .. "'")
+                    if password_format == "$p$" then
+                        success = sys.user.setpasswd(username, new)
+                    elseif password_format == "$6$" then
+                        local cmd = string.format('echo "%s" | openssl passwd -6 -stdin', new)
+                        local new_hash = sys.exec(cmd)
+                        sys.exec("logger '[DEBUG] action_change_password_admin: new_hash = " .. tostring(new_hash) .. "'")
+                        if new_hash and new_hash:match("^%$6%$") then
+                            local section_name = user_section[".name"]
+                            local set_result = uci:set("rpcd", section_name, "password", new_hash:trim())
+                            success = uci:commit("rpcd")
+                            sys.exec("logger '[DEBUG] action_change_password_admin: set_result = " .. tostring(set_result) .. ", commit = " .. tostring(success) .. "'")
+                            sys.exec("/etc/init.d/rpcd reload")
+                        end
+                    end
+
+                    if success then
+                        sys.exec("logger '[DEBUG] action_change_password_admin: password change success!'")
+                        if dispatcher.context.authsession then
+                            util.ubus("session", "set", {
+                                ubus_rpc_session = dispatcher.context.authsession,
+                                values = {
+                                    token = dispatcher.context.authtoken,
+                                    default_login_flag = false
+                                }
+                            })
+                            util.ubus("session", "destroy", {
+                                ubus_rpc_session = dispatcher.context.authsession
+                            })
+                            http.header("Set-Cookie", "sysauth=; path=%s; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; HttpOnly%s" %{
+                                build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
+                            })
+                        end
+                        http.redirect(build_url("admin/system/admin"))
+                        return
+                    else
+                        sys.exec("logger '[DEBUG] action_change_password_admin: password change failed!'")
+                    end
+                else
+                    sys.exec("logger '[DEBUG] action_change_password_admin: user_section not found!'")
+                end
+            else
+                sys.exec("logger '[DEBUG] action_change_password_admin: username is nil!'")
+            end
+        else
+            sys.exec("logger '[DEBUG] action_change_password_admin: new is nil after decode'")
+        end
+        http.redirect(build_url("admin/system/admin"))
+    else
+        sys.exec("logger '[DEBUG] action_change_password_admin: GET or other request, rendering form'")
+        http.redirect(build_url("admin/system/admin"))
     end
 end
 
