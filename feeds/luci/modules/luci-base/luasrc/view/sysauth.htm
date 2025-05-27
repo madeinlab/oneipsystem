@@ -82,31 +82,22 @@ document.addEventListener("DOMContentLoaded", function () {
 	if (!form) return;
 
 	form.addEventListener("submit", function(event) {
-		console.log("[LuCI][DEBUG] Form submit event");
 		if (!validateForm()) {
-			console.log("[LuCI][DEBUG] Validation failed");
 			event.preventDefault();
 			return false;
 		}
 
 		var pubkey = `<%=rsa_pubkey%>`;
-		console.log("[LuCI][DEBUG] RSA pubkey length:", pubkey ? pubkey.length : 0);
 		var encrypt = new JSEncrypt();
 		encrypt.setPublicKey(pubkey);
 
 		var password = document.getElementById('luci_password');
-		console.log("[LuCI][DEBUG] Plain password length:", password.value.length);
 		var encrypted = encrypt.encrypt(password.value);
-		console.log("[LuCI][DEBUG] Encrypted password length:", encrypted ? encrypted.length : 0);
 
 		if (!encrypted) {
-			console.error("[LuCI][DEBUG] 암호화 실패");
-			alert("암호화 실패");
 			event.preventDefault();
 			return false;
 		}
-
-		console.log("[LuCI][DEBUG] 암호화 성공, 암호문 앞 20자:", encrypted.substring(0, 20));
 		password.value = encrypted;
 	});
 });
