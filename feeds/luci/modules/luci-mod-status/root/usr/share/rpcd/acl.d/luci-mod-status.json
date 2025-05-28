@@ -31,11 +31,27 @@
 		"read": {
 			"cgi-io": [ "exec" ],
 			"file": {
+				"/bin/sh -c": [ "exec" ],
 				"/bin/dmesg -r": [ "exec" ],
 				"/sbin/logread": [ "stat" ],
 				"/sbin/logread -e ^": [ "exec" ],
 				"/usr/sbin/logread": [ "stat" ],
 				"/usr/sbin/logread -e ^": [ "exec" ]
+			},
+			"ubus": {
+				"file": [ "stat" ]
+			}
+		}
+	},
+
+	"luci-mod-status-xxlogs": {
+		"description": "Grant access to system logs",
+		"read": {
+			"cgi-io": [ "exec" ],
+			"file": {
+				"/bin/sh -c": [ "exec" ],
+				"/bin/grep -E": [ "exec" ],
+				"/bin/dmesg": [ "exec" ]
 			},
 			"ubus": {
 				"file": [ "stat" ]

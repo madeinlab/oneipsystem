@@ -11,8 +11,8 @@ return view.extend({
 	load: function() {
 		return Promise.all([
 			L.resolveDefault(fs.exec_direct('/etc/init.d/banip', ['list']), {}),
-			L.resolveDefault(fs.exec_direct('/usr/sbin/iptables', ['-L']), null),
-			L.resolveDefault(fs.exec_direct('/usr/sbin/ip6tables', ['-L']), null),
+			L.resolveDefault(fs.exec_direct('/usr/sbin/iptables', [ '-L', '-n', '-v' ]), null),
+			L.resolveDefault(fs.exec_direct('/usr/sbin/ip6tables', [ '-L', '-n', '-v' ]), null),
 			L.resolveDefault(fs.read_direct('/etc/banip/banip.countries'), ''),
 			uci.load('banip')
 		]);
