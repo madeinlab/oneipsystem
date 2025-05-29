@@ -120,17 +120,17 @@ function rule_target_txt(s, ctHelpers) {
 	case 'REJECT':
 		return fwtool.fmt(_('<var data-tooltip="REJECT">Reject</var> %{src?%{dest?forward:input}:output}'), s);
 
-	case 'NOTRACK':
-		return fwtool.fmt(_('<var data-tooltip="NOTRACK">Do not track</var> %{src?%{dest?forward:input}:output}'), s);
+	// case 'NOTRACK':
+	// 	return fwtool.fmt(_('<var data-tooltip="NOTRACK">Do not track</var> %{src?%{dest?forward:input}:output}'), s);
 
-	case 'HELPER':
-		return fwtool.fmt(_('<var data-tooltip="HELPER">Assign conntrack</var> helper <var%{helper_name? data-tooltip="%{helper_name}"}>%{set_helper}</var>'), s);
+	// case 'HELPER':
+	// 	return fwtool.fmt(_('<var data-tooltip="HELPER">Assign conntrack</var> helper <var%{helper_name? data-tooltip="%{helper_name}"}>%{set_helper}</var>'), s);
 
-	case 'MARK':
-		return fwtool.fmt(_('<var data-tooltip="MARK">%{set_mark?Assign:XOR}</var> firewall mark <var>%{set_mark?:%{set_xmark}}</var>'), s);
+	// case 'MARK':
+	// 	return fwtool.fmt(_('<var data-tooltip="MARK">%{set_mark?Assign:XOR}</var> firewall mark <var>%{set_mark?:%{set_xmark}}</var>'), s);
 
-	case 'DSCP':
-		return fwtool.fmt(_('<var data-tooltip="DSCP">Assign DSCP</var> classification <var>%{set_dscp}</var>'), s);
+	// case 'DSCP':
+	// 	return fwtool.fmt(_('<var data-tooltip="DSCP">Assign DSCP</var> classification <var>%{set_dscp}</var>'), s);
 
 	default:
 		return t;
@@ -173,7 +173,7 @@ return view.extend({
 		m = new form.Map('firewall', _('Administrator IP'),
 			_('Administrator IP rules define policies for controlling access from specific IP addresses. For example, you can allow or deny only specific IP addresses to access the router management page.'));
 
-		s = m.section(form.GridSection, 'rule', _('Administrator IP Rules'));
+		s = m.section(form.GridSection, 'rule');
 		s.addremove = true;
 		s.anonymous = true;
 		s.sortable  = false;
@@ -275,15 +275,24 @@ return view.extend({
 			return false; // Otherwise, editable
 		};
 
-		o = s.option(form.DummyValue, '_match', _('Match'));
-		o.modalonly = false;
+		// o = s.option(form.DummyValue, '_match', _('Match'));
+		// o.modalonly = false;
+		// o.textvalue = function(s) {
+		// 	return E('small', [
+		// 		rule_proto_txt(s, ctHelpers), E('br'),
+		// 		rule_src_txt(s, hosts), E('br'),
+		// 		rule_dest_txt(s), E('br'),
+		// 		rule_limit_txt(s)
+		// 	]);
+		// };
+		o = s.option(form.DummyValue, '_ip', _('Target source address'));
+		o.modalonly = false;		
 		o.textvalue = function(s) {
-			return E('small', [
-				rule_proto_txt(s, ctHelpers), E('br'),
-				rule_src_txt(s, hosts), E('br'),
-				rule_dest_txt(s), E('br'),
-				rule_limit_txt(s)
-			]);
+			const src_ips = fwtool.map_invert(uci.get('firewall', s, 'src_ip'), 'toLowerCase');
+			return E('small', src_ips.map(function(ip) {
+				let val = ip.ival == "0.0.0.0/0" ? _('Any external IP') : ip.ival
+				return E('div', val);
+			}));
 		};
 
 		o = s.option(form.ListValue, '_target', _('Action'));
@@ -343,54 +352,7 @@ return view.extend({
 			return null;
 		};
 
-		o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
-		o.modalonly = true;
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return 'all'; // Use 'all' for 'Any' for Admin_IP rules
-			}
-			return uci.get('firewall', section_id, 'proto') || 'tcp udp'; // Raw value for other rules, default to 'tcp udp'
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'proto', 'all'); // Save as 'all'
-			}
-			return this.super('write', [section_id, value]); // Default behavior for other rules
-		};
-		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
-		o.default = 'tcp udp'; // Default for general rules if not Admin_IP_X
-
-		o = s.taboption('general', widgets.ZoneSelect, 'src', _('Source zone'));
-		o.modalonly = true;
-		o.nocreate = true;
-		o.allowany = true;
-		o.allowlocal = 'src';
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return 'wan'; // For Admin_IP rules, source zone is always 'wan'
-			}
-			return this.super('cfgvalue', [section_id]); // Default behavior for other rules
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'src', 'wan'); // Ensure it's saved as 'wan'
-			}
-			return this.super('write', [section_id, value]);
-		};
-		o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
-
-		// 출발지 주소 필드
-		fwtool.addIPOption(s, 'general', 'src_ip', _('Source address'), null, '', hosts, true);
+		fwtool.addIPOption(s, 'general', 'src_ip', _('Target source address'), null, '', hosts, true);
 		var src_ip_field = s.children.filter(function(o) { return o.option == 'src_ip' })[0];
 		if (src_ip_field) {
 			src_ip_field.renderWidget = function(section_id, option_index, cfgvalue) {
@@ -403,65 +365,23 @@ return view.extend({
 			// 저장 시 option src_ip로, CIDR /32로 저장
 			src_ip_field.write = function(section_id, value) {
 				if (Array.isArray(value)) value = value[0];
-				if (value && !value.includes('/')) value = value + '/32';
-				return uci.set('firewall', section_id, 'src_ip', value);
-			};
+				if (value && !value.includes('/')) value += '/32';
+				uci.set('firewall', section_id, 'src_ip', value);
+
+				// 디폴트 설정값
+				var current_name = uci.get('firewall', section_id, 'name');
+				if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+					uci.set('firewall', section_id, 'proto', 'all');
+					uci.set('firewall', section_id, 'src', 'wan');
+					uci.set('firewall', section_id, 'dest', '');
+					uci.set('firewall', section_id, 'dest_ip', '');
+				}
+
+				return true;
+			};			
 		}
 
 		o = s.taboption('general', form.Value, 'src_port', _('Source port'));
-		o.modalonly = true;
-		o.datatype = 'list(neg(portrange))';
-		o.placeholder = _('any');
-		o.depends({ proto: 'tcp', '!contains': true });
-		o.depends({ proto: 'udp', '!contains': true });
-
-		o = s.taboption('general', widgets.ZoneSelect, 'dest', _('Destination zone'));
-		o.modalonly = true;
-		o.nocreate = true;
-		o.allowany = true;
-		o.allowlocal = true;
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return ''; // Device(input)를 의미
-			}
-			return this.super('cfgvalue', [section_id]);
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'dest', '');
-			}
-			return this.super('write', [section_id, value]);
-		};
-		o.readonly = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
-
-		// 목적지 주소 필드
-		o = s.taboption('general', form.Value, 'dest_ip', _('Destination address'));
-		o.modalonly = true;
-		o.cfgvalue = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return '-';
-			}
-			return this.super('cfgvalue', [section_id]);
-		};
-		o.write = function(section_id, value) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
-				return uci.set('firewall', section_id, 'dest_ip', '');
-			}
-			return this.super('write', [section_id, value]);
-		};
-		o.readonly = function(section_id) {
-			var current_name = uci.get('firewall', section_id, 'name');
-			return (current_name && /^Admin_IP_\d+$/.test(current_name));
-		};
-
-		o = s.taboption('general', form.Value, 'dest_port', _('Destination port'));
 		o.modalonly = true;
 		o.datatype = 'list(neg(portrange))';
 		o.placeholder = _('any');
@@ -474,11 +394,6 @@ return view.extend({
 		o.value('DROP', _('drop'));
 		o.value('ACCEPT', _('accept'));
 		o.value('REJECT', _('reject'));
-		o.value('NOTRACK', _("don't track"));
-		o.value('HELPER', _('assign conntrack helper'));
-		o.value('MARK_SET', _('apply firewall mark'));
-		o.value('MARK_XOR', _('XOR firewall mark'));
-		o.value('DSCP', _('DSCP classification'));
 		o.renderWidget = function(section_id, option_index, cfgvalue) {
 			var widget = this.super('renderWidget', [section_id, option_index, cfgvalue]);
 			if (widget) {
@@ -487,16 +402,160 @@ return view.extend({
 			return widget;
 		};
 
-		fwtool.addMarkOption(s, 1);
-		fwtool.addMarkOption(s, 2);
-		fwtool.addDSCPOption(s, true);
+		// o = s.taboption('general', fwtool.CBIProtocolSelect, 'proto', _('Protocol'));
+		// o.modalonly = true;
+		// o.cfgvalue = function(section_id) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return 'all'; // Use 'all' for 'Any' for Admin_IP rules
+		// 	}
+		// 	return uci.get('firewall', section_id, 'proto') || 'tcp udp'; // Raw value for other rules, default to 'tcp udp'
+		// };
+		// o.write = function(section_id, value) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return uci.set('firewall', section_id, 'proto', 'all'); // Save as 'all'
+		// 	}
+		// 	return this.super('write', [section_id, value]); // Default behavior for other rules
+		// };
+		// o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		// };
+		// o.default = 'tcp udp'; // Default for general rules if not Admin_IP_X
 
-		o = s.taboption('general', form.ListValue, 'set_helper', _('Tracking helper'), _('Assign the specified connection tracking helper to matched traffic.'));
-		o.modalonly = true;
-		o.placeholder = _('any');
-		o.depends('target', 'HELPER');
-		for (var i = 0; i < ctHelpers.length; i++)
-			o.value(ctHelpers[i].name, '%s (%s)'.format(ctHelpers[i].description, ctHelpers[i].name.toUpperCase()));
+		// o = s.taboption('general', widgets.ZoneSelect, 'src', _('Source zone'));
+		// o.modalonly = true;
+		// o.nocreate = true;
+		// o.allowany = true;
+		// o.allowlocal = 'src';
+		// o.cfgvalue = function(section_id) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return 'wan'; // For Admin_IP rules, source zone is always 'wan'
+		// 	}
+		// 	return this.super('cfgvalue', [section_id]); // Default behavior for other rules
+		// };
+		// o.write = function(section_id, value) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return uci.set('firewall', section_id, 'src', 'wan'); // Ensure it's saved as 'wan'
+		// 	}
+		// 	return this.super('write', [section_id, value]);
+		// };
+		// o.readonly = function(section_id) { // Make readonly for Admin_IP_X rules
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		// };
+
+		// // 출발지 주소 필드
+		// fwtool.addIPOption(s, 'general', 'src_ip', _('Source address'), null, '', hosts, true);
+		// var src_ip_field = s.children.filter(function(o) { return o.option == 'src_ip' })[0];
+		// if (src_ip_field) {
+		// 	src_ip_field.renderWidget = function(section_id, option_index, cfgvalue) {
+		// 		var widget = this.super('renderWidget', [section_id, option_index, cfgvalue]);
+		// 		if (widget) {
+		// 			widget.setAttribute('style', 'border-color: var(--main-bright-color)');
+		// 		}
+		// 		return widget;
+		// 	};
+		// 	// 저장 시 option src_ip로, CIDR /32로 저장
+		// 	src_ip_field.write = function(section_id, value) {
+		// 		if (Array.isArray(value)) value = value[0];
+		// 		if (value && !value.includes('/')) value = value + '/32';
+		// 		return uci.set('firewall', section_id, 'src_ip', value);
+		// 	};
+		// }
+
+		// o = s.taboption('general', form.Value, 'src_port', _('Source port'));
+		// o.modalonly = true;
+		// o.datatype = 'list(neg(portrange))';
+		// o.placeholder = _('any');
+		// o.depends({ proto: 'tcp', '!contains': true });
+		// o.depends({ proto: 'udp', '!contains': true });
+
+		// o = s.taboption('general', widgets.ZoneSelect, 'dest', _('Destination zone'));
+		// o.modalonly = true;
+		// o.nocreate = true;
+		// o.allowany = true;
+		// o.allowlocal = true;
+		// o.cfgvalue = function(section_id) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return ''; // Device(input)를 의미
+		// 	}
+		// 	return this.super('cfgvalue', [section_id]);
+		// };
+		// o.write = function(section_id, value) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return uci.set('firewall', section_id, 'dest', '');
+		// 	}
+		// 	return this.super('write', [section_id, value]);
+		// };
+		// o.readonly = function(section_id) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		// };
+
+		// // 목적지 주소 필드
+		// o = s.taboption('general', form.Value, 'dest_ip', _('Destination address'));
+		// o.modalonly = true;
+		// o.cfgvalue = function(section_id) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return '-';
+		// 	}
+		// 	return this.super('cfgvalue', [section_id]);
+		// };
+		// o.write = function(section_id, value) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	if (current_name && /^Admin_IP_\d+$/.test(current_name)) {
+		// 		return uci.set('firewall', section_id, 'dest_ip', '');
+		// 	}
+		// 	return this.super('write', [section_id, value]);
+		// };
+		// o.readonly = function(section_id) {
+		// 	var current_name = uci.get('firewall', section_id, 'name');
+		// 	return (current_name && /^Admin_IP_\d+$/.test(current_name));
+		// };
+
+		// o = s.taboption('general', form.Value, 'dest_port', _('Destination port'));
+		// o.modalonly = true;
+		// o.datatype = 'list(neg(portrange))';
+		// o.placeholder = _('any');
+		// o.depends({ proto: 'tcp', '!contains': true });
+		// o.depends({ proto: 'udp', '!contains': true });
+
+		// o = s.taboption('general', form.ListValue, 'target', _('Action'));
+		// o.modalonly = true;
+		// o.default = 'ACCEPT';
+		// o.value('DROP', _('drop'));
+		// o.value('ACCEPT', _('accept'));
+		// o.value('REJECT', _('reject'));
+		// // o.value('NOTRACK', _("don't track"));
+		// // o.value('HELPER', _('assign conntrack helper'));
+		// // o.value('MARK_SET', _('apply firewall mark'));
+		// // o.value('MARK_XOR', _('XOR firewall mark'));
+		// // o.value('DSCP', _('DSCP classification'));
+		// o.renderWidget = function(section_id, option_index, cfgvalue) {
+		// 	var widget = this.super('renderWidget', [section_id, option_index, cfgvalue]);
+		// 	if (widget) {
+		// 		widget.setAttribute('style', 'border-color: var(--main-bright-color)');
+		// 	}
+		// 	return widget;
+		// };
+
+		// fwtool.addMarkOption(s, 1);
+		// fwtool.addMarkOption(s, 2);
+		// fwtool.addDSCPOption(s, true);
+
+		// o = s.taboption('general', form.ListValue, 'set_helper', _('Tracking helper'), _('Assign the specified connection tracking helper to matched traffic.'));
+		// o.modalonly = true;
+		// o.placeholder = _('any');
+		// o.depends('target', 'HELPER');
+		// for (var i = 0; i < ctHelpers.length; i++)
+		// 	o.value(ctHelpers[i].name, '%s (%s)'.format(ctHelpers[i].description, ctHelpers[i].name.toUpperCase()));
 
 		return m.render();
 	}
