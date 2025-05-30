@@ -117,8 +117,8 @@ function rule_target_txt(s, ctHelpers) {
 	case 'ACCEPT':
 		return fwtool.fmt(_('<var data-tooltip="ACCEPT">Accept</var> %{src?%{dest?forward:input}:output}'), s);
 
-	case 'REJECT':
-		return fwtool.fmt(_('<var data-tooltip="REJECT">Reject</var> %{src?%{dest?forward:input}:output}'), s);
+	// case 'REJECT':
+	// 	return fwtool.fmt(_('<var data-tooltip="REJECT">Reject</var> %{src?%{dest?forward:input}:output}'), s);
 
 	// case 'NOTRACK':
 	// 	return fwtool.fmt(_('<var data-tooltip="NOTRACK">Do not track</var> %{src?%{dest?forward:input}:output}'), s);
@@ -393,7 +393,6 @@ return view.extend({
 		o.default = 'ACCEPT';
 		o.value('DROP', _('drop'));
 		o.value('ACCEPT', _('accept'));
-		o.value('REJECT', _('reject'));
 		o.renderWidget = function(section_id, option_index, cfgvalue) {
 			var widget = this.super('renderWidget', [section_id, option_index, cfgvalue]);
 			if (widget) {
