@@ -208,9 +208,9 @@ function createCameraDumpFile(filename, ip, mac, username, password)
 		pass = password
 	else
 		if mac and mac ~= '' then
-			user, pass = getAccountByMac(mac)
-			user = user or ''
-			pass = pass or ''			
+			local account = getAccountByMac(mac)
+			user = account and account.username or ""
+			pass = account and account.password or ""
 		end
 	end
 
@@ -311,7 +311,9 @@ function isNonEmpty(str)
 end
 
 function addCamera(ip, mac, username, password)
-	-- nixio.syslog("debug", string.format("[addCamera] ip[%s] mac[%s] username[%s] password[%s]", ip, mac, username, password))
+	-- local safe_username = username or ""
+	-- local safe_password = password or ""
+	-- nixio.syslog("debug", string.format("[addCamera] ip[%s] mac[%s] username[%s] password[%s]", ip, mac, safe_username, safe_password))
 
 	-- check ip
 	local port = getPortFromIP(ip)
@@ -645,7 +647,8 @@ end
 
 function rebootCamera(ip, mac)
 	nixio.syslog("debug", string.format("rebootCamera ip[%s] mac[%s]", ip, mac))
-	sys.exec("/usr/bin/reboot-camera.lua " .. ip .. " " .. mac)
+	-- sys.exec("/usr/bin/reboot-camera.lua " .. ip .. " " .. mac)
+	os.execute("/usr/bin/reboot-camera.lua " .. ip .. " " .. mac)
 end
 
 -- Get the port link state from /proc/rtk_gsw/link.
@@ -726,17 +729,20 @@ function getAccountByMac(mac)
 	local data = jsonc.parse(fs.readfile(account_path) or "{}")
 
 	if not data or type(data) ~= "table" then
-		return "", ""
+		return nil
 	end
 
 	local account = data[mac:lower()]
 	if account then
-		local username = account.username or ""
-		local password = account.password or ""
-		return username, password
+		return {
+			mac = account.mac or "",
+			name = account.name or "",
+			username = account.username or "",
+			password = account.password or ""
+		}
 	end
 
-	return "", ""
+	return nil
 end
 
 function removeAccount(mac)
@@ -831,4 +837,79 @@ function generateRtspProxyConf()
 		nixio.syslog("debug", "RTSP configuration generation failed.")
 		return { error = "RTSP configuration generation failed." }
 	end
+end
+
+function updateCameraInfo(mac, ip, name)
+	-- nixio.syslog("debug", string.format("updateCameraInfo mac[%s] ip[%s] name[%s])", mac, ip, name))
+    local accounts = {}
+    local json_str = fs.readfile(account_path)
+
+    if json_str and json_str ~= "" then
+        accounts = jsonc.parse(json_str) or {}
+    end
+
+	local norm_mac = mac:lower()
+	if accounts[norm_mac] then
+		if accounts[norm_mac].mac ~= mac then
+			accounts[norm_mac].mac = mac
+		end
+
+		-- if accounts[norm_mac].ip ~= ip then
+		-- 	accounts[norm_mac].ip = ip
+		-- end
+
+		if accounts[norm_mac].name ~= name then
+			accounts[norm_mac].name = name
+		end
+	else
+        accounts[norm_mac] = {
+            mac = mac,
+            -- ip = ip,
+            name = name
+        }
+	end
+
+	fs.writefile(account_path, jsonc.stringify(accounts, true))
+	os.execute("chmod 600 " .. account_path)
+end
+
+function handleCameraEvent(args)
+	-- args = { action = "string", mac = "string", ip = "string", name = "string"}
+	local action = args.action
+	local mac = args.mac
+	local ip = args.ip
+	local name = args.name
+	
+	-- update camera info
+	updateCameraInfo(mac, ip, name)
+
+	-- Validate IP format and range (209.142.67.xx)
+	if not ip:match("^209%.142%.67%.[0-9]+$") then
+		return { result = false, reason = "Invalid IP format" }
+	end
+
+	local last_octet = tonumber(ip:match("(%d+)$"))
+	if not last_octet then
+		return { result = false, reason = "Invalid last octet" }
+	end
+
+	if ((last_octet % 10) ~= 0) or (math.floor(last_octet / 10) < 1) or (math.floor(last_octet / 10) > 8) then
+		if action == "add" or action == "old" then
+			-- ping test to verify if the IP address is reachable
+			local ping_result = os.execute("ping -c 3 -W 2 " .. ip .. " > /dev/null 2>&1")
+			if ping_result == 0 then
+				-- reboot camera
+				rebootCamera(ip, mac)
+			end
+			return { result = true, action = "reboot_check" }
+		end
+	end
+
+	if action == 'add' or action == 'old' then
+		addCamera(ip, mac)
+	elseif action == 'del' then
+		removeCamera(ip, mac)
+	end
+
+	return { result = true, action = action }
 end

@@ -8777,6 +8777,10 @@ msgstr "모델명"
 msgid "Manufacturer"
 msgstr "제조사"
 
+#: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js:477
+msgid "Model name: %s"
+msgstr "모델명: %s"
+
 #: modules/luci-base/luasrc/view/sysauth.htm:82
 msgid "Please enter your username."
 msgstr "사용자이름을 입력해 주세요."

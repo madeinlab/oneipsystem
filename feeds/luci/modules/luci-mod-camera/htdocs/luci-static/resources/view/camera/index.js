@@ -455,11 +455,18 @@ async function handleSetCameraLoginInfo(section_id) {
 	let mac = uci.get('camera', section_id, 'mac') ? uci.get('camera', section_id, 'mac') : _macAddrArr[portNum - 1]
 
 	callGetAccountByMac(mac).then(function(account) {
-		let user = account.username || ''
-		let pass = account.password || ''
-		// console.log("camera mac[%s] username[%s] password[%s]", mac, user, pass)
+		let accMac = account.mac || ''
+		let accName = account.name || ''
+		let accUsername =  account.username || ''
+		let accPassword = account.password || ''
+		// console.log("camera mac[%s] accMac[%s] accName[%s] accUsername[%s] accPassword[%s]", mac, accMac, accName, accUsername, accPassword)
 
-		let hasAccount = (user !== '' && pass !== '') ? true : false
+		// debug
+		// if (mac !== accMac) {
+		// 	console.log("[debug] MAC is different. mac[%s] account.mac[%s]", mac, accMac);
+		// }
+
+		let hasAccount = (accUsername !== '' && accPassword !== '') ? true : false
 
 		// 카메라 계정 설정 모달창
 		ui.showModal(`${_('Camera')} ${portStr}`, [
@@ -467,34 +474,9 @@ async function handleSetCameraLoginInfo(section_id) {
 				E('div', { 'class': 'cbi-section-node' }, [
 					E('p', _('Enter the username and password for Camera %d.').replace('%d', portStr)),
 
-					// E('div', { 'class': 'cbi-value' }, [
-					// 	E('label', { 'class': 'cbi-value-title', 'for': 'set-user-flag' }, _('Set Login Info')),
-					// 	E('div', { 'class': 'cbi-value-field' }, [
-					// 		E('input', {
-					// 			'type': 'checkbox',
-					// 			'id': 'set-user-flag',
-					// 			//'checked': uci.get('camera', section_id, 'set_user') === '1',
-					// 			'click': function () {
-					// 				// 체크 상태에 따라 관련 필드 show/hide
-					// 				const checked = this.checked;
-					// 				document.querySelectorAll('.user-info-field').forEach(el => {
-					// 					el.style.display = checked ? '' : 'none';
-					// 				});
-					// 			}
-					// 		})
-					// 	])
-					// ]),
+					E('p', { style: "margin-left:20px; font-weight:bold;" }, `MAC:  ${accMac}`),
+					E('p', { style: "margin-left:20px; font-weight:bold;" }, _('Model name:  %s').replace('%s', accName || '-')),
 
-					// E('p', {
-					// 	'class': 'user-info-field',
-					// 	'style': msgStyle + ' font-size: 14px; font-style: italic;'
-					// }, 
-					// 	hasAccount
-					// 		? _('Saved credentials exist.') 
-					// 		: _('No saved credentials.')
-					// ),
-
-					//E('div', { 'class': 'cbi-value user-info-field', 'style': uci.get('camera', section_id, 'set_user') === '1' ? '' : 'display: none;' }, [
 					E('div', { 'class': 'cbi-value user-info-field' }, [
 						E('label', { 'class': 'cbi-value-title', 'for': 'camera-id' }, _('Username')),
 						E('div', { 'class': 'cbi-value-field' }, [
@@ -503,12 +485,11 @@ async function handleSetCameraLoginInfo(section_id) {
 								'id': 'camera-id', 
 								// 'type': 'password', 
 								'placeholder': _('Enter Camera Username'),
-								'value': user
+								'value': accUsername
 							})
 						])
 					]),
 
-					//E('div', { 'class': 'cbi-value user-info-field', 'style': uci.get('camera', section_id, 'set_user') === '1' ? '' : 'display: none;' }, [
 					E('div', { 'class': 'cbi-value user-info-field' }, [
 						E('label', { 'class': 'cbi-value-title', 'for': 'camera-pw' }, _('Password')),
 						E('div', { 'class': 'cbi-value-field' }, [
@@ -545,7 +526,7 @@ async function handleSetCameraLoginInfo(section_id) {
 								}
 
 								if (newUser !== '' && encrypted !== '') {
-									saveCameraUserAccount(mac, newUser, encrypted);
+									saveCameraUserAccount(accMac, newUser, encrypted);
 								}
 								
 								ui.hideModal();

@@ -672,6 +672,35 @@ local methods = {
 		end
 	},
 
+	updateCameraInfo = {
+		args = {
+			mac = "string",
+			ip = "string",			
+			name = "string"
+		},
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.updateCameraInfo(args.mac, args.ip, args.name);
+
+			return { result = true }
+		end
+	},
+
+	handleCameraEvent = {
+		args = {
+			action = "string",
+			mac = "string",
+			ip = "string",
+			name = "string"			
+		},
+		call = function(args)
+			local camera = require "luci.camera"
+			camera.handleCameraEvent(args);
+
+			return { result = true }
+		end
+	},
+
 	addCamera = {
 		args = {
 			ip = "string",
@@ -824,12 +853,9 @@ local methods = {
 		args = { mac = "string" },
 		call = function(args)
 			local camera = require "luci.camera"
-			local username, password = camera.getAccountByMac(args.mac)
+			local account = camera.getAccountByMac(args.mac)
 
-			return {
-				username = username,
-				password = password
-			}
+			return account or {}
 		end
 	},
 
