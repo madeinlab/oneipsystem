@@ -1,16 +1,18 @@
 #!/bin/sh /etc/rc.common
+
 START=41
 USE_PROCD=1
 
+# Configuration variables
 MTD_NUM="7"
 VOL_SIZE="12MiB"
 VOL_NAME="oneip_log"
-
 MTD_DEV="mtd${MTD_NUM}"
-UBI_DEV=""		# Dynamic assign
+UBI_DEV=""  # Dynamic assignment
 MOUNT_POINT="/mnt/${VOL_NAME}"
 
 start_service() {
+	# Attempt to attach UBI to MTD device
 	if ! ubiattach /dev/ubi_ctrl -m $MTD_NUM 2>/dev/null; then
 		echo "UBI not formatted on $MTD_DEV, formatting..."
 		ubiformat /dev/$MTD_DEV -y
@@ -19,6 +21,7 @@ start_service() {
 		echo "$MTD_DEV is already UBI formatted"
 	fi
 
+	# Detect UBI device linked to MTD
 	for ubi in /sys/class/ubi/ubi*; do
 		if [ -d "$ubi" ]; then
 			if grep -q "^$MTD_NUM$" "$ubi/mtd_num" 2>/dev/null; then
@@ -28,32 +31,43 @@ start_service() {
 		fi
 	done
 
+	# Check if UBI device was detected
 	if [ -z "$UBI_DEV" ]; then
 		echo "Failed to detect UBI device for mtd$MTD_NUM"
 		exit 1
 	fi
 	echo "Detected UBI device: $UBI_DEV"
 
+	# Create volume if it doesn't exist
 	if ! ubinfo /dev/$UBI_DEV -a 2>/dev/null | grep -q "Name:.*$VOL_NAME"; then
 		echo "Creating volume $VOL_NAME on $UBI_DEV..."
-		ubirmvol /dev/$UBI_DEV -n 0
+		ubirmvol /dev/$UBI_DEV -n 0 2>/dev/null
 		ubimkvol /dev/$UBI_DEV -N $VOL_NAME -s $VOL_SIZE
 	fi
 
+	# Create mount point and mount UBIFS
 	mkdir -p $MOUNT_POINT
 	mount -t ubifs ${UBI_DEV}_0 $MOUNT_POINT
+
+	# Define service with procd
+	procd_open_instance "ubi_logflash"
+	procd_set_param command /bin/true  # Dummy command to keep service registered
+	procd_close_instance
 }
 
 stop_service() {
+	# Define source and destination for log sync
 	SRC="/tmp/system.log"
 	DEST="/mnt/oneip_log/systemLOG_temp.log"
 
+	# Sync log if source exists and mount point is active
 	if [ -f "$SRC" ] && mountpoint -q "$MOUNT_POINT"; then
 		cp "$SRC" "$DEST"
 		sync
 		logger -t ubi_logflash "Log synced before UBI detach at $(date)"
 	fi
+	
+	# Unmount and detach UBI
 	umount $MOUNT_POINT 2>/dev/null
 	ubidetach -m $MTD_NUM 2>/dev/null
 }
-

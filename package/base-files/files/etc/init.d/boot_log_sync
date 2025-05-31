@@ -1,17 +1,36 @@
 #!/bin/sh /etc/rc.common
-START=42  # ubi_logflash(41) 이후
-start() {
+
+START=42  # After ubi_logflash(41)
+USE_PROCD=1  # Enable procd usage
+
+start_service() {
 	SRC="/tmp/system.log"
 	DEST="/mnt/oneip_log/systemLOG_temp.log"
 	MOUNT_POINT="/mnt/oneip_log"
+
+	# Check if mount point is ready
 	if ! mountpoint -q "$MOUNT_POINT"; then
 		logger -t boot_log_sync "Mount point $MOUNT_POINT not ready"
 		exit 1
 	fi
-	sleep 30
-	if [ -f "$SRC" ]; then
-		cp "$SRC" "$DEST"
-		sync
-		logger -t boot_log_sync "Boot log synced at $(date)"
-	fi
+
+	# Open a procd instance with a unique name
+	procd_open_instance "boot_log_sync"
+
+	# Define the command to execute: sleep, check file, copy, and sync
+	procd_set_param command /bin/sh -c "
+		sleep 30
+		if [ -f '$SRC' ]; then
+			cp '$SRC' '$DEST'
+			sync
+			logger -t boot_log_sync 'Boot log synced at $(date)'
+		fi
+	"
+
+	# Optional: Enable respawn to restart on failure
+	# procd_set_param respawn
+
+	# Close the procd instance
+	procd_close_instance
 }
+
