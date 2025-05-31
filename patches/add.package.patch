@@ -1,9 +1,0 @@
-diff -urN C/package/base-files/files/sbin/check_socat.sh openwrt/package/base-files/files/sbin/check_socat.sh
---- C/package/base-files/files/sbin/check_socat.sh	1970-01-01 00:00:00.000000000 +0000
-+++ openwrt/package/base-files/files/sbin/check_socat.sh	2024-05-22 02:52:15.915467785 +0000
-@@ -0,0 +1,5 @@
-+#!/bin/bash
-+ps aux | grep socat | grep "TCP-LISTEN:$1" > /dev/null
-+rv=`echo $?`
-+echo $rv
-+exit $(( rv ))
