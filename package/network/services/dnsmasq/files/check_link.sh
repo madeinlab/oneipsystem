@@ -83,10 +83,14 @@ while true; do
                 port=`expr $i + 1`
                 priLinkStr=LINK$priLink
                 curLinkStr=LINK$curLink
-                eval echo Switch port ${port} change state '$'${priLinkStr} to '$'${curLinkStr}
+
 				if [ ${curLink} -eq "1" ]; then
 					DHCP_ACT=`expr ${DHCP_ACT} + $((curLink))`
+					logger -p "daemon.notice" -t "netifd" "Switch port ${port} link is up"
+					echo "daemon.notice netifd:Switch port ${port} link is up" > /dev/console
 				else
+					logger -p "daemon.notice" -t "netifd" "Switch port ${port} link is down"
+					echo "daemon.notice netifd:Switch port ${port} link is down" > /dev/console
 					ip -s -s neigh flush all
 				fi
             fi

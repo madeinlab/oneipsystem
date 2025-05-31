@@ -39,11 +39,11 @@ return view.extend({
 				return { shellcmd: null, logreadcmd: null, grepcmd: null, awkcmd: null, logdata: '' };
 			}
 
-			var grepPattern = 'user\\.|daemon\\.|auth\\.';
+			var grepPattern = 'user\\.|daemon\\.|auth\\.|authpriv\\.';
 			var logCmd1 = logreadcmd + '|' + grepcmd + ' -E "' + grepPattern + '"';
 			var logCmd2 = grepcmd + ' -v "kernel"';
 			var logCmd3 = grepcmd + ' -v "S95done:"';
-			var awkPattern = "\"/netifd/ && /link is up/ || !/netifd/ && !/uwsgi/\"";
+			var awkPattern = "\"/netifd/ && (/link is up/ || /link is down/) || !/netifd/ && !/uwsgi/\"";
 			var logCmd4 = awkcmd + " " + awkPattern;
 			var logCmd = logCmd1 + ' | ' + logCmd2 + ' | ' + logCmd3 + ' | ' + logCmd4;
 
@@ -57,11 +57,11 @@ return view.extend({
 	},
 
 	render: function(data) {
-		var grepPattern = 'user\\.|daemon\\.|auth\\.';
+		var grepPattern = 'user\\.|daemon\\.|auth\\.|authpriv\\.';
 		var logCmd1 = data.logreadcmd + '|' + data.grepcmd + ' -E "' + grepPattern + '"';
 		var logCmd2 = data.grepcmd + ' -v "kernel"';
 		var logCmd3 = data.grepcmd + ' -v "S95done:"';
-		var awkPattern = "\"/netifd/ && /link is up/ || !/netifd/ && !/uwsgi/\"";
+		var awkPattern = "\"/netifd/ && (/link is up/ || /link is down/) || !/netifd/ && !/uwsgi/\"";
 		var logCmd4 = data.awkcmd + " " + awkPattern;
 		var logCmd = logCmd1 + ' | ' + logCmd2 + ' | ' + logCmd3 + ' | ' + logCmd4;
 
