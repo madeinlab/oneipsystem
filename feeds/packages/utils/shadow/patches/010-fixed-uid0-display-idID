@@ -1,0 +1,12 @@
+diff -urN a/src/login.c b/src/login.c
+--- a/src/login.c	2020-01-12 22:58:49.000000000 +0900
++++ b/src/login.c	2025-05-31 18:09:31.937270151 +0900
+@@ -1339,7 +1339,7 @@
+ 	(void) signal (SIGINT, SIG_DFL);	/* default interrupt signal */
+ 
+ 	if (0 == pwd->pw_uid) {
+-		SYSLOG ((LOG_NOTICE, "ROOT LOGIN %s", fromhost));
++		SYSLOG ((LOG_INFO, "'%s' logged in %s", username, fromhost));
+ 	} else if (getdef_bool ("LOG_OK_LOGINS")) {
+ 		SYSLOG ((LOG_INFO, "'%s' logged in %s", username, fromhost));
+ 	}

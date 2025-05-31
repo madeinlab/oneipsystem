@@ -32,7 +32,8 @@
 			"cgi-io": [ "exec" ],
 			"file": {
 				"/bin/sh -c": [ "exec" ],
-				"/bin/grep -E *": [ "exec" ],
+				"/bin/grep": [ "exec" ],
+				"/usr/bin/awk": [ "exec" ],
 				"/bin/dmesg -r": [ "exec" ],
 				"/sbin/logread": [ "stat" ],
 				"/sbin/logread -e *": [ "exec" ],
@@ -51,7 +52,8 @@
 			"cgi-io": [ "exec" ],
 			"file": {
 				"/bin/sh -c": [ "exec" ],
-				"/bin/grep -E *": [ "exec" ],
+				"/bin/grep": [ "exec" ],
+				"/usr/bin/awk": [ "exec" ],
 				"/bin/dmesg *": [ "exec" ]
 			},
 			"ubus": {

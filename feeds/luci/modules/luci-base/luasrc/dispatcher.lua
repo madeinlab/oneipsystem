@@ -21,7 +21,7 @@ local index = nil
 -- Global variable for super user
 local super_user = sys.get_super_user()
 
--- 상단에 추가
+-- Add at the top
 local ATTEMPTS_FILE = "/tmp/login_attempts.json"
 local json = require "luci.jsonc"
 
@@ -44,7 +44,7 @@ local function rsa_decrypt_base64_nofile(enc_base64)
 	end
 end
 
--- 로그인 시도 데이터 로드/저장 함수
+-- Functions to load/save login attempt data
 local function load_attempts()
 	-- nixio.syslog("info", "=== Loading attempts from file ===")
 	local content = fs.readfile(ATTEMPTS_FILE)
@@ -479,11 +479,11 @@ function error500(message)
 end
 
 function error503(message, retry_interval, ip)
-	-- 방화벽 룰 먼저 추가
+	-- Add firewall rule first
 	local uci = require "luci.model.uci".cursor()
 	local rule_name = "login_block_" .. ip:gsub("%.", "_")
 	
-	-- 기존 룰이 있는지 확인
+	-- Check if rule already exists
 	local exists = false
 	uci:foreach("firewall", "rule", function(s)
 		if s.name == rule_name then
@@ -493,7 +493,7 @@ function error503(message, retry_interval, ip)
 	end)
 	
 	if not exists then
-		-- 새 룰 추가
+		-- Add new rule
 		local rule = uci:add("firewall", "rule")
 		uci:set("firewall", rule, "name", rule_name)
 		uci:set("firewall", rule, "src", "wan")
@@ -503,10 +503,10 @@ function error503(message, retry_interval, ip)
 		uci:set("firewall", rule, "proto", "tcp")
 		uci:commit("firewall")
 		
-		-- 방화벽 리로드
+		-- Reload firewall
 		os.execute("/etc/init.d/firewall reload &")
 		
-		-- 룰 제거를 위한 cron job 설정
+		-- Set up cron job for rule deletion
 		os.execute(string.format(
 			"(/bin/sh -c 'sleep %d && uci delete firewall.$(uci show firewall | grep %s | cut -d. -f2) && uci commit firewall && /etc/init.d/firewall reload') &",
 			retry_interval * 60,
@@ -514,11 +514,11 @@ function error503(message, retry_interval, ip)
 		))
 	end
 
-	-- HTTP 응답 헤더 설정
+	-- Set HTTP response headers
 	http.status(403, "Forbidden")
 	http.prepare_content("text/html")
 
-	-- 간단한 HTML 응답
+	-- Simple HTML response
 	local html = string.format([[
 <!DOCTYPE html>
 <html lang="en">
@@ -678,7 +678,7 @@ local function session_retrieve(sid, allowed_users)
 end
 
 local function get_retry_settings()
-	-- login_rule 섹션 확인
+	-- login_rule section
 	local sections = uci:get_all('admin_manage')
 	if sections then
 		-- nixio.syslog("info", "=== UCI Sections ===")
@@ -703,7 +703,7 @@ local function get_retry_settings()
 		end
 	end
 
-	-- 섹션이 없으면 기본값 추가
+	-- If section does not exist, add default values
 	local sid = uci:add('admin_manage', 'login_rule')
 	uci:set('admin_manage', sid, 'retry_count', '5')
 	uci:set('admin_manage', sid, 'retry_interval', '5')
@@ -713,7 +713,7 @@ local function get_retry_settings()
 		   tonumber(uci:get('admin_manage', sid, 'retry_interval_default'))
 end
 
--- 방화벽 룰 추가
+-- Add firewall rule
 local function add_firewall_rule(ip, retry_interval)
 	local fw = require "luci.model.firewall"
 	local rule_name = "login_block_" .. ip:gsub("%.", "_")
@@ -734,13 +734,13 @@ local function add_firewall_rule(ip, retry_interval)
 	uci:reorder("firewall", new_rule, 0)
 	uci:commit("firewall")
 	
-	-- 방화벽 리로드
+	-- Reload firewall
 	os.execute("/etc/init.d/firewall reload")
 	
 	return rule_name
 end
 
--- 방화벽 룰 자동 삭제 설정
+-- Set up automatic deletion of firewall rule
 local function schedule_rule_deletion(rule_name, retry_interval)
 	-- nixio.syslog("info", string.format("Scheduling deletion of firewall rule %s in %d minutes", rule_name, retry_interval))
 	
@@ -770,7 +770,7 @@ local function session_setup(user, pass)
 	local rp = context.requestpath
 		and table.concat(context.requestpath, "/") or ""
 
-	-- 로그인 시도 데이터 로드
+	-- Load login attempt data
 	load_attempts()
 
 	local ip = http.getenv("REMOTE_ADDR") or "?"
@@ -780,7 +780,7 @@ local function session_setup(user, pass)
 		login_attempts[key] = { count = 0 }
 	end
 
-	-- /etc/config/rpcd에서 사용자 패스워드 가져오기
+	-- Get user password from /etc/config/rpcd
 	local uci = require "luci.model.uci".cursor()
 	local current_password = nil
 
@@ -788,8 +788,8 @@ local function session_setup(user, pass)
 		if s.username == user then
 			local password_type = s.password
 			if password_type:sub(1, 3) == "$p$" then
-				-- /etc/shadow에서 패스워드 가져오기
-				local shadow_user = password_type:sub(4) -- $p$ 뒤의 사용자 이름
+				-- Get password from /etc/shadow
+				local shadow_user = password_type:sub(4) -- username after $p$
 				local shadow = nixio.fs.readfile("/etc/shadow")
 				if shadow then
 					for line in shadow:gmatch("[^\n]+") do
@@ -801,15 +801,15 @@ local function session_setup(user, pass)
 					end
 				end
 			elseif password_type:sub(1, 3) == "$6$" then
-				-- SHA-512 해시인 경우 그대로 사용
+				-- Use as is if SHA-512 hash
 				current_password = password_type
 			end
-			return false -- 루프 중단
+			return false -- Stop loop
 		end
 	end)
 
 	if not current_password then
-		-- 패스워드를 찾을 수 없는 경우
+		-- If password cannot be found
 		context.auth_failed = {
 			fuser = user,
 			fail_count = login_attempts[key].count,
@@ -819,17 +819,17 @@ local function session_setup(user, pass)
 		return nil
 	end
 
-	-- RSA 복호화 시도
+	-- Try RSA decryption
 	local ok, decrypted = pcall(rsa_decrypt_base64_nofile, pass)
 	if ok and decrypted and #decrypted > 0 then
 		pass = decrypted
 	end
 
-	-- 입력받은 패스워드를 SHA-512로 해시
+	-- Hash the entered password with SHA-512
 	local salt = current_password:match("%$6%$([^%$]+)%$")
 	local hashed_input_password = nixio.crypt(pass, "$6$" .. salt)
 
-	-- default_password 가져오기
+	-- Get default_password
 	local default_password = nil
 	uci:foreach("rpcd", "login", function(s)
 		if s.username == user then
@@ -838,27 +838,27 @@ local function session_setup(user, pass)
 		end
 	end)
 
-	-- 해시된 패스워드 비교
+	-- Compare hashed password
 	if hashed_input_password == current_password and current_password == default_password then
-		-- 로그인 성공 시 카운트 초기화
+		-- Reset count on successful login
 		login_attempts[key].count = 0
 		save_attempts()
 
-		-- ubus 세션 파라미터 로깅
+		-- Log ubus session parameters
 		local session_params = {
 			username = user,
 			password = pass,
 			timeout  = tonumber(luci.config.sauth.sessiontime)
 		}
 
-		-- rpcd 상태 확인
+		-- Check rpcd status
 		local rpcd_status = nixio.fs.stat("/var/run/rpcd.sock")
 
-		-- 임시 세션 생성 시도
+		-- Try to create temporary session
 		local ok, login = pcall(util.ubus, "session", "login", session_params)
 
 		if ok and type(login) == "table" and type(login.ubus_rpc_session) == "string" then
-			-- 세션 설정 시도
+			-- Try to set session
 			local set_ok, set_result = pcall(util.ubus, "session", "set", {
 				ubus_rpc_session = login.ubus_rpc_session,
 				values = {
@@ -868,19 +868,19 @@ local function session_setup(user, pass)
 			})
 
 			if set_ok then
-				-- 세션 쿠키 설정
+				-- Set session cookie
 				http.header("Set-Cookie", 'sysauth=%s; path=%s; SameSite=Strict; HttpOnly%s' %{
 					login.ubus_rpc_session, build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
 				})
 
-				-- 세션 검색 먼저 수행
+				-- Search for session first
 				local sdata = session_retrieve(login.ubus_rpc_session)
 				if sdata then
-					-- 최초 로그인 플래그 설정 (true)
+					-- Set first login flag (true)
 					uci:set("system", "@system[0]", "first_login", "1")
 					uci:commit("system")
 
-					-- 리다이렉션 수행
+					-- Perform redirection
 					http.redirect(build_url("admin/changepassword"))
 					return sdata
 				end
@@ -888,11 +888,11 @@ local function session_setup(user, pass)
 		end
 	end
 
-	-- 로그인 실패 처리
+	-- Handle login failure
 	login_attempts[key].count = login_attempts[key].count + 1
 	save_attempts()
 
-	-- 일반 로그인 처리
+	-- General login processing
 	local login = util.ubus("session", "login", {
 		username = user,
 		password = pass,
@@ -900,16 +900,19 @@ local function session_setup(user, pass)
 	})
 
 	if type(login) == "table" and type(login.ubus_rpc_session) == "string" then
-		-- 방어코드: first_login 값이 여전히 "1"인 경우에만 "0"으로 변경
+		-- Defensive code: only change first_login to "0" if it is still "1"
 		local current = uci:get("system", "@system[0]", "first_login")
 		if current == "1" then
 			uci:set("system", "@system[0]", "first_login", "0")
 			uci:commit("system")
 		end
 		
-		-- 로그인 성공 시 카운트 초기화
+		-- Reset count on successful login
 		login_attempts[key].count = 0
 		save_attempts()
+
+		-- Print login success log
+		nixio.syslog("info", string.format("[LOGIN SUCCESS] user: %s, ip: %s", user, ip))
 
 		util.ubus("session", "set", {
 			ubus_rpc_session = login.ubus_rpc_session,
@@ -921,7 +924,7 @@ local function session_setup(user, pass)
 		return session_retrieve(login.ubus_rpc_session)
 	end
 
-	-- 로그인 실패 처리
+	-- Handle login failure
 	local retry_count, retry_interval = get_retry_settings()
 
 	if login_attempts[key].count >= retry_count then
@@ -929,7 +932,7 @@ local function session_setup(user, pass)
 		return false
 	end
 
-	-- 일반 실패 메시지 표시
+	-- Show general failure message
 	context.auth_failed = {
 		fuser = user,
 		fail_count = login_attempts[key].count,
@@ -1253,7 +1256,7 @@ function dispatch(request)
 				http.header("X-LuCI-Login-Required", "yes")
 
 				local retry_count, _ = get_retry_settings()
-				-- 실패 정보가 있으면 사용
+				-- Use failure info if available
 				local scope = context.auth_failed or {
 					duser = sys.get_super_user(),
 					fuser = user,
@@ -1289,10 +1292,10 @@ function dispatch(request)
 		ctx.authuser = sdat.username
 		ctx.authacl = sacl
 
-		-- default_login_flag 체크 및 리다이렉션
+		-- Check default_login_flag and redirect
 		if sdat.default_login_flag == true then
 			local current_path = table.concat(ctx.path, "/")
-			-- 패스워드 변경 페이지나 로그인 페이지가 아닌 경우에만 리다이렉트
+			-- Only redirect if not on password change or login page
 			if current_path ~= "admin/changepassword" and current_path ~= "admin/login" then
 				http.redirect(build_url("admin/changepassword"))
 				return
@@ -1928,7 +1931,7 @@ local function check_password_hash(user, pass)
 	for line in shadow:gmatch("[^\n]+") do
 		local username, hash = line:match("^([^:]+):([^:]+)")
 		if username == user then
-			-- 입력받은 패스워드를 해당 hash의 salt로 암호화하여 비교
+			-- Encrypt the entered password with the salt from the hash and compare
 			local salt = hash:match("^%$6%$([^%$]+)")
 			if salt then
 				local hashed = nixio.crypt(pass, "$6$" .. salt)
@@ -1942,29 +1945,29 @@ end
 
 function handle_login_failed(key, user, ip, retry_count, retry_interval)
     
-    -- 먼저 503 응답 전송
+    -- Send 503 response first
     http.status(503, "Service Temporarily Unavailable")
     http.header("Content-Type", "text/html; charset=utf-8")
     http.header("Connection", "close")
     
-    -- error503.htm 템플릿 렌더링
+    -- Render error503.htm template
     require("luci.template").render("error503", {
         message = translate('Too many login attempts'),
         retry_interval = retry_interval,
-        unlock_time = retry_interval * 60,  -- 초 단위로 변환
+        unlock_time = retry_interval * 60, -- Convert to seconds
         redirect_url = "/cgi-bin/luci/admin/login"
     })
     
-    -- 응답 완료
+    -- Response complete
     http.write("")
     http.close()
     
-    -- 방화벽 룰 추가
+    -- Add firewall rule
     local rule_name = add_firewall_rule(ip, retry_interval)
 
 	login_attempts[key].count = 0
 	save_attempts()
     
-    -- 자동 삭제 스케줄링
+    -- Set up automatic deletion of firewall rule
     schedule_rule_deletion(rule_name, retry_interval)
 end
