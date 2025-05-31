@@ -9,13 +9,9 @@
 <form method="post" action="<%=pcdata(FULL_REQUEST_URI)%>" autocomplete="off">
 	<%- if fuser then %>
 		<%
-			nixio.syslog("info", "=== Template Debug Start ===")
-			nixio.syslog("info", string.format("fuser: %s", fuser or "nil"))
-			nixio.syslog("info", string.format("fail_count: %s", fail_count or "nil"))
 			if message then
 				nixio.syslog("info", string.format("message: %s", message))
 			end
-			nixio.syslog("info", "=== Template Debug End ===")
 		%>
 		<div class="alert-message warning">
 			<p><%:Invalid username and/or password! Please try again.%></p>
