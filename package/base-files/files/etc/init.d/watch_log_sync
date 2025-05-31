@@ -15,7 +15,6 @@ start_service() {
 			if [ -f $SRC ]; then
 				cp $SRC $DEST
 				sync
-				logger -t watch_log_sync 'Log synced at $(date)'
 			fi
 		done"
 	procd_set_param respawn

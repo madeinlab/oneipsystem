@@ -6,7 +6,12 @@ module("luci.controller.admin.index", package.seeall)
 function action_logout()
 	local dsp = require "luci.dispatcher"
 	local utl = require "luci.util"
-	local sid = dsp.context.authsession
+	local nixio = require "nixio"
+	local ctx = dsp.context
+	local sid = ctx.authsession
+	local username = ctx.authuser or "unknown"
+
+	nixio.syslog("info", string.format("User logout attempt: %s", username))
 
 	if sid then
 		utl.ubus("session", "destroy", { ubus_rpc_session = sid })
