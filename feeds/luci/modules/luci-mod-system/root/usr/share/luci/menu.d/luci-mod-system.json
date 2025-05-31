@@ -72,18 +72,6 @@
 		}
 	},
 
-	"admin/system/startup": {
-		"title": "Startup Program",
-		"order": 80,
-		"action": {
-			"type": "view",
-			"path": "system/startup"
-		},
-		"depends": {
-			"acl": [ "luci-mod-system-init" ]
-		}
-	},
-
 	"admin/system/reboot": {
 		"title": "Reboot",
 		"order": 90,
