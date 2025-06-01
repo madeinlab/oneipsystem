@@ -70,3 +70,44 @@ diff -urN a/core/emperor.c b/core/emperor.c
  		// remove me
  		if (byte == 0) {
  			uwsgi_hooks_run(uwsgi.hook_emperor_stop, "emperor-stop", 0);
+diff -urN a/core/ini.c b/core/ini.c
+--- a/core/ini.c	2021-10-06 14:22:45.000000000 +0900
++++ b/core/ini.c	2025-06-01 23:25:22.231417531 +0900
+@@ -113,9 +113,9 @@
+ 		}
+ 	}
+ 
+-	if (file[0] != 0 && file != last_file) {
+-		uwsgi_log_initial("[uWSGI] getting INI configuration from %s\n", file);
+-	}
++	//if (file[0] != 0 && file != last_file) {
++		//uwsgi_log_initial("[uWSGI] getting INI configuration from %s\n", file);
++	//}
+ 
+ 	ini = uwsgi_open_and_read(file, &len, 1, magic_table);
+ 	if (file != last_file) {
+diff -urN a/core/uwsgi.c b/core/uwsgi.c
+--- a/core/uwsgi.c	2025-06-01 20:57:09.418951340 +0900
++++ b/core/uwsgi.c	2025-06-01 23:27:10.451291055 +0900
+@@ -1315,7 +1315,7 @@
+ 	// unsubscribe if needed
+ 	uwsgi_unsubscribe_all();
+ 
+-	uwsgi_log("SIGINT/SIGTERM received...killing workers...\n");
++	//uwsgi_log("SIGINT/SIGTERM received...killing workers...\n");
+ 
+ 	int i;
+ 	for (i = 1; i <= uwsgi.numproc; i++) {
+@@ -3199,9 +3199,9 @@
+ 		if (uwsgi.is_a_reload) {
+ 			uwsgi_log("gracefully (RE)spawned uWSGI master process (pid: %d)\n", uwsgi.mypid);
+ 		}
+-		else {
+-			uwsgi_log("spawned uWSGI master process (pid: %d)\n", uwsgi.mypid);
+-		}
++		//else {
++			//uwsgi_log("spawned uWSGI master process (pid: %d)\n", uwsgi.mypid);
++		//}
+ 	}
+ 
+ 
