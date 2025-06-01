@@ -78,7 +78,7 @@
 			"path": "status/syslog_config"
 		},
 		"depends": {
-			"acl": [ "luci-mod-status-xxlogs" ]
+			"acl": [ "luci-mod-status-syslog-conf" ]
 		}
 	},
 

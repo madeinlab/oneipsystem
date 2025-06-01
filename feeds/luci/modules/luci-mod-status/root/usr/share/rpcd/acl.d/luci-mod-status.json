@@ -62,6 +62,19 @@
 		}
 	},
 
+	"luci-mod-status-syslog-conf": {
+		"description": "Grant access to system log configuration",
+		"read": {
+			"cgi-io": [ "exec" ],
+			"file": {
+				"/etc/logrotate.d/system_log": [ "read" ]
+			},
+			"ubus": {
+				"file": [ "stat" ]
+			}
+		}
+	},
+
 	"luci-mod-status-routes": {
 		"description": "Grant access to the system route status",
 		"read": {
