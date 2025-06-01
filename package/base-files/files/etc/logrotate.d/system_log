@@ -1,6 +1,6 @@
 /tmp/system.log {
-	size 64k
-	rotate 40
+	size 100k
+	rotate 50
 	copytruncate
 	dateext
 	dateformat _%Y%m%d_%H%M%S
