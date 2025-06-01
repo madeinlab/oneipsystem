@@ -5,7 +5,7 @@ USE_PROCD=1  # Enable procd usage
 
 start_service() {
 	SRC="/tmp/system.log"
-	DEST="/mnt/oneip_log/systemLOG_temp.log"
+	DEST="/mnt/oneip_log/systemLOG_temp.boot.log"
 	MOUNT_POINT="/mnt/oneip_log"
 
 	# Check if mount point is ready
@@ -23,7 +23,7 @@ start_service() {
 		if [ -f '$SRC' ]; then
 			cp '$SRC' '$DEST'
 			sync
-			logger -t boot_log_sync 'Boot log synced at $(date)'
+			logger -t boot_log_sync 'Boot log synced'
 		fi
 	"
 

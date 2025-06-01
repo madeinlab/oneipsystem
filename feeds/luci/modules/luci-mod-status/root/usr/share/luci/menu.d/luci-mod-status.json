@@ -70,6 +70,18 @@
 		}
 	},
 
+	"admin/status/syslog/config": {
+		"title": "System log configuration info",
+		"order": 4,
+		"action": {
+			"type": "view",
+			"path": "status/syslog_config"
+		},
+		"depends": {
+			"acl": [ "luci-mod-status-xxlogs" ]
+		}
+	},
+
 	"admin/status/processes": {
 		"title": "Processes",
 		"order": 6,

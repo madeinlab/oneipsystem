@@ -305,14 +305,14 @@ generate_static_system() {
 		set system.@system[-1].hostname='OneIPSystem'
 		set system.@system[-1].timezone='UTC'
 		set system.@system[-1].ttylogin='1'
-		set system.@system[-1].log_size='512'
+		set system.@system[-1].log_size='64'
 		set system.@system[-1].urandom_seed='0'
 		set system.@system[-1].log_file='/tmp/system.log'
 		set system.@system[-1].conloglevel='2'
 
 		delete system.ntp
 		set system.ntp='timeserver'
-		# busybox ntpd 비활성화
+		# busybox ntpd De-activity
 		set system.ntp.enabled='0'
 		set system.ntp.enable_server='0'
 		# add_list system.ntp.server='0.openwrt.pool.ntp.org'
