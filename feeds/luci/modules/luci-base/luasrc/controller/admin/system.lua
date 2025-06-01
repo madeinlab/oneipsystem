@@ -9,30 +9,30 @@ dispatcher = require "luci.dispatcher"
 
 module("luci.controller.admin.system", package.seeall)
 
--- build_url 함수 로컬 복사
+-- build_url function local copy
 local build_url = dispatcher.build_url
 
 function verify_password(username, password, current_format, user_section)
     if current_format == "$p$" then
         return sys.user.checkpasswd(username, password)
     elseif current_format == "$6$" then
-        -- 1. 저장된 해시값 가져오기
+        -- 1. Get the stored hash value
         local stored_hash = user_section.password:trim()
 
-        -- 2. 저장된 해시에서 salt 추출 ($6$salt$hash 형식)
+        -- 2. Extract salt from the stored hash ($6$salt$hash format)
         local salt = stored_hash:match("^%$6%$([^%$]+)%$")
         if not salt then
             return false
         end
 
-        -- 3. 추출한 salt로 현재 비밀번호의 해시값 생성
+        -- 3. Generate the hash value of the current password using the extracted salt
         local cmd = string.format('echo "%s" | openssl passwd -6 -salt "%s" -stdin', password, salt)
         local current_hash = sys.exec(cmd)
         if not current_hash then
             return false
         end
 
-        -- 4. 해시값 비교
+        -- 4. Compare hash values
         local result = (stored_hash == current_hash:trim())
         return result
     end
@@ -66,7 +66,7 @@ function action_change_password()
     local util = require "luci.util"
     local i18n = require "luci.i18n"
 
-    -- 최초 로그인 시에만 changepassword.htm 으로 이동. 그 외는 접근 금지.
+    -- Only allow access to changepassword.htm on first login. Otherwise, deny access.
     local first_login = uci:get("system", "@system[0]", "first_login") or "0"
     if first_login ~= "1" then
         http.status(403, "Forbidden")
@@ -84,7 +84,7 @@ function action_change_password()
         local new = http.formvalue("new_password")
         local confirm = http.formvalue("confirm_password")
         
-        -- RSA 복호화 시도
+        -- Try RSA decryption
         local ok_cur, dec_current = pcall(rsa_decrypt_base64_nofile, current)
         local ok_new, dec_new = pcall(rsa_decrypt_base64_nofile, new)
         local ok_conf, dec_confirm = pcall(rsa_decrypt_base64_nofile, confirm)
@@ -103,7 +103,7 @@ function action_change_password()
         if current and new and confirm then
             if new == confirm then
                 if username then
-                    -- 현재 사용자의 패스워드 형식 확인
+                    -- Check the password format of the current user
                     local user_section = nil
                     uci:foreach("rpcd", "login", function(s)
                         if s.username == username then
@@ -116,19 +116,19 @@ function action_change_password()
                         local current_password = user_section.password
                         local success = false
 
-                        -- 현재 비밀번호 검증
+                        -- Verify current password
                         local password_format = current_password:sub(1, 3)
                         if verify_password(username, current, password_format, user_section) then
-                            -- 패스워드 형식에 따른 처리
+                            -- Handle according to password format
                             if password_format == "$p$" then
                                 success = sys.user.setpasswd(username, new)
                             elseif password_format == "$6$" then
-                                -- 새로운 비밀번호의 SHA-512 해시 생성 (기본 동작 - 랜덤 salt 사용)
+                                -- Generate SHA-512 hash of the new password (default action - use random salt)
                                 local cmd = string.format('echo "%s" | openssl passwd -6 -stdin', new)
                                 local new_hash = sys.exec(cmd)
 
                                 if new_hash and new_hash:match("^%$6%$") then
-                                    -- 새 해시값을 UCI에 저장
+                                    -- Save the new hash value to UCI
                                     local section_name = user_section[".name"]
                                     local set_result = uci:set("rpcd", section_name, "password", new_hash:trim())
                                     success = uci:commit("rpcd")
@@ -137,7 +137,7 @@ function action_change_password()
                         end
 
                         if success then
-                            -- 최초 로그인 플래그 설정 (false)
+                            -- Set the first login flag (false)
                             local ok = uci:set("system", "@system[0]", "first_login", "0")
                             if ok then
                                 local committed = uci:commit("system")
@@ -148,9 +148,12 @@ function action_change_password()
                                 end
                             end
 
-                            -- 세션의 default_login_flag를 false로 업데이트
+                            -- Log password change
+                            sys.exec(string.format('logger -p "authpriv.info" -t "changepassword" "password for \'%s\' changed by \'%s\'"', username, username))
+
+                            -- Update the session's default_login_flag to false
                             if dispatcher.context.authsession then
-                                -- 세션 업데이트
+                                -- Update session
                                 util.ubus("session", "set", {
                                     ubus_rpc_session = dispatcher.context.authsession,
                                     values = {
@@ -159,18 +162,18 @@ function action_change_password()
                                     }
                                 })
 
-                                -- 세션 종료
+                                -- Destroy session
                                 util.ubus("session", "destroy", {
                                     ubus_rpc_session = dispatcher.context.authsession
                                 })
 
-                                -- 쿠키 제거
+                                -- Remove cookie
                                 http.header("Set-Cookie", "sysauth=; path=%s; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; HttpOnly%s" %{
                                     build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
                                 })
                             end
 
-                            -- 로그인 페이지로 리다이렉트
+                            -- Redirect to login page
                             http.redirect(build_url("admin/login"))
                             return
                         end
@@ -179,7 +182,7 @@ function action_change_password()
             end
         end
         
-        -- 실패 시 에러 메시지와 함께 폼 다시 표시
+        -- On failure, show the form again with an error message
         template.render("admin/changepassword", {
             success = false,
             error = true,
@@ -207,22 +210,15 @@ function action_change_password_admin()
     local util = require "luci.util"
     local i18n = require "luci.i18n"
 
-    sys.exec("logger '[DEBUG] action_change_password_admin: called'")
-
     if dispatcher.context and dispatcher.context.authuser then
         username = dispatcher.context.authuser
-        sys.exec("logger '[DEBUG] action_change_password_admin: username = " .. tostring(username) .. "'")
     end
 
     if http.getenv("REQUEST_METHOD") == "POST" then
-        sys.exec("logger '[DEBUG] action_change_password_admin: POST request received'")
         local new = http.formvalue("new_password")
-        sys.exec("logger '[DEBUG] action_change_password_admin: new_password(raw) = " .. tostring(new) .. "'")
         
         -- RSA 복호화 시도
         local ok_new, dec_new = pcall(rsa_decrypt_base64_nofile, new)
-
-        sys.exec("logger '[DEBUG] action_change_password_admin: dec_new = " .. tostring(dec_new) .. " ok_new = " .. tostring(ok_new) .. "'")
 
         if not (ok_new and dec_new and #dec_new > 0) then
             dec_new = nil
@@ -246,26 +242,21 @@ function action_change_password_admin()
                     local current_password = user_section.password
                     local success = false
                     local password_format = current_password:sub(1, 3)
-                    sys.exec("logger '[DEBUG] action_change_password_admin: password_format = " .. tostring(password_format) .. "'")
                     if password_format == "$p$" then
                         success = sys.user.setpasswd(username, new)
                     elseif password_format == "$6$" then
                         local cmd = string.format('echo "%s" | openssl passwd -6 -stdin', new)
                         local new_hash = sys.exec(cmd)
-                        sys.exec("logger '[DEBUG] action_change_password_admin: new_hash = " .. tostring(new_hash) .. "'")
                         if new_hash and new_hash:match("^%$6%$") then
                             local section_name = user_section[".name"]
                             local set_result = uci:set("rpcd", section_name, "password", new_hash:trim())
                             success = uci:commit("rpcd")
-                            sys.exec("logger '[DEBUG] action_change_password_admin: set_result = " .. tostring(set_result) .. ", commit = " .. tostring(success) .. "'")
                             sys.exec("/etc/init.d/rpcd reload")
                         end
                     end
 
                     if success then
-                        sys.exec("logger '[DEBUG] action_change_password_admin: password change success(" .. tostring(success) .. ")!'")
                         if dispatcher.context.authsession then
-                            sys.exec("logger '[DEBUG] action_change_password_admin: session update and destroy start'")
                             util.ubus("session", "set", {
                                 ubus_rpc_session = dispatcher.context.authsession,
                                 values = {
@@ -279,32 +270,22 @@ function action_change_password_admin()
                             http.header("Set-Cookie", "sysauth=; path=%s; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; HttpOnly%s" %{
                                 build_url(), http.getenv("HTTPS") == "on" and "; secure" or ""
                             })
-                            sys.exec("logger '[DEBUG] action_change_password_admin: session update and destroy end'")
                         end
                         http.prepare_content("text/plain")
                         http.write("success")
                         return
-                    else
-                        sys.exec("logger '[DEBUG] action_change_password_admin: password change failed!'")
                     end
-                else
-                    sys.exec("logger '[DEBUG] action_change_password_admin: user_section not found!'")
                 end
-            else
-                sys.exec("logger '[DEBUG] action_change_password_admin: username is nil!'")
             end
-        else
-            sys.exec("logger '[DEBUG] action_change_password_admin: new is nil after decode'")
         end
         http.redirect(build_url("admin/system/admin"))
     else
-        sys.exec("logger '[DEBUG] action_change_password_admin: GET or other request, rendering form'")
         http.redirect(build_url("admin/system/admin"))
     end
 end
 
 function get_password_rules()
-    -- 인증 체크 추가
+    -- Add authentication check
     if not luci.dispatcher.context.authsession then
         luci.http.status(403, "Forbidden")
         luci.http.prepare_content("application/json")
@@ -323,14 +304,14 @@ function get_password_rules()
     if first_section then
         local section_name = first_section[".name"]
 
-        -- UCI에서 값 읽기
+        -- Read values from UCI
         local min_length = uci:get('admin_manage', section_name, 'min_length') or "9"
         local max_length = uci:get('admin_manage', section_name, 'max_length') or "32"
         local check_sequential = uci:get('admin_manage', section_name, 'check_sequential') or "0"
         local check_sequential_ignore_case = uci:get('admin_manage', section_name, 'check_sequential_ignore_case') or "0"
         local check_sequential_special = uci:get('admin_manage', section_name, 'check_sequential_special') or "0"
 
-        -- JSON 반환
+        -- Return as JSON
         luci.http.prepare_content("application/json")
         luci.http.write_json({
             minLength = tonumber(min_length),
@@ -340,7 +321,7 @@ function get_password_rules()
             checkSequentialSpecial = check_sequential_special
         })
     else
-        -- 기본값 반환
+        -- Return default values
         luci.http.prepare_content("application/json")
         luci.http.write_json({
             minLength = 9,
