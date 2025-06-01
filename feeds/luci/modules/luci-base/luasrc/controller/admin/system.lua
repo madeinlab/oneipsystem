@@ -256,6 +256,9 @@ function action_change_password_admin()
                     end
 
                     if success then
+                        -- Log password change
+                        sys.exec(string.format('logger -p "authpriv.info" -t "changepassword" "password for \'%s\' changed by \'%s\'"', username, username))
+
                         if dispatcher.context.authsession then
                             util.ubus("session", "set", {
                                 ubus_rpc_session = dispatcher.context.authsession,
