@@ -46,9 +46,21 @@
 		}
 	},
 
+	"admin/status/syslog/config": {
+		"title": "System log configuration info",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "status/syslog_config"
+		},
+		"depends": {
+			"acl": [ "luci-mod-status-syslog-conf" ]
+		}
+	},
+
 	"admin/status/syslog/HW": {
 		"title": "H/W Self Test Verification",
-		"order": 2,
+		"order": 3,
 		"action": {
 			"type": "view",
 			"path": "status/syslogHW"
@@ -60,25 +72,13 @@
 
 	"admin/status/syslog/SW": {
 		"title": "S/W Self Test Verification",
-		"order": 3,
+		"order": 4,
 		"action": {
 			"type": "view",
 			"path": "status/syslogSW"
 		},
 		"depends": {
 			"acl": [ "luci-mod-status-xxlogs" ]
-		}
-	},
-
-	"admin/status/syslog/config": {
-		"title": "System log configuration info",
-		"order": 4,
-		"action": {
-			"type": "view",
-			"path": "status/syslog_config"
-		},
-		"depends": {
-			"acl": [ "luci-mod-status-syslog-conf" ]
 		}
 	},
 

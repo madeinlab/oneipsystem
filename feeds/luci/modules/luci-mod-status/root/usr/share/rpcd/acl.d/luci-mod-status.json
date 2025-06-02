@@ -38,7 +38,9 @@
 				"/sbin/logread": [ "stat" ],
 				"/sbin/logread -e *": [ "exec" ],
 				"/usr/sbin/logread": [ "stat" ],
-				"/usr/sbin/logread -e *": [ "exec" ]
+				"/usr/sbin/logread -e *": [ "exec" ],
+				"/etc/logrotate.d/system_log": [ "read" ],
+				"/mnt/oneip_log/*": [ "read", "stat", "list" ]
 			},
 			"ubus": {
 				"file": [ "stat" ]
@@ -67,7 +69,8 @@
 		"read": {
 			"cgi-io": [ "exec" ],
 			"file": {
-				"/etc/logrotate.d/system_log": [ "read" ]
+				"/etc/logrotate.d/system_log": [ "read" ],
+				"/mnt/oneip_log/*": [ "read", "stat", "list" ]
 			},
 			"ubus": {
 				"file": [ "stat" ]
