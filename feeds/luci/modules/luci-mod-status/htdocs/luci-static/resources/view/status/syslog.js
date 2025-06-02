@@ -6,29 +6,6 @@
 'require dom';
 'require form';
 
-function startPolling(shellcmd, logCmd, textarea) {
-	var step = function() {
-		return Promise.all([
-			fs.exec_direct(shellcmd, ['-c', logCmd]),
-			fetchData()
-		]).then(function(results) {
-			var logdata = results[0];
-			var data = results[1];
-			if (textarea && logdata != null) {
-				var loglines = logdata.trim().split(/\n/);
-				textarea.value = loglines.join('\n');
-				textarea.rows = loglines.length + 1;
-			}
-			if (data) {
-				updateFileCountIndicator(data.fileCount, data.rotateLimit);
-			}
-		});
-	};
-
-	return step().then(function() {
-		poll.add(step);
-	});
-}
 
 // Fetch log file count and config from /mnt/oneip_log and /etc/logrotate.d/system_log
 function fetchData() {
@@ -130,26 +107,80 @@ return view.extend({
 		var logCmd = logCmd1 + ' | ' + logCmd2 + ' | ' + logCmd3 + ' | ' + logCmd4;
 
 		var loglines = (data.logdata || '').trim().split(/\n/);
+
+		// Create reverse checkbox
+		var reverseCheckbox = E('input', {
+			type: 'checkbox',
+			id: 'reverse-log-checkbox',
+			style: 'margin-left: 12px; vertical-align: middle;'
+		});
+		var reverseLabel = E('label', {
+			for: 'reverse-log-checkbox',
+			style: 'margin-left: 4px; font-size: 13px; vertical-align: middle;'
+		}, [ _('Reverse') ]);
+
+		// Set initial state (checked by default for reverse)
+		reverseCheckbox.checked = true;
+
+		function renderLog() {
+			var lines = reverseCheckbox.checked ? loglines.slice().reverse() : loglines;
+			textarea.value = lines.join('\n');
+			textarea.rows = lines.length + 1;
+		}
+
 		var textarea = E('textarea', {
 			'id': 'syslog',
 			'style': 'font-size:12px',
 			'readonly': 'readonly',
 			'wrap': 'off',
 			'rows': loglines.length + 1
-		}, [ loglines.join('\n') ]);
+		}, []);
+
+		// Initial render
+		renderLog();
+
+		// Checkbox event
+		reverseCheckbox.addEventListener('change', renderLog);
 
 		var prev = document.getElementById('filecount-indicator');
 		if (prev) prev.remove();
 		updateFileCountIndicator(data.fileCount, data.rotateLimit);
 
 		var container = E('div', { 'id': 'content_syslog' }, [ textarea ]);
+		var titleRow = E('div', { style: 'display: flex; align-items: center;' }, [
+			E('h2', { style: 'margin: 0;' }, [ _('System Log') ]),
+			reverseCheckbox,
+			reverseLabel
+		]);
 		var root = E([], [
-			E('h2', {}, [ _('System Log') ]),
+			titleRow,
 			container
 		]);
 
 		if (data.shellcmd && data.logreadcmd && data.grepcmd && data.awkcmd) {
-			startPolling(data.shellcmd, logCmd, textarea);
+			// Patch polling to respect reverse checkbox
+			function customPolling(shellcmd, logCmd, textarea) {
+				var step = function() {
+					return Promise.all([
+						fs.exec_direct(shellcmd, ['-c', logCmd]),
+						fetchData()
+					]).then(function(results) {
+						var logdata = results[0];
+						var data = results[1];
+						if (textarea && logdata != null) {
+							loglines = logdata.trim().split(/\n/);
+							renderLog();
+						}
+						if (data) {
+							updateFileCountIndicator(data.fileCount, data.rotateLimit);
+						}
+					});
+				};
+				step().then(function() {
+					poll.add(step);
+				});
+			}
+			customPolling(data.shellcmd, logCmd, textarea);
 		}
 
 		return root;
