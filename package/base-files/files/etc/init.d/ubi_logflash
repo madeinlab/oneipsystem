@@ -55,7 +55,7 @@ start_service() {
 stop_service() {
 	# Define source and destination for log sync
 	SRC="/tmp/system.log"
-	DEST="/mnt/oneip_log/systemLOG_temp.log"
+	DEST="/mnt/oneip_log/systemLOG_temp.stop.log"
 
 	# Sync log if source exists and mount point is active
 	if [ -f "$SRC" ] && mountpoint -q "$MOUNT_POINT"; then
