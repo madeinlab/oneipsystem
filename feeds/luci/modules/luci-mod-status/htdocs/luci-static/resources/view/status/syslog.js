@@ -15,7 +15,7 @@ function fetchData() {
     ]).then(function(results) {
         let config = results[0] || '';
         let files = Array.isArray(results[1]) ? results[1] : [];
-        let fileCount = files.filter(f => f.name && f.name.startsWith('systemLOG_')).length;
+        let fileCount = files.filter(f => f.name && f.name.startsWith('system.log_')).length;
         let rotateLimit = 40;
         let match = config.match(/rotate\s+(\d+)/);
         if (match) rotateLimit = parseInt(match[1]);

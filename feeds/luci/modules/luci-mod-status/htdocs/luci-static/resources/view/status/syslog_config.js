@@ -23,7 +23,7 @@ function fetchData() {
     ]).then(function(results) {
         // Count files starting with systemLOG_
         let files = Array.isArray(results[1]) ? results[1] : [];
-        let count = files.filter(f => f.name && f.name.startsWith('systemLOG_')).length;
+        let count = files.filter(f => f.name && f.name.startsWith('system.log_')).length;
         return {
             config: results[0],
             fileCount: count
