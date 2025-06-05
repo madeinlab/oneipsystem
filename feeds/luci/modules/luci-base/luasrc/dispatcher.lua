@@ -912,7 +912,7 @@ local function session_setup(user, pass)
 		save_attempts()
 
 		-- Print login success log
-		nixio.syslog("info", string.format("[LOGIN SUCCESS] user: %s, ip: %s", user, ip))
+		nixio.syslog("info", string.format("[LOGIN] SUCCESS user: %s, ip: %s", user, ip))
 
 		util.ubus("session", "set", {
 			ubus_rpc_session = login.ubus_rpc_session,
@@ -936,8 +936,8 @@ local function session_setup(user, pass)
 	context.auth_failed = {
 		fuser = user,
 		fail_count = login_attempts[key].count,
-		message = string.format("Invalid username and/or password! Please try again. (Failed attempts: %d)",
-			login_attempts[key].count),
+		message = string.format("[LOGIN] FAILED user: %s, ip: %s (Failed attempts: %d)",
+			user, ip, login_attempts[key].count),
 		retry_count = retry_count
 	}
 
@@ -1970,4 +1970,9 @@ function handle_login_failed(key, user, ip, retry_count, retry_interval)
     
     -- Set up automatic deletion of firewall rule
     schedule_rule_deletion(rule_name, retry_interval)
+
+	nixio.syslog("info", string.format(
+		"[LOGIN] BLOCKED user: %s, ip: %s (Exceeded %d failed attempts within %ds)",
+		user, ip, retry_count, retry_interval
+	))	
 end

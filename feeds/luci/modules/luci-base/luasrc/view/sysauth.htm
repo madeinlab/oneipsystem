@@ -10,7 +10,7 @@
 	<%- if fuser then %>
 		<%
 			if message then
-				nixio.syslog("info", string.format("message: %s", message))
+				nixio.syslog("info", string.format("%s", message))
 			end
 		%>
 		<div class="alert-message warning">

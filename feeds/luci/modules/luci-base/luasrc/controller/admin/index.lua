@@ -12,7 +12,7 @@ function action_logout()
 	local username = ctx.authuser or "unknown"
 	local ip = luci.http.getenv("REMOTE_ADDR") or "?"
 
-	nixio.syslog("info", string.format("[LOGOUT] user: %s, ip: %s", username, ip))
+	nixio.syslog("info", string.format("[LOGOUT] SUCCESS user: %s, ip: %s", username, ip))
 
 	if sid then
 		utl.ubus("session", "destroy", { ubus_rpc_session = sid })
