@@ -6,11 +6,18 @@ local mac = arg[2]
 mac = string.lower(mac)
 local accounts_path = "/etc/camera/accounts.json"
 
-nixio.syslog("debug", string.format("reboot-camera.lua ip[%s] mac[%s]", uci_ip, mac))
+local debug = false
+local function debug_log(level, msg)
+	if debug and nixio and nixio.syslog then
+		nixio.syslog(level, msg)
+	end
+end
+
+debug_log("debug", string.format("reboot-camera.lua ip[%s] mac[%s]", uci_ip, mac))
 
 if not uci_ip or uci_ip == "" then
     print("Missing CAMERA_IP")
-    nixio.syslog("err", "reboot-camera.lua Missing CAMERA_IP")
+    debug_log("err", "reboot-camera.lua Missing CAMERA_IP")
     os.exit(1)
 end
 
@@ -18,12 +25,11 @@ local username = ""
 local password = ""
 local decpass = ""
 
--- 계정 정보 조회
 if mac and mac ~= "" then
     local fs = require("nixio.fs")
     local json = require("luci.jsonc")
     if fs.access(accounts_path) then
-        -- nixio.syslog("debug", "reboot-camera.lua access  /etc/camera/accounts.json")
+        debug_log("debug", "reboot-camera.lua access  /etc/camera/accounts.json")
         local content = fs.readfile(accounts_path)
         local data = json.parse(content)
         local acc = data and data[mac]
@@ -32,7 +38,7 @@ if mac and mac ~= "" then
             password = acc.password or ""
         end
     end
-    -- nixio.syslog("debug", "username: " .. username .. " password:" .. password)
+    debug_log("debug", "username: " .. username .. " password:" .. password)
 
     if password and password ~= "" then
         local f = io.popen("luajit /usr/lib/key_manager.lua decrypt " .. password)
@@ -49,8 +55,11 @@ else
     cmd = string.format('sh -c \'onvif-util -r "%s" & echo $! > %s\'', uci_ip, tmpfile)
 end
 
--- nixio.syslog("debug", "cmd:" .. cmd)
-os.execute(cmd)
+debug_log("debug", "cmd:" .. cmd)
+local ret = os.execute(cmd)
+if ret == 0 then
+    nixio.syslog("info", string.format("[Camera] Reboot [%s][%s]", uci_ip, mac))
+end
 
 local pidFile = io.open(tmpfile, "r")
 local pid = pidFile and pidFile:read("*n")
@@ -62,7 +71,7 @@ if not pid then
     os.exit(1)
 end
 
--- nixio.syslog("debug", "pid:" .. pid)
+debug_log("debug", "pid:" .. pid)
 
 os.execute("sleep 2")
 local check = os.execute("ps -p " .. pid .. " > /dev/null")

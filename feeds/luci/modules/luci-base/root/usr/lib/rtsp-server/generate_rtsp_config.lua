@@ -53,6 +53,13 @@ paths:
 local nixio = require "nixio", require "nixio.util"
 local accounts = loadAccountsJson("/etc/camera/accounts.json")
 
+local debug = false
+local function debug_log(level, msg)
+	if debug and nixio and nixio.syslog then
+		nixio.syslog(level, msg)
+	end
+end
+
 for _, cam in ipairs(camlist) do
     local name = exec("uci get camera."..cam..".name"):gsub("%s+$", "")
     local ip = exec("uci get camera."..cam..".ip"):gsub("%s+$", "")
@@ -64,7 +71,7 @@ for _, cam in ipairs(camlist) do
         username = accounts[mac].username or ""
         encpass = accounts[mac].password or ""
     end
-    -- nixio.syslog("debug", string.format("generate_rtsp_config name[%s] ip[%s] mac[%s] username[%s]", name, ip, mac, username))
+    debug_log("debug", string.format("generate_rtsp_config name[%s] ip[%s] mac[%s] username[%s]", name, ip, mac, username))
 
     local rtsp_port = 554
     local profiles_raw = exec("uci get camera."..cam..".profile 2>/dev/null")

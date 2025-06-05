@@ -11,6 +11,13 @@ jsonc = require "luci.jsonc"
 
 module("luci.camera", package.seeall)
 
+local debug = false
+local function debug_log(level, msg)
+	if debug and nixio and nixio.syslog then
+		nixio.syslog(level, msg)
+	end
+end
+
 local HLS_PORT_OFFSET = 50000
 
 local camera_dump_path = "/etc/camera"
@@ -44,9 +51,9 @@ function get_ip_address(intf)
 end
 
 function cameraRedirect(ip, port)
-	-- nixio.syslog("debug", "cameraRedirect() " .. ip .. " " .. port)
+	debug_log("debug", "cameraRedirect() " .. ip .. " " .. port)
     if ip == "" or ip == nil or port == "" or port == nil then
-        -- nixio.syslog("debug", "cameraRedirect: ip or port is empty or nil.")
+        debug_log("debug", "cameraRedirect: ip or port is empty or nil.")
         return false
     end
 
@@ -57,7 +64,7 @@ function cameraRedirect(ip, port)
 	rv = util.split(res, "\n")
 	if(rv[1] ~= "0") then
 		local cmd = "socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. ip .. ":443 & > /dev/null"
-		-- nixio.syslog("debug", "cameraRedirect() " .. cmd)
+		debug_log("debug", "cameraRedirect() " .. cmd)
 		sys.exec(cmd)		
 	end
 
@@ -67,9 +74,9 @@ function cameraRedirect(ip, port)
 end
 
 function rtspRedirect(url, port)
-	-- nixio.syslog("debug", "rtspRedirect() " .. url .. " " .. port)
+	debug_log("debug", "rtspRedirect() " .. url .. " " .. port)
 	if url == "" or url == nil or port == "" or port == nil then
-        -- nixio.syslog("debug", "rtspRedirect: url or port is empty or nil.")
+        debug_log("debug", "rtspRedirect: url or port is empty or nil.")
         return false
     end
 
@@ -81,7 +88,7 @@ function rtspRedirect(url, port)
 	rv = util.split(res, "\n")
 	if(rv[1] ~= "0") then
 		local cmd = "socat TCP-LISTEN:" .. port .. ",fork,reuseaddr TCP:" .. removedUrl .. " & > /dev/null"
-		-- nixio.syslog("debug", "rtspRedirect() " .. cmd)
+		debug_log("debug", "rtspRedirect() " .. cmd)
 		sys.exec(cmd)
 	end
 	
@@ -91,7 +98,7 @@ function rtspRedirect(url, port)
 end
 
 function getCameraInfo(section_id, type)
-	-- nixio.syslog("debug", "getCameraInfo() " .. section_id .. " " .. type)
+	debug_log("debug", "getCameraInfo() " .. section_id .. " " .. type)
 	
 	local wanip = uci:get('network', 'wan', 'ipaddr')
 	local portKey = (type == 'webpage') and 'httpForwardingPort' or 'rtspForwardingPort'
@@ -121,7 +128,7 @@ end
 
 -- Search connected camera
 function searchConnectedCamera()
-	-- nixio.syslog("debug", "searchConnectedCamera()")
+	debug_log("debug", "searchConnectedCamera()")
 
 	local result = sys.exec("onvif-util -a")
 
@@ -220,11 +227,11 @@ function createCameraDumpFile(filename, ip, mac, username, password)
 		if decPass ~= '' then
 			cmd = string.format("onvif-util -d -u '%s' -p '%s' '%s'", user, decPass, ip)
 		else
-			nixio.syslog("err", string.format("[createCameraDumpFile] Password decryption failed for user: %s. Aborting.", user))
+			debug_log("err", string.format("[createCameraDumpFile] Password decryption failed for user: %s. Aborting.", user))
 			return false
 		end				
 	else
-		nixio.syslog("err", string.format("[createCameraDumpFile] No valid credentials found for ip: %s (mac: %s)", ip, mac or "nil"))
+		debug_log("err", string.format("[createCameraDumpFile] No valid credentials found for ip: %s (mac: %s)", ip, mac or "nil"))
 		cmd = string.format("onvif-util -d '%s'", ip)
 	end
 
@@ -239,28 +246,28 @@ function createCameraDumpFile(filename, ip, mac, username, password)
 		if file then
 			file:write(result)
 			file:close()
-			nixio.syslog("debug", string.format("[createCameraDumpFile] Dumpfile created successfully: %s", filename))
+			debug_log("debug", string.format("[createCameraDumpFile] Dumpfile created successfully: %s", filename))
 			return true
 		else
-			nixio.syslog("err", string.format("[createCameraDumpFile] Failed to write dump file: %s (%s)", path, err or "unknown error"))
+			debug_log("err", string.format("[createCameraDumpFile] Failed to write dump file: %s (%s)", path, err or "unknown error"))
 			return false
 		end
 	else
-		nixio.syslog("err", string.format("[createCameraDumpFile] Failed to connect to host: %s with user: %s", ip, user))
+		debug_log("err", string.format("[createCameraDumpFile] Failed to connect to host: %s with user: %s", ip, user))
 		return false
 	end
 end
 
 -- Generate camera config file
 function createCameraConfigFile(dumpFilename)
-	-- nixio.syslog("debug", "createCameraConfigFile()")		
+	debug_log("debug", "createCameraConfigFile()")		
 
 	if not dumpFilename then
 		-- If dumpFilename is not provided, process all dump files
 
 		local iter = fs.dir(camera_dump_path)
 		if not iter then
-			nixio.syslog("err", "[createCameraConfigFile] Failed to open camera dump directory")
+			debug_log("err", "[createCameraConfigFile] Failed to open camera dump directory")
 			return nil
 		end
 	
@@ -276,7 +283,7 @@ function createCameraConfigFile(dumpFilename)
 	
 				local result = write_to_uci_config(config_file, config_section_type, camera_info)
 				if not result then
-					nixio.syslog("err", string.format("[createCameraConfigFile] Failed to write UCI config for %s", file))					
+					debug_log("err", string.format("[createCameraConfigFile] Failed to write UCI config for %s", file))					
 				end
 			end
 		end
@@ -288,15 +295,15 @@ function createCameraConfigFile(dumpFilename)
 		if camera_info and camera_info.ip ~= "" and camera_info.selectedrtsp ~= "" then
 			local result = write_to_uci_config(config_file, config_section_type, camera_info)
 			if not result then
-				nixio.syslog("err", string.format("[createCameraConfigFile] Failed to write UCI config for %s", dumpFilename))
+				debug_log("err", string.format("[createCameraConfigFile] Failed to write UCI config for %s", dumpFilename))
 				return false
 			end
 		else
-			nixio.syslog("err", string.format("[createCameraConfigFile] Invalid or incomplete camera info in %s", dumpFilename))
+			debug_log("err", string.format("[createCameraConfigFile] Invalid or incomplete camera info in %s", dumpFilename))
 		end
 	end
 
-	nixio.syslog("debug", string.format("[createCameraConfigFile] Config 'camera' created successfully"))
+	debug_log("debug", string.format("[createCameraConfigFile] Config 'camera' created successfully"))
 
 	return true
 end
@@ -311,24 +318,24 @@ function isNonEmpty(str)
 end
 
 function addCamera(ip, mac, username, password)
-	-- local safe_username = username or ""
-	-- local safe_password = password or ""
-	-- nixio.syslog("debug", string.format("[addCamera] ip[%s] mac[%s] username[%s] password[%s]", ip, mac, safe_username, safe_password))
+	local safe_username = username or ""
+	local safe_password = password or ""
+	debug_log("debug", string.format("[addCamera] ip[%s] mac[%s] username[%s] password[%s]", ip, mac, safe_username, safe_password))
 
 	-- check ip
 	local port = getPortFromIP(ip)
 	if port == 0 then
-		nixio.syslog("err", string.format("[addCamera] Invalid IP address: %s", ip))
+		debug_log("err", string.format("[addCamera] Invalid IP address: %s", ip))
 		return false
 	end
 
 	if mac == nil or mac == '' then
-		nixio.syslog("err", string.format("[addCamera] MAC address is nil or empty"))
+		debug_log("err", string.format("[addCamera] MAC address is nil or empty"))
 		return false
 	end
 
 	local filename = macToFilename(mac)
-	-- nixio.syslog("err", string.format("[addCamera] filename:%s", filename))
+	debug_log("err", string.format("[addCamera] filename:%s", filename))
 	local hasCredentials = isNonEmpty(username) and isNonEmpty(password)
 	local result
 
@@ -336,14 +343,14 @@ function addCamera(ip, mac, username, password)
 		-- Called from web 'camera' page
 		result = createCameraDumpFile(filename, ip, mac, username, password)
 		if not result then
-			nixio.syslog("err", string.format("[addCamera] Failed to create dump file"))
+			debug_log("err", string.format("[addCamera] Failed to create dump file"))
 			return false
 		end
 	else
 		if not findFile(camera_dump_path, filename) then
 			result = createCameraDumpFile(filename, ip, mac)
 			if not result then
-				nixio.syslog("err", string.format("[addCamera] Failed to create dump file"))
+				debug_log("err", string.format("[addCamera] Failed to create dump file"))
 				return false
 			end			
 		end
@@ -353,7 +360,7 @@ function addCamera(ip, mac, username, password)
 		-- Generate camera config file
 		result = createCameraConfigFile(filename)
 		if not result then
-			nixio.syslog("err", string.format("[addCamera] Failed to create config file"))
+			debug_log("err", string.format("[addCamera] Failed to create config file"))
 			return false
 		end
 
@@ -368,6 +375,8 @@ function addCamera(ip, mac, username, password)
 
 		-- Generates or updates the RTSP proxy server configuration file
 		generateRtspProxyConf()
+
+		nixio.syslog("info", string.format("[Camera] Registration completed [%s][%s]", ip, mac))
 	end
 
 	return true
@@ -377,12 +386,12 @@ function removeCamera(ip, mac)
 	-- check ip
 	local port = getPortFromIP(ip)
 	if port == 0 then
-		nixio.syslog("err", string.format("[removeCamera] Invalid IP address: %s", ip))
+		debug_log("err", string.format("[removeCamera] Invalid IP address: %s", ip))
 		return false
 	end
 
 	if mac == nil or mac == '' then
-		nixio.syslog("err", string.format("[removeCamera] MAC address is nil or empty"))
+		debug_log("err", string.format("[removeCamera] MAC address is nil or empty"))
 		return false
 	end
 
@@ -469,7 +478,7 @@ function parseCameraFile(filepath)
 end	
 
 function delete_uci_config_options(config_file, config_section_type, config_section_name, options)
-	-- nixio.syslog("debug", "delete_uci_config_options")
+	debug_log("debug", "delete_uci_config_options")
     -- Check if the section exists
     local section_found = false
     uci:foreach(config_file, config_section_type, function(section)
@@ -488,9 +497,9 @@ function delete_uci_config_options(config_file, config_section_type, config_sect
         -- Commit the changes
 		uci:save(config_file)
         uci:commit(config_file)
-        -- nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
+        debug_log("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
     else
-		-- nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
+		debug_log("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
     end
 
 	return;
@@ -512,9 +521,9 @@ function clear_uci_config(config_file, config_section_type, config_section_name)
         -- Commit the changes
 		uci:save(config_file)
         uci:commit(config_file)
-        -- nixio.syslog("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
+        debug_log("debug", string.format("Deleted section '%s' from '%s'", config_section_name, config_file))
     else
-		-- nixio.syslog("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
+		debug_log("debug", string.format("Section '%s' not found in '%s'", config_section_name, config_file))
     end
 
 	return;
@@ -611,7 +620,7 @@ function getChannel(cameraIP)
         table.insert(ip_parts, part)
     end
 
-	-- nixio.syslog("debug", string.format("getChannel [%s] [%s] [%s] [%s]", ip_parts[1], ip_parts[2], ip_parts[3], ip_parts[4]))	
+	debug_log("debug", string.format("getChannel [%s] [%s] [%s] [%s]", ip_parts[1], ip_parts[2], ip_parts[3], ip_parts[4]))	
 
 	local portN = tonumber(ip_parts[4])
     if portN == nil then
@@ -622,7 +631,7 @@ function getChannel(cameraIP)
 		return nil
 	end
 
-	-- nixio.syslog("debug", string.format("getChannel return: %d", math.floor(portN / 10)))	
+	debug_log("debug", string.format("getChannel return: %d", math.floor(portN / 10)))	
 
 	return math.floor(portN / 10)
 end
@@ -636,17 +645,17 @@ function findFile(path, filename)
 	for file in iter do
 		if file == filename then
 			print("File found: " .. file)
-			-- nixio.syslog("debug", "[findFile] File found: " .. file)
+			debug_log("debug", "[findFile] File found: " .. file)
 			return true
 		end
 	end
 	
-	-- nixio.syslog("debug", "[findFile] File not found: " .. filename)
+	debug_log("debug", "[findFile] File not found: " .. filename)
 	return false
 end
 
 function rebootCamera(ip, mac)
-	nixio.syslog("debug", string.format("rebootCamera ip[%s] mac[%s]", ip, mac))
+	debug_log("debug", string.format("rebootCamera ip[%s] mac[%s]", ip, mac))
 	-- sys.exec("/usr/bin/reboot-camera.lua " .. ip .. " " .. mac)
 	os.execute("/usr/bin/reboot-camera.lua " .. ip .. " " .. mac)
 end
@@ -654,8 +663,8 @@ end
 -- Get the port link state from /proc/rtk_gsw/link.
 function getLinkState()
     local state = sys.exec("cat /proc/rtk_gsw/link")
-    state = tostring(state):gsub("%s+", "")  -- 문자열 양옆 공백 제거
-    --nixio.syslog("debug", string.format("getLinkState (type: %s): %s", type(state), state))
+    state = tostring(state):gsub("%s+", "")
+    debug_log("debug", string.format("getLinkState (type: %s): %s", type(state), state))
     return { result = state } 
 end
 
@@ -663,7 +672,7 @@ function setCameraConfig(section, option, value)
 	local cmd_set = string.format("uci set camera.%s.%s=%s", section, option, value)
 	local cmd_commit = "uci commit camera"
 	
-	--nixio.syslog("debug", string.format("setCameraConfig %s", cmd_set))
+	debug_log("debug", string.format("setCameraConfig %s", cmd_set))
 
 	sys.exec(cmd_set)
 	sys.exec(cmd_commit)
@@ -783,7 +792,7 @@ end
 
 -- Saves camera account information mapped to a MAC address
 function saveAccountConf(mac, username, password)
-	-- nixio.syslog("debug", string.format("saveAccountConf mac:%s)", mac))
+	debug_log("debug", string.format("saveAccountConf mac:%s)", mac))
     local accounts = {}
     local json_str = fs.readfile(account_path)
 
@@ -814,7 +823,7 @@ function saveAccountConf(mac, username, password)
 		fs.writefile(account_path, updated_json)
 		os.execute("chmod 600 " .. account_path)
 
-		nixio.syslog("debug", string.format("Account saved successfully (%s)", mac))
+		debug_log("debug", string.format("Account saved successfully (%s)", mac))
 	end
 end
 
@@ -831,16 +840,16 @@ function generateRtspProxyConf()
 
 	if result:match("OK") then
 		os.execute("/etc/init.d/rtspproxy restart")
-		nixio.syslog("debug", "RTSP configuration generated successfully")
+		debug_log("debug", "RTSP configuration generated successfully")
 		return { result = "RTSP configuration generated successfully." }
 	else
-		nixio.syslog("debug", "RTSP configuration generation failed.")
+		debug_log("debug", "RTSP configuration generation failed.")
 		return { error = "RTSP configuration generation failed." }
 	end
 end
 
 function updateCameraInfo(mac, ip, name)
-	-- nixio.syslog("debug", string.format("updateCameraInfo mac[%s] ip[%s] name[%s])", mac, ip, name))
+	debug_log("debug", string.format("updateCameraInfo mac[%s] ip[%s] name[%s])", mac, ip, name))
     local accounts = {}
     local json_str = fs.readfile(account_path)
 
