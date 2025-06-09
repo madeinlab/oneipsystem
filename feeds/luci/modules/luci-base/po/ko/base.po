@@ -9110,3 +9110,55 @@ msgstr "설정"
 #: modules/luci-mod-camera/htdocs/luci-static/resources/view/camera/index.js
 msgid "Camera Account"
 msgstr "카메라 계정"
+
+#: modules/luci-mod-status/root/usr/share/luci/menu.d/luci-mod-status.json:50
+msgid "System log configuration info"
+msgstr "시스템 로그 설정 정보"
+
+#: modules/luci-mod-status/root/usr/share/luci/menu.d/luci-mod-status.json:62
+msgid "H/W Self Test Verification"
+msgstr "하드웨어 자가 진단 검증"
+
+#: modules/luci-mod-status/root/usr/share/luci/menu.d/luci-mod-status.json:74
+msgid "S/W Self Test Verification"
+msgstr "소프트웨어 자가 진단 검증"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:164
+msgid "Log Rotation Settings"
+msgstr "로그 로테이션 설정"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:98
+msgid "Log File Path"
+msgstr "로그 파일 경로"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:99
+msgid "Size Limit"
+msgstr "파일 크기 제한"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:100
+msgid "Number of Rotations"
+msgstr "보존 로그 개수"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:101
+msgid "Rotation Directory"
+msgstr "로테이션 저장 경로"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:102
+msgid "Date Format"
+msgstr "날짜 형식"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:103
+msgid "File Permissions"
+msgstr "파일 권한"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:104
+msgid "Log File Count"
+msgstr "현재 로그 파일 개수"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog_config.js:116
+msgid "Extra Options"
+msgstr "추가 설정 옵션"
+
+#: modules/luci-mod-status/htdocs/luci-static/resources/view/status/syslog.js:120
+msgid "Reverse"
+msgstr "최근 로그 먼저 보기"

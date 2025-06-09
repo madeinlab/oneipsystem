@@ -113,7 +113,7 @@ return view.extend({
                         border-bottom:1px solid #bbdefb;
                         font-weight:600;
                     `
-                }, [ICONS['Extra Options'] + ' Extra Options']),
+                }, [ICONS['Extra Options'] + ' ' + _('Extra Options')]),
                 E('td', {
                     'style': `
                         padding:10px;
@@ -178,7 +178,7 @@ return view.extend({
                     border-bottom:1px solid #bbdefb;
                     font-weight:600;
                 `
-            }, [ICONS[label] + ' ' + label]),
+            }, [ICONS[label] + ' ' + _(label)]),
             E('td', {
                 'style': `
                     padding:10px;
