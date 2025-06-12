@@ -27,6 +27,10 @@ end
 
 local outfile = io.open("/usr/lib/rtsp-server/config.yml", "w")
 outfile:write([[
+rtmp: no    # disabled RTMP
+webrtc: no  # disabeld WebRTC
+srt: no     # disabeld SRT
+
 # RTSP
 rtsp: yes
 rtspTransports: [tcp]
@@ -45,7 +49,7 @@ hlsAllowOrigin: '*'
 
 readTimeout: 5s
 writeTimeout: 5s
-readBufferCount: 128
+writeQueueSize: 128
 
 paths:
 ]])
@@ -100,6 +104,7 @@ for _, cam in ipairs(camlist) do
             outfile:write(string.format('    source: "rtsp://%s:%s/%s"\n',
                 ip, rtsp_port, rtsp_path))
         end
+        outfile:write('    sourceOnDemand: yes\n')
     end
 end
 
