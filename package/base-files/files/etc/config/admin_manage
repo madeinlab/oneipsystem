@@ -3,6 +3,9 @@ config password_rule
     option max_length_default '32'
     option min_length '9'
     option max_length '32'
+    option check_sequential '1'
+    option check_sequential_ignore_case '1'
+    option check_sequential_special '1'
 
 config login_rule
     option retry_count_default '5'

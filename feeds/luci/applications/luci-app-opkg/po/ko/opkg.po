@@ -185,9 +185,13 @@ msgstr "OPKG-설정"
 msgid "Overwrite files from other package(s)"
 msgstr ""
 
-#: applications/luci-app-opkg/htdocs/luci-static/resources/view/opkg.js:1069
+#: applications/luci-app-opkg/htdocs/luci-static/resources/view/opkg.js:1120
 msgid "Package name"
 msgstr "패키지 이름"
+
+#: applications/luci-app-opkg/htdocs/luci-static/resources/view/opkg.js:1006
+msgid "%d%% (%s MB free / %s MB total)"
+msgstr "%d%% (사용 가능: %s MB / 총 용량: %s MB )"
 
 #: applications/luci-app-opkg/htdocs/luci-static/resources/view/opkg.js:1038
 #, fuzzy

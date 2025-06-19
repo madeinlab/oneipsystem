@@ -220,8 +220,8 @@ return view.extend({
 				body.push(E('p', _("The flash image was uploaded. Below is the checksum and file size listed, compare them with the original file to ensure data integrity. <br /> Click 'Continue' below to start the flash procedure.")));
 				body.push(E('ul', {}, [
 					res[0].size ? E('li', {}, '%s: %1024.2mB'.format(_('Size'), res[0].size)) : '',
-					res[0].checksum ? E('li', {}, '%s: %s'.format(_('MD5'), res[0].checksum)) : '',
-					res[0].sha256sum ? E('li', {}, '%s: %s'.format(_('SHA256'), res[0].sha256sum)) : ''
+					// res[0].checksum ? E('li', {}, '%s: %s'.format(_('MD5'), res[0].checksum)) : '',
+					res[0].sha256sum ? E('li', {}, '%s: %s'.format(_('SHA-256'), res[0].sha256sum)) : ''
 				]));
 
 				body.push(E('p', {}, E('label', { 'class': 'btn' }, [

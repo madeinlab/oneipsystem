@@ -1002,7 +1002,7 @@ return view.extend({
 		
 		// Create capacity graph
 		var freePercent = size ? Math.floor((free / size) * 100) : 0;
-		var space = freePercent + '% (' + freeMB + ' MB free / ' + sizeMB + ' MB total)';
+		var space = String.format(_('%d%% (%s MB free / %s MB total)'), freePercent, freeMB, sizeMB);
 
 		var capacityBar = E('div', { 
 			'class': 'cbi-progressbar', 
@@ -1116,7 +1116,7 @@ return view.extend({
 		// Create basic table structure
 		var packageTable = E('table', { 'id': 'packages', 'class': 'table' }, [
 			E('tr', { 'class': 'tr table-titles' }, [
-				E('th', { 'class': 'th' }, [ _('Package Name') ]),
+				E('th', { 'class': 'th' }, [ _('Package name') ]),
 				E('th', { 'class': 'th' }, [ _('Version') ])
 			])
 		]);
@@ -1144,7 +1144,7 @@ return view.extend({
 							'style': 'position: absolute; left: 0; right: 0; height: 100%; background-color: #3bb4d8; border-radius: 3px;'
 						}),
 						E('div', {
-							'style': 'position: absolute; left: 0; right: 0; top: 0; bottom: 0; text-align: center; line-height: 32px; color: black; font-weight: bold; padding: 0 5px; font-size: calc(32px * 0.9);'
+							'style': 'position: absolute; left: 0; right: 0; top: 0; bottom: 0; text-align: center; line-height: 32px; color: black; font-weight: bold; padding: 0 5px; font-size: calc(32px * 0.7);'
 						}, [ space ])
 					]),
 					packageTable

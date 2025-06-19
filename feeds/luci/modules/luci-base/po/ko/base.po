@@ -5999,8 +5999,8 @@ msgstr "런타임 오류"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js:224
 #, fuzzy
-msgid "SHA256"
-msgstr "SHA256"
+msgid "SHA-256"
+msgstr "SHA-256"
 
 #: modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js:59
 #: modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/60_wifi.js:271
@@ -8016,7 +8016,7 @@ msgstr ""
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/reboot.js:26
 msgid "Warning: There are unsaved changes that will get lost on reboot!"
-msgstr ""
+msgstr "저장되지 않은 변경 사항이 있습니다. 재부팅하면 변경 내용이 모두 사라집니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password.js:37
 msgid "Weak"
@@ -8855,9 +8855,29 @@ msgstr "암호의 최소/최대 길이를 설정합니다."
 msgid "Minimum Length"
 msgstr "최소 길이"
 
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:52
+msgid "Minimum length must be less than maximum length."
+msgstr "최소 길이는 최대 길이보다 작아야 합니다."
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:72
+msgid "Maximum length must be greater than minimum length."
+msgstr "최대 길이는 최소 길이보다 커야 합니다."
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js
+msgid "Minimum length must be at least %d."
+msgstr "최소 길이는 %d 이상입니다."
+
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
 msgid "Maximum Length"
 msgstr "최대 길이"
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js
+msgid "Maximum length must be at least %d."
+msgstr "최대 길이는 %d 이상입니다."
+
+#: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js
+msgid "Maximum length is less than minimum length."
+msgstr "최대길이가 최소길이보다 작습니다."
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
 msgid "Check sequential characters"
@@ -8868,16 +8888,16 @@ msgid "Prohibits three or more consecutive or identical characters. (e.g., 123, 
 msgstr "3자 이상의 연속 또는 동일 문자 설정을 금지합니다. (예: 123, 111, abc, aaa)"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
-msgid "Ignore case"
-msgstr "대소문자 구분 안함"
+msgid "- Ignore case"
+msgstr "- 대소문자 무시"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
 msgid "Case insensitive. (e.g., abc, Abc)"
 msgstr "대소문자를 구분하지 않습니다. (예: abc, Abc)"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
-msgid "Check special charaters"
-msgstr "연속된 특수문자 금지"
+msgid "- Check special charaters"
+msgstr "- 연속된 특수문자 금지"
 
 #: modules/luci-mod-system/htdocs/luci-static/resources/view/system/password_rule.js:39
 msgid "Prohibits the setting of three or more consecutive or identical special characters. (e.g., !@#, !!!)"
