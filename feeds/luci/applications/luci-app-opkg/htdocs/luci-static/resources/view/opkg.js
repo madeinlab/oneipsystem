@@ -224,7 +224,8 @@ function display(pattern)
 			continue;
 
 		// nginx, ssh, ssl related packages only
-		if (!name.match(/(nginx|ssh|ssl)/i))
+		// yjyoon: include mediamtx and onvif packages (2025-07-22)
+		if (!name.match(/(nginx|ssh|ssl|mediamtx|onvif)/i))
 			continue;
 
 		desc = desc.split(/\n/);
@@ -1065,9 +1066,12 @@ return view.extend({
 		});
 		
 		// Filter nginx, ssh, ssl related packages
+		// yjyoon: include mediamtx and onvif packages (2025-07-22)
 		var nginxPackages = [];
 		var sslPackages = [];
 		var sshPackages = [];
+		var mediamtxPackages = [];
+		var onvifPackages = [];
 		
 		for (var i = 0; i < allPackages.length; i++) {
 			var pkg = allPackages[i];
@@ -1081,15 +1085,23 @@ return view.extend({
 			else if (pkg.name.match(/ssh/i)) {
 				sshPackages.push(pkg);
 			}
+			else if (pkg.name.match(/mediamtx/i)) {
+				mediamtxPackages.push(pkg);
+			}
+			else if (pkg.name.match(/onvif/i)) {
+				onvifPackages.push(pkg);
+			}			
 		}
 		
 		// Sort each category alphabetically
 		nginxPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
 		sslPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
 		sshPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
+		mediamtxPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });
+		onvifPackages.sort(function(a, b) { return a.name.localeCompare(b.name); });		
 		
 		// Combine all packages in the specified order
-		var sortedPackages = [].concat(nginxPackages, sslPackages, sshPackages);
+		var sortedPackages = [].concat(nginxPackages, sslPackages, sshPackages, mediamtxPackages, onvifPackages);
 		
 		// Create rows for the sorted packages
 		for (var i = 0; i < sortedPackages.length; i++) {

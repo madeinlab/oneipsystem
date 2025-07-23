@@ -13,8 +13,10 @@ module("luci.camera", package.seeall)
 
 local debug = false
 local function debug_log(level, msg)
-	if debug and nixio and nixio.syslog then
-		nixio.syslog(level, msg)
+	if _debug and nixio and nixio.syslog then
+		local info = debug.getinfo(2, "n") -- Returns the name of the caller function
+		local func_name = info and info.name or "?"
+		nixio.syslog(level, string.format("[%s] %s", func_name, msg))
 	end
 end
 
@@ -370,7 +372,7 @@ function addCamera(ip, mac, username, password)
 		
 		-- Execute socat
 		cameraRedirect(ip, webPort)
-		-- rtspRedirect is disabled because RTSP port redirection is now handled via iptables, not socat
+		-- # Use iptables instead of socat for internal RTSP port redirection
 		-- rtspRedirect(camera_info.rtsp, rtspPort)
 
 		-- Generates or updates the RTSP proxy server configuration file
@@ -813,7 +815,7 @@ function saveAccountConf(mac, username, password)
 
 	local isPWMatch = isPasswordMatch(oldpass, newpass)
 
-	if (olduser == newuser and isPWMatch == false) or (olduser ~= newuser) then
+	-- if (olduser == newuser and isPWMatch == false) or (olduser ~= newuser) then
 		accounts[norm_mac] = {
 			username = newuser,
 			password = newpass
@@ -824,7 +826,18 @@ function saveAccountConf(mac, username, password)
 		os.execute("chmod 600 " .. account_path)
 
 		debug_log("debug", string.format("Account saved successfully (%s)", mac))
-	end
+
+		local target_ip = getIpByMac(mac)
+		if target_ip and target_ip ~= "" then
+			local args = {
+				action = "add",
+				mac = mac,
+				ip = target_ip,
+				name = ""
+			}
+			handleCameraEvent(args)
+		end
+	-- end
 end
 
 -- Compares two encrypted passwords after decryption
@@ -836,7 +849,7 @@ end
 
 -- Generates or updates the RTSP proxy server configuration file based on camera data
 function generateRtspProxyConf()
-	local result = sys.exec("/usr/lib/rtsp-server/generate_rtsp_config.lua")
+	local result = sys.exec("/usr/lib/rtsp-proxy/generate_rtsp_config.lua")
 
 	if result:match("OK") then
 		os.execute("/etc/init.d/rtspproxy restart")
@@ -921,4 +934,21 @@ function handleCameraEvent(args)
 	end
 
 	return { result = true, action = action }
+end
+
+function getIpByMac(target_mac)
+	local lease_file = "/tmp/dhcp.leases"
+	local ip = nil
+
+	for line in io.lines(lease_file) do
+		local ts, mac, ipaddr, name, clientid = line:match("^(%S+)%s+(%S+)%s+(%S+)%s+(%S*)%s*(%S*)")
+		if mac and mac:lower() == target_mac:lower() then
+			ip = ipaddr
+			break
+		end
+	end
+
+	debug_log("debug", string.format("Mac: %s -> IP: %s)", target_mac, ip))
+
+	return ip
 end

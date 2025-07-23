@@ -3,8 +3,8 @@
 START=95
 STOP=10
 
-MEDIAMTX_BIN=/usr/lib/rtsp-server/mediamtx
-CONFIG_FILE=/usr/lib/rtsp-server/config.yml
+MEDIAMTX_BIN=/usr/lib/rtsp-proxy/mediamtx
+CONFIG_FILE=/usr/lib/rtsp-proxy/config.yml
 PIDFILE=/var/run/mediamtx.pid
 
 start() {

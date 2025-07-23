@@ -809,7 +809,7 @@ local methods = {
 
 	updateRTSPProxyConf = {
 		call = function()
-			local handle = io.popen("/usr/lib/rtsp-server/generate_rtsp_config.lua")
+			local handle = io.popen("/usr/lib/rtsp-proxy/generate_rtsp_config.lua")
 			local result = handle:read("*a")
 			handle:close()
 	

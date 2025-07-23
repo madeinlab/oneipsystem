@@ -207,14 +207,8 @@ define Package/$(PKG_NAME)/install
 	  if [ -e $(1)/usr/lib/key_manager.lua ]; then \
 	    chmod +x $(1)/usr/lib/key_manager.lua; \
 	  fi; \
-	  if [ -e $(1)/usr/lib/rtsp-server/generate_rtsp_config.lua ]; then \
-	    chmod +x $(1)/usr/lib/rtsp-server/generate_rtsp_config.lua; \
-	  fi; \
 	  if [ -e $(1)/usr/bin/reboot-camera.lua ]; then \
 	    chmod +x $(1)/usr/bin/reboot-camera.lua; \
-	  fi; \
-	  if [ -e $(1)/usr/lib/rtsp-server/mediamtx ]; then \
-	    chmod +x $(1)/usr/lib/rtsp-server/mediamtx; \
 	  fi; \
 	  if [ -e $(1)/etc/init.d/rtspproxy ]; then \
 	    chmod +x $(1)/etc/init.d/rtspproxy; \

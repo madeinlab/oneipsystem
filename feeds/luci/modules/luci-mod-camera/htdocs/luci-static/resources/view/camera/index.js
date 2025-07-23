@@ -455,7 +455,7 @@ async function handleSetCameraLoginInfo(section_id) {
 	let mac = uci.get('camera', section_id, 'mac') ? uci.get('camera', section_id, 'mac') : _macAddrArr[portNum - 1]
 
 	callGetAccountByMac(mac).then(function(account) {
-		let accMac = account.mac || ''
+		let accMac = account.mac || mac || ''
 		let accName = account.name || ''
 		let accUsername =  account.username || ''
 		let accPassword = account.password || ''
